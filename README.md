@@ -1,6 +1,37 @@
-# Research Team Folder – Africa’s Blockchain Club
+# Research Team Folder – Africa's Blockchain Club
 
 This folder is the single source of truth for all research blueprints, forensic reports, dashboards, and tools.
+
+## Quick Start: Run the Dashboard Locally
+
+1. Clone the main repo (if not already done):
+
+```bash
+git clone https://github.com/Africas-Blockchain-Club/PeterManda.git
+cd PeterManda/research-team
+```
+
+2. (Recommended) Create and activate a virtual environment:
+
+```bash
+python -m venv venv
+source venv/bin/activate    # On Windows: venv\Scripts\activate
+```
+
+3. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+4. Launch the dashboard:
+
+```bash
+streamlit run dashboards/app.py
+```
+
+The dashboard will open in your browser at http://localhost:8501.  
+It auto-detects all blueprints and reports — add new ones and refresh!
 
 ## Folder Structure & Rules (Strict – Follow for Scalability)
 
