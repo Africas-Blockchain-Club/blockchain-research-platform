@@ -19,7 +19,7 @@ Liquidity-First Forensic Audit for Any Cryptocurrency Token
 - Open Interest (OI), funding rates, liquidation clusters (Coinglass, Hyblock Capital)
 - Cascade risk (downside liqs) vs. squeeze potential (upside)
 
-### Step 4: Liquidity Analysis (Critical for Profit Realization)
+### Step 4: Liquidity Analysis (Critical for Profit sation)
 - 24h volume / market cap ratio (>5–10% = healthy velocity)
 - Order-book depth (±1–2% on major exchanges)
 - Bid-ask spread & slippage simulation ($1M–$10M+ orders)
