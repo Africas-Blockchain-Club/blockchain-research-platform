@@ -2,20 +2,37 @@
 
 This folder is the single source of truth for all research blueprints, forensic reports, dashboards, and tools.
 
+## Prerequisites
+
+### System Dependencies (Linux/WSL)
+This project uses `xhtml2pdf`, which requires system-level graphics libraries to generate PDFs. If you are on Ubuntu, WSL, or Debian, run:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y libcairo2-dev pkg-config python3-dev
+```
 ## Quick Start: Run the Dashboard Locally
 
 1. Clone the main repo (if not already done):
 
 ```bash
-git clone https://github.com/Africas-Blockchain-Club/PeterManda.git
+git clone git@github.com:Africas-Blockchain-Club/PeterManda.git
 cd PeterManda/research-team
 ```
 
 2. (Recommended) Create and activate a virtual environment:
 
 ```bash
-python -m venv venv
-source venv/bin/activate    # On Windows: venv\Scripts\activate
+python3 -m venv venv
+
+# For Linux/macOS/WSL:
+source venv/bin/activate
+
+# For Windows Command Prompt:
+venv\Scripts\activate.bat
+
+# For Windows PowerShell:
+venv\Scripts\Activate.ps1
 ```
 
 3. Install dependencies:

@@ -1,4 +1,4 @@
-# Token Analysis Blueprint v1.0
+# Blueprint: Token Analysis for Profitable, Liquidity-Aware Trading
 Liquidity-First Forensic Audit for Any Cryptocurrency Token
 
 **Purpose**: Repeatable framework for data-driven investment decisions. Focus on realising profits (liquidity = you can actually take them).
@@ -19,11 +19,23 @@ Liquidity-First Forensic Audit for Any Cryptocurrency Token
 - Open Interest (OI), funding rates, liquidation clusters (Coinglass, Hyblock Capital)
 - Cascade risk (downside liqs) vs. squeeze potential (upside)
 
-### Step 4: Liquidity Analysis (Critical for Profit sation)
-- 24h volume / market cap ratio (>5–10% = healthy velocity)
-- Order-book depth (±1–2% on major exchanges)
-- Bid-ask spread & slippage simulation ($1M–$10M+ orders)
-- Key insight: High liquidity = clean exits even on large positions. Thin liquidity = slippage eats gains or traps you.
+### Step 4: Liquidity Analysis (Critical for Realising Profits)
+Metrics to track (live via APIs or CoinGecko/Coinglass/Amberdata/Kaiko):
+- 24h spot volume / market cap (Liquidity Turnover Ratio; >5–10% = healthy).
+- Order-book depth (±1% / ±2% on Binance, Bybit, OKX – aim for $100M+ for majors).
+- Bid-ask spread (tight <0.05–0.1% ideal).
+- Slippage for realistic sizes (1M to 10M dollars orders; <0.5% = excellent).
+- Derivatives liquidity (perps volume vs. spot, OI sustainability).
+
+Why liquidity is make-or-break:
+- High liquidity = you can exit huge positions (even 100+ BTC or 10k+ ETH) with minimal slippage → lock in profits cleanly, compound small wins.
+- Low liquidity = massive slippage eats gains, or you're trapped (price moves against you while selling).
+- Liquidity dries up in bears → cascades worsen. 
+- Concentrate on bulls → easier big exits.
+- Majors (BTC) have structural depth; alts can evaporate overnight.
+- Institutions provide liquidity (market-making) but pull it in stress → watch depth contraction as early warning.
+- On-chain/DEX liquidity matters for alts (Uniswap pools); CEX dominates spot for majors.
+- Follow it for timing: Enter during rising volume/depth; exit in high-volume windows; avoid thin books (e.g., weekends, low-activity periods).
 
 ### Step 5: Holistic Synthesis & Trade Signals
 - **Enter**: Scarcity improving + institutional accumulation + balanced leverage + strong liquidity
@@ -32,7 +44,7 @@ Liquidity-First Forensic Audit for Any Cryptocurrency Token
 
 ### Step 6: Source Layer (Unique Alpha Only)
 - Core: CoinGecko, Arkham, Glassnode
-- Unique: ultrasound.money (ETH burns), Coinglass/Hyblock (leverage/heatmaps), Dune Analytics (custom queries)
+- Unique: Ultrasound.money (burns), Coinglass (leverage/liquidity), Dune (custom), Hyblock (heatmaps)
 
 **Version History**  
 - v1.0 (Feb 2026): Initial token analysis blueprint  

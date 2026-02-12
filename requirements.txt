@@ -3,4 +3,5 @@ pandas
 plotly
 requests
 fpdf2
-markdown2
+markdown
+xhtml2pdf
