@@ -218,6 +218,7 @@ CRITICAL RULES:
 1. Write in British English throughout (e.g., "analyse" not "analyze", "colour" not "color", "behaviour" not "behavior", "defence" not "defense", "realised" not "realized").
 2. Do NOT begin the report with any preamble, greeting, or meta-commentary (e.g., never start with "Certainly!", "Below is…", "Here is…"). Begin DIRECTLY with the report title.
 3. Use the exact 4-phase structure below. Every section must appear.
+4. All currency values must be denominated in US Dollars ($) AND accompanied by an estimate in South African Rand (ZAR) in brackets, e.g., "$1,200 (approx. R19,200)". Use the exchange rate provided in the context.
 
 REPORT STRUCTURE (follow exactly):
 
@@ -503,6 +504,7 @@ def generate_report(token, date=None):
         "30d_market_caps": market_caps,
         "liquidity": liquidity_data,
         "treasuries": fetch_treasuries(token),
+        "zar_rate": 16.01,
     }
 
     # Add Coinglass data (OI, Funding, Liquidations)
