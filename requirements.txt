@@ -5,3 +5,9 @@ requests
 fpdf2
 markdown
 xhtml2pdf
+pycoingecko
+openai
+matplotlib
+beautifulsoup4
+python-dotenv
+google-genai

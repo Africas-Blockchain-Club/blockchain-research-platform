@@ -1,0 +1,12 @@
+feat: align research engine with Forensic Audit Blueprint v1.0
+
+- Restructured AI report generation into 4 forensic phases with weighted Blueprint Scoring (0-100).
+- Implemented robust AI fallback logic:
+    - OpenRouter: Claude 3.5 Sonnet (Premium) -> Auto-selection (Free).
+    - Groq: Llama 3.3 70B (Best) -> Llama 3.1 8B (Fallback/Rate-limit).
+- Migrated Google Gemini integration to the new google-genai SDK.
+- Enhanced data fetching with Coinglass liquidation levels and 4 automated 'Kill Switch' red-flag checks.
+- Overhauled Streamlit dashboard with score-based metrics, Phase-based tabs, and custom token input.
+- Improved regex extraction for Blueprint Scores and Final Verdicts from AI reports.
+- Enforced British English and professional 'no preamble' constraints for all AI responses.
+- Updated README.md to reflect latest tech stack and features.
