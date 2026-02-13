@@ -52,6 +52,9 @@ page = st.sidebar.radio("Select",
 def clean_markdown_for_pdf(md_text):
     md_text = md_text.replace('■', '-')
     md_text = md_text.replace('•', '-')
+    md_text = md_text.replace('—', '&mdash;')
+    md_text = md_text.replace('–', '&ndash;')
+    md_text = md_text.replace(' / ', '&nbsp;/&nbsp;')
     md_text = md_text.replace('\u201c', '"').replace('\u201d', '"')
     md_text = md_text.replace('\u2018', "'").replace('\u2019', "'")
     return md_text
@@ -72,17 +75,17 @@ def md_to_pdf(md_text, filename):
     <head>
         <meta charset="UTF-8">
         <style>
-            @page {{ size: a4; margin: 2cm 2.5cm; }}
+            @page {{ size: a4; margin: 1.5cm 1.5cm; }}
             body {{ font-family: Arial, Helvetica, sans-serif; font-size: 10pt; line-height: 1.4; color: rgb(33, 33, 33); }}
             h1 {{ font-size: 16pt; font-weight: bold; margin-top: 0; margin-bottom: 12pt; color: rgb(0,0,0); border-bottom: 2pt solid rgb(200,200,200); padding-bottom: 4pt; }}
             h2 {{ font-size: 13pt; font-weight: bold; margin-top: 14pt; margin-bottom: 8pt; color: rgb(51,51,51); }}
             h3 {{ font-size: 11pt; font-weight: bold; margin-top: 10pt; margin-bottom: 6pt; color: rgb(68,68,68); }}
             p {{ margin-bottom: 6pt; text-align: justify; }}
             ul, ol {{ margin-left: 12pt; margin-bottom: 8pt; padding-left: 8pt; }}
-            li {{ margin-bottom: 4pt; line-height: 1.5; }}
-            table {{ width: 100%; border-collapse: collapse; margin: 8pt 0; font-size: 9pt; }}
-            td, th {{ border: 1pt solid rgb(187,187,187); padding: 4pt 6pt; text-align: left; vertical-align: top; }}
-            th {{ background-color: rgb(235,235,235); font-weight: bold; text-align: center; }}
+            li {{ margin-bottom: 4pt; line-height: 1.4; }}
+            table {{ width: 100%; border-collapse: collapse; margin: 10pt 0; font-size: 8.5pt; table-layout: auto; }}
+            td, th {{ border: 0.5pt solid rgb(180,180,180); padding: 5pt 3pt; text-align: left; vertical-align: top; }}
+            th {{ background-color: rgb(240,240,240); font-weight: bold; text-align: center; }}
             tr:nth-child(even) {{ background-color: rgb(250,250,250); }}
             img {{ max-width: 100%; height: auto; }}
         </style>
