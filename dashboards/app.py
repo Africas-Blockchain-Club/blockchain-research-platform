@@ -48,9 +48,10 @@ if not os.path.exists(reports_dir): os.makedirs(reports_dir)
 blueprint_files = [f for f in os.listdir(blueprints_dir) if f.endswith(".md")]
 
 import glob
-report_files = []
-for file_path in glob.glob(os.path.join(reports_dir, "*_audit_report.md")):
-    report_files.append(os.path.relpath(file_path, reports_dir))
+_raw_report_paths = glob.glob(os.path.join(reports_dir, "*_audit_report.md"))
+# Newest first, cap at 10 for the dashboard — older files stay on disk
+_raw_report_paths.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+report_files = [os.path.relpath(p, reports_dir) for p in _raw_report_paths[:10]]
 
 display_reports = []
 for rep in report_files:
@@ -366,8 +367,7 @@ if page == "Overview":
     
     for i, rep in enumerate(report_files):
         token_name = os.path.basename(rep).split('_')[0].upper()
-        
-        # Extract score and verdict safely
+
         rep_path = os.path.join(reports_dir, rep)
         score = 0
         verdict = "Unknown"
@@ -376,11 +376,34 @@ if page == "Overview":
             meta, md = extract_metadata_frontmatter(raw_md)
             score = meta.get("Score", extract_blueprint_score(md))
             verdict = meta.get("Verdict", extract_final_verdict(md))
-            
+
         emoji = extract_verdict_emoji(verdict)
+
+        # Staleness calculation
+        age_days = 0
+        if os.path.exists(rep_path):
+            mtime = os.path.getmtime(rep_path)
+            age_days = (datetime.datetime.now() - datetime.datetime.fromtimestamp(mtime)).days
+
+        if age_days < 3:
+            fresh_color = "#10b981"
+            fresh_label = f"{age_days}d ago" if age_days > 0 else "Today"
+            fresh_nudge = ""
+        elif age_days < 7:
+            fresh_color = "#f59e0b"
+            fresh_label = f"{age_days}d ago"
+            fresh_nudge = ""
+        else:
+            fresh_color = "#ef4444"
+            fresh_label = f"{age_days}d ago"
+            fresh_nudge = " - Regenerate"
+
         card_html = f"""
 <div class="inst-card report-card" style="margin-bottom: 0.5rem; height: 100%;">
-    <div class="meta-tag" style="background: rgba(16, 185, 129, 0.2); color: #10b981;">Data Extraction: Live & Autonomous</div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <div class="meta-tag" style="background: rgba(16, 185, 129, 0.2); color: #10b981; margin-bottom: 0;">Data Extraction: Live & Autonomous</div>
+        <span style="font-size: 0.72rem; font-weight: 700; color: {fresh_color}; background: rgba(128,128,128,0.1); padding: 0.2rem 0.5rem; border-radius: 4px; white-space: nowrap;">{fresh_label}{fresh_nudge}</span>
+    </div>
     <div class="card-title">{token_name} Insight Report</div>
     <div class="card-meta">
         <strong>Contents:</strong> Unbiased forensic audit to support profitable investment decisions. Features live data snapshots, derivatives checks, and generative Alpha assessment.<br><br>
@@ -400,7 +423,7 @@ if page == "Overview":
 """
         with cols[i % 3]:
             st.markdown(card_html, unsafe_allow_html=True)
-            if st.button(f"📖 View {token_name} Report", key=f"btn_{token_name}"):
+            if st.button(f"View {token_name} Report", key=f"btn_{token_name}"):
                 st.session_state.selected_page = f"Report: {token_name}"
                 st.rerun()
     
