@@ -385,18 +385,16 @@ if page == "Overview":
             mtime = os.path.getmtime(rep_path)
             age_days = (datetime.datetime.now() - datetime.datetime.fromtimestamp(mtime)).days
 
+        is_stale = age_days >= 7
         if age_days < 3:
             fresh_color = "#10b981"
             fresh_label = f"{age_days}d ago" if age_days > 0 else "Today"
-            fresh_nudge = ""
         elif age_days < 7:
             fresh_color = "#f59e0b"
             fresh_label = f"{age_days}d ago"
-            fresh_nudge = ""
         else:
             fresh_color = "#ef4444"
             fresh_label = f"{age_days}d ago"
-            fresh_nudge = " - Regenerate"
 
         card_html = f"""
 <div class="inst-card report-card" style="margin-bottom: 0.5rem; height: 100%;">
@@ -426,6 +424,11 @@ if page == "Overview":
             if st.button(f"View {token_name} Report", key=f"btn_{token_name}"):
                 st.session_state.selected_page = f"Report: {token_name}"
                 st.rerun()
+            if is_stale:
+                if st.button(f"Regenerate {token_name}", key=f"regen_{token_name}", type="primary", use_container_width=True):
+                    st.session_state.regen_token = token_name
+                    st.session_state.selected_page = "Generate Report"
+                    st.rerun()
     
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -445,7 +448,8 @@ elif page == "Generate Report":
             placeholder="Select one or more tokens...",
         )
     with col2:
-        custom_token = st.text_input("Other token", placeholder="e.g., ENA, MATIC")
+        _regen_prefill = st.session_state.pop("regen_token", "")
+        custom_token = st.text_input("Other token", value=_regen_prefill, placeholder="e.g., ENA, MATIC")
     with col3:
         model_choice = st.selectbox(
             "Model",
