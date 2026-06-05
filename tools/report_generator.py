@@ -9,6 +9,8 @@ from data_engineering.fetchers import (
     fetch_dexscreener_data,
     fetch_coingecko_data,
     fetch_cryptopanic_news,
+    fetch_reddit_stats,
+    fetch_cryptocompare_social,
     fetch_coinglass_data,
     fetch_liquidation_data,
     fetch_defillama_data,
@@ -47,6 +49,29 @@ def generate_report(token, model="claude-sonnet-4-6", log_fn=None):
 
     log("Fetching market data, supply, and community stats from CoinGecko...")
     coingecko_data = fetch_coingecko_data(token)
+
+    # Fill social gaps: CoinGecko community_data is often null for smaller tokens
+    cg_twitter = coingecko_data.get("twitter_followers") if "error" not in coingecko_data else None
+    cg_reddit = coingecko_data.get("reddit_subscribers") if "error" not in coingecko_data else None
+    subreddit_name = coingecko_data.get("subreddit_name", "") if "error" not in coingecko_data else ""
+
+    if not cg_twitter or not cg_reddit:
+        log("CoinGecko social data incomplete - fetching from free alternative sources...")
+        if subreddit_name and not cg_reddit:
+            log(f"Fetching Reddit stats for r/{subreddit_name}...")
+            reddit_stats = fetch_reddit_stats(subreddit_name)
+            if "error" not in reddit_stats:
+                coingecko_data["reddit_subscribers"] = reddit_stats.get("subscribers")
+                coingecko_data["reddit_active_users"] = reddit_stats.get("active_users")
+
+        if not cg_twitter:
+            log("Fetching Twitter/social stats from CryptoCompare...")
+            cc_social = fetch_cryptocompare_social(token)
+            if "error" not in cc_social:
+                coingecko_data["twitter_followers"] = cc_social.get("twitter_followers")
+                coingecko_data["twitter_handle"] = cc_social.get("twitter_handle")
+                if not cg_reddit:
+                    coingecko_data["reddit_subscribers"] = coingecko_data.get("reddit_subscribers") or cc_social.get("reddit_subscribers")
 
     log("Fetching recent news headlines...")
     news_headlines = fetch_cryptopanic_news(token)
@@ -101,8 +126,18 @@ def generate_report(token, model="claude-sonnet-4-6", log_fn=None):
             "liquidity_turnover_ratio": metrics["liquidity_turnover_ratio"],
         },
         "community_and_social": {
+            # Follower counts: CoinGecko removed these from free tier; Reddit needs OAuth keys in .env
             "twitter_followers": coingecko_data.get("twitter_followers") if cg_ok else None,
+            "twitter_screen_name": coingecko_data.get("twitter_screen_name", "") if cg_ok else "",
             "reddit_subscribers": coingecko_data.get("reddit_subscribers") if cg_ok else None,
+            "reddit_active_users": coingecko_data.get("reddit_active_users") if cg_ok else None,
+            "subreddit": coingecko_data.get("subreddit_name", "") if cg_ok else "",
+            # Note for AI: handles are available even when counts are not
+            "social_note": (
+                f"Twitter handle: @{coingecko_data.get('twitter_screen_name', 'unavailable')} | "
+                f"Subreddit: r/{coingecko_data.get('subreddit_name', 'unavailable')} | "
+                "Follower counts require paid API access; use news headlines for sentiment assessment."
+            ) if cg_ok else "Social data unavailable",
             "official_social_links": dex_data.get("social_links", []),
             "official_website_links": dex_data.get("website_links", []),
             "token_categories": coingecko_data.get("categories", []) if cg_ok else [],

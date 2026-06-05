@@ -238,6 +238,18 @@ def split_report_phases(md_text):
     return sections
 
 
+def clean_report_for_display(text):
+    """
+    Preprocess report markdown before passing to st.markdown.
+    - Escapes $ signs so Streamlit does not treat them as LaTeX math delimiters.
+    - Replaces any em/en dashes that slipped through AI generation.
+    """
+    text = text.replace('—', '-').replace('–', '-')
+    # Escape dollar signs: $50 -> \$50 so Streamlit renders them as currency, not LaTeX
+    text = text.replace('$', r'\$')
+    return text
+
+
 # ====================== TOP TOKENS (auto-refreshes weekly) ======================
 
 STABLECOINS = {"USDT", "USDC", "BUSD", "DAI", "TUSD", "USDD", "FRAX", "USDP", "GUSD",
@@ -672,13 +684,13 @@ elif page.startswith("Report:"):
             tabs = st.tabs(tab_names)
             for tab, name in zip(tabs, tab_names):
                 with tab:
-                    st.markdown(sections[name], unsafe_allow_html=True)
+                    st.markdown(clean_report_for_display(sections[name]), unsafe_allow_html=True)
                     # If this is Phase 4 / Synthesis, show the chart screenshot!
                     if "Phase 4" in name and screenshot and screenshot != "None" and os.path.exists(screenshot):
                         st.image(screenshot, caption=f"DexScreener Live Chart Capture for {token_name.upper()}")
         else:
             # Fallback: show full report
-            st.markdown(md, unsafe_allow_html=True)
+            st.markdown(clean_report_for_display(md), unsafe_allow_html=True)
 
         st.divider()
         md_to_pdf(md, f"{token_name}-audit-latest.pdf")

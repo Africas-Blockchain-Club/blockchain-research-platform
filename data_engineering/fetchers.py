@@ -49,6 +49,19 @@ def fetch_coingecko_data(token):
         market = d.get("market_data", {})
         community = d.get("community_data", {})
 
+        links = d.get("links", {})
+        # Extract social handles for use by the free social fetchers
+        twitter_handle = links.get("twitter_screen_name") or ""
+        subreddit_url = links.get("subreddit_url") or ""
+        # Parse subreddit name from URL e.g. https://www.reddit.com/r/ethereum/
+        subreddit_name = ""
+        if subreddit_url:
+            parts = [p for p in subreddit_url.rstrip("/").split("/") if p]
+            if "r" in parts:
+                idx = parts.index("r")
+                if idx + 1 < len(parts):
+                    subreddit_name = parts[idx + 1]
+
         return {
             "id": coin_id,
             "name": d.get("name"),
@@ -66,12 +79,77 @@ def fetch_coingecko_data(token):
             "total_supply": market.get("total_supply"),
             "circulating_supply": market.get("circulating_supply"),
             "max_supply": market.get("max_supply"),
+            # CoinGecko community data (sometimes null - fetchers below fill the gap)
             "twitter_followers": community.get("twitter_followers"),
+            "twitter_screen_name": twitter_handle,
             "reddit_subscribers": community.get("reddit_subscribers"),
+            "subreddit_name": subreddit_name,
             "source": "CoinGecko API",
         }
     except Exception as e:
         return {"error": f"CoinGecko fetch failed: {str(e)}"}
+
+
+# ====================== SOCIAL STATS ======================
+
+def fetch_reddit_stats(subreddit_name):
+    """
+    Fetch Reddit subscriber count using the free OAuth app-only flow.
+    No user login required; only a free Reddit app registration.
+    Set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET in .env:
+      1. Go to reddit.com/prefs/apps
+      2. Click 'create an app' -> choose 'script'
+      3. Copy the client id (under the app name) and secret
+    """
+    if not subreddit_name:
+        return {"error": "No subreddit name"}
+    subreddit = subreddit_name.strip("/").lstrip("r/")
+
+    client_id = os.getenv("REDDIT_CLIENT_ID", "")
+    client_secret = os.getenv("REDDIT_CLIENT_SECRET", "")
+
+    if not client_id or not client_secret:
+        return {"error": "REDDIT_CLIENT_ID/SECRET not set - see .env.example"}
+
+    try:
+        # App-only OAuth - no user credentials needed
+        token_resp = requests.post(
+            "https://www.reddit.com/api/v1/access_token",
+            auth=requests.auth.HTTPBasicAuth(client_id, client_secret),
+            data={"grant_type": "client_credentials"},
+            headers={"User-Agent": "ABCResearch/1.0"},
+            timeout=8,
+        )
+        if token_resp.status_code != 200:
+            return {"error": f"Reddit OAuth token failed: {token_resp.status_code}"}
+
+        token = token_resp.json().get("access_token")
+        about_resp = requests.get(
+            f"https://oauth.reddit.com/r/{subreddit}/about",
+            headers={"Authorization": f"Bearer {token}", "User-Agent": "ABCResearch/1.0"},
+            timeout=8,
+        )
+        if about_resp.status_code == 200:
+            d = about_resp.json().get("data", {})
+            return {
+                "subscribers": d.get("subscribers", 0),
+                "active_users": d.get("accounts_active", 0),
+                "source": "Reddit OAuth API (free)",
+            }
+        return {"error": f"Reddit about returned {about_resp.status_code}"}
+    except Exception as e:
+        return {"error": f"Reddit fetch failed: {str(e)}"}
+
+
+def fetch_cryptocompare_social(symbol):
+    """
+    Placeholder - CryptoCompare removed social data from their free tier.
+    Kept for future use if a paid key is added (CRYPTOCOMPARE_API_KEY in .env).
+    """
+    api_key = os.getenv("CRYPTOCOMPARE_API_KEY", "")
+    if not api_key:
+        return {"error": "CRYPTOCOMPARE_API_KEY not set - social data requires paid tier"}
+    return {"error": "CryptoCompare social data not available on free tier"}
 
 
 def check_cmc_listed(token):
