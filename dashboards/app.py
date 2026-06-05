@@ -374,8 +374,8 @@ elif page == "Generate Report":
     with col3:
         model_choice = st.selectbox(
             "Model",
-            ["claude-sonnet-4-6", "claude-opus-4-8"],
-            help="Sonnet is fast and thorough. Opus goes deepest."
+            ["claude-sonnet-4-6", "claude-haiku-4-5", "claude-opus-4-8"],
+            help="Haiku is fastest. Sonnet is thorough. Opus goes deepest."
         )
 
     date = st.date_input("Report Date", datetime.date.today())
