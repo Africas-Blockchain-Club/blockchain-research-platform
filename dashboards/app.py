@@ -278,7 +278,7 @@ def fetch_top_tokens():
         fetched_at = dt.datetime.utcnow().strftime("%d %b %Y")
         return top, fetched_at
     except Exception:
-        return FALLBACK_TOP_TOKENS, "fallback (fetch failed)"
+        return FALLBACK_TOP_TOKENS, None
 
 
 # ====================== MAIN LOGIC ======================
@@ -414,8 +414,9 @@ elif page == "Generate Report":
 
     col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
+        token_label = f"Top 10 by utility (updated {list_updated})" if list_updated else "Top 10 by utility"
         tokens = st.multiselect(
-            f"Top 10 by utility (updated {list_updated})",
+            token_label,
             options=top_tokens,
             default=[],
             placeholder="Select one or more tokens...",
