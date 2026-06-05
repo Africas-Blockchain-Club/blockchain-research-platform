@@ -400,7 +400,7 @@ if page == "Overview":
 <div class="inst-card report-card" style="margin-bottom: 0.5rem; height: 100%;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
         <div class="meta-tag" style="background: rgba(16, 185, 129, 0.2); color: #10b981; margin-bottom: 0;">Data Extraction: Live & Autonomous</div>
-        <span style="font-size: 0.72rem; font-weight: 700; color: {fresh_color}; background: rgba(128,128,128,0.1); padding: 0.2rem 0.5rem; border-radius: 4px; white-space: nowrap;">{fresh_label}{fresh_nudge}</span>
+        <span style="font-size: 0.72rem; font-weight: 700; color: {fresh_color}; background: rgba(128,128,128,0.1); padding: 0.2rem 0.5rem; border-radius: 4px; white-space: nowrap;">{fresh_label}</span>
     </div>
     <div class="card-title">{token_name} Insight Report</div>
     <div class="card-meta">
