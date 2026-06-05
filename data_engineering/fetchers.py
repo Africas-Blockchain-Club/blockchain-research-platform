@@ -75,7 +75,7 @@ def fetch_coingecko_data(token):
 
 
 def check_cmc_listed(token):
-    """Quick CMC listing check — HTTP 200 means the page exists."""
+    """Quick CMC listing check. Returns True on HTTP 200."""
     try:
         resp = requests.get(
             f"https://coinmarketcap.com/currencies/{token.lower()}/",
@@ -120,7 +120,7 @@ def fetch_cryptopanic_news(token):
             if not title_m:
                 continue
             raw_title = re.sub(r"<[^>]+>", "", title_m.group(1)).strip()
-            # Google News appends " - Source Name" — split it off
+            # Google News appends " - Source Name"; split it off
             parts = raw_title.rsplit(" - ", 1)
             title = parts[0].strip()
             source = parts[1].strip() if len(parts) == 2 else (source_m.group(1).strip() if source_m else "Unknown")

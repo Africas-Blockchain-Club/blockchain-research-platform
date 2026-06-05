@@ -36,7 +36,7 @@ Africa's Blockchain Club Research Dashboard
 
 st.caption("Liquidity-First Blueprints & Reports | Live PDF Generation (Professional)")
 
-# Sidebar — only two nav items; reports are opened from the Overview card grid
+# Sidebar - two nav items only; reports are opened from the Overview card grid
 st.sidebar.header("Navigation")
 
 blueprints_dir = os.path.join(root_path, "blueprints")
@@ -57,7 +57,7 @@ for rep in report_files:
     token_name = os.path.basename(rep).split('_')[0].upper()
     display_reports.append(f"Report: {token_name}")
 
-# Sidebar only shows primary nav — reports open via card clicks
+# Sidebar only shows primary nav; reports open via card clicks
 SIDEBAR_PAGES = ["Overview", "Generate Report"]
 all_pages = SIDEBAR_PAGES + display_reports
 
@@ -396,7 +396,7 @@ elif page == "Generate Report":
                         )
                     except Exception as e:
                         status.update(
-                            label=f"{token.upper()} failed — {str(e)[:80]}",
+                            label=f"{token.upper()} failed: {str(e)[:80]}",
                             state="error",
                             expanded=True,
                         )
@@ -404,7 +404,7 @@ elif page == "Generate Report":
                 st.session_state.last_generated_tokens = [t.upper() for t, _ in generated]
                 st.rerun()
 
-    # AI Investment Brief — shown after a successful generation (persists across rerenders via session_state)
+    # AI Investment Brief - shown after a successful generation (persists across rerenders via session_state)
     if st.session_state.get("last_generated_tokens"):
         st.divider()
         st.subheader("AI Investment Brief")
@@ -419,7 +419,7 @@ elif page == "Generate Report":
 
             col_a, col_b = st.columns(2)
             with col_a:
-                if st.button(f"Generate Brief — Haiku ({token})", key=f"haiku_gen_{token}"):
+                if st.button(f"Generate Brief - Haiku ({token})", key=f"haiku_gen_{token}"):
                     with st.spinner("Generating brief via Haiku..."):
                         try:
                             brief, cost = generate_anthropic_brief(token, {}, report_text, model=HAIKU)
@@ -427,7 +427,7 @@ elif page == "Generate Report":
                         except Exception as e:
                             st.error(f"Haiku error: {e}")
             with col_b:
-                if st.button(f"Deep Analysis — Sonnet ({token})", key=f"sonnet_gen_{token}"):
+                if st.button(f"Deep Analysis - Sonnet ({token})", key=f"sonnet_gen_{token}"):
                     with st.spinner("Generating deep analysis via Sonnet..."):
                         try:
                             brief, cost = generate_anthropic_brief(token, {}, report_text, model=SONNET)
@@ -504,11 +504,11 @@ elif page.startswith("Report:"):
 
         # Kill Switch warning
         if score < 20:
-            st.error("🚨 **KILL SWITCH TRIGGERED** — Blueprint Score is below 20. One or more critical red flags have been detected. Review the Kill Switch section for details.")
+            st.error("🚨 **KILL SWITCH TRIGGERED** - Blueprint Score is below 20. One or more critical red flags have been detected. Review the Kill Switch section for details.")
 
         st.divider()
 
-        # ---- AI Investment Brief — prominent callout, not buried in expander ----
+        # ---- AI Investment Brief - prominent callout, not buried in expander ----
         brief_key_haiku = f"brief_{token_name}_{HAIKU}"
         brief_key_sonnet = f"brief_{token_name}_{SONNET}"
 
@@ -529,7 +529,7 @@ elif page.startswith("Report:"):
                     "Haiku is fast and cheap. Sonnet goes deeper."
                 )
             with btn_col:
-                if st.button("Generate — Haiku", key=f"rpt_haiku_{token_name}", use_container_width=True):
+                if st.button("Generate - Haiku", key=f"rpt_haiku_{token_name}", use_container_width=True):
                     with st.spinner("Generating via Haiku..."):
                         try:
                             brief, cost = generate_anthropic_brief(token_name, {}, md, model=HAIKU)
@@ -539,7 +539,7 @@ elif page.startswith("Report:"):
                             st.rerun()
                         except Exception as e:
                             st.error(f"Haiku error: {e}")
-                if st.button("Deep Analysis — Sonnet", key=f"rpt_sonnet_{token_name}", use_container_width=True):
+                if st.button("Deep Analysis - Sonnet", key=f"rpt_sonnet_{token_name}", use_container_width=True):
                     with st.spinner("Generating via Sonnet..."):
                         try:
                             brief, cost = generate_anthropic_brief(token_name, {}, md, model=SONNET)

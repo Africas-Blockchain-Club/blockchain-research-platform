@@ -52,7 +52,7 @@ def generate_report(token, log_fn=None):
 
     is_cmc_listed = check_cmc_listed(token)
 
-    # Chart screenshot — non-blocking if it fails
+    # Chart screenshot; non-blocking if it fails
     screenshot_path = None
     if "url" in dex_data:
         log("Capturing DexScreener chart screenshot...")

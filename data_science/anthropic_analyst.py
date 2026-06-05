@@ -42,7 +42,7 @@ def generate_anthropic_brief(token, data_summary, report_text, model=HAIKU):
     client = anthropic.Anthropic(api_key=api_key)
     system_prompt = load_resources_prompt()
 
-    # Trim the report to avoid exceeding context — first 6000 chars covers all phases
+    # Trim the report to avoid exceeding context; first 6000 chars covers all phases
     trimmed_report = report_text[:6000] if report_text else ""
 
     # Pull the key numbers from data_summary for extra grounding
@@ -59,7 +59,7 @@ def generate_anthropic_brief(token, data_summary, report_text, model=HAIKU):
         "Write a plain-English investment brief for this token. "
         "Summarise the key findings from the forensic report in your own voice. "
         "State the verdict clearly, name the single biggest risk, and give one specific actionable observation. "
-        "Do not repeat the forensic report verbatim — synthesise it. "
+        "Do not repeat the forensic report verbatim; synthesise it. "
         "Keep the brief under 300 words."
     )
 
