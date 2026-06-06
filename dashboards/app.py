@@ -514,12 +514,17 @@ elif page == "Generate Report":
             brief_key_sonnet = f"brief_{token}_{SONNET}"
             brief_key_opus = f"brief_{token}_{OPUS}"
 
+            audience_gen = st.text_input(
+                "Who is this brief for? (optional)",
+                placeholder="e.g. my own use / cohort member / newsletter reader",
+                key=f"audience_gen_{token}",
+            )
             col_a, col_b, col_c = st.columns(3)
             with col_a:
                 if st.button(f"Generate Brief - Haiku ({token})", key=f"haiku_gen_{token}"):
                     with st.spinner("Generating via Haiku..."):
                         try:
-                            brief, cost = generate_anthropic_brief(token, {}, report_text, model=HAIKU)
+                            brief, cost = generate_anthropic_brief(token, {}, report_text, model=HAIKU, audience_context=audience_gen)
                             st.session_state[brief_key_haiku] = (brief, cost)
                             st.session_state.pop(brief_key_sonnet, None)
                             st.session_state.pop(brief_key_opus, None)
@@ -529,7 +534,7 @@ elif page == "Generate Report":
                 if st.button(f"Deep Analysis - Sonnet ({token})", key=f"sonnet_gen_{token}"):
                     with st.spinner("Generating via Sonnet..."):
                         try:
-                            brief, cost = generate_anthropic_brief(token, {}, report_text, model=SONNET)
+                            brief, cost = generate_anthropic_brief(token, {}, report_text, model=SONNET, audience_context=audience_gen)
                             st.session_state[brief_key_sonnet] = (brief, cost)
                             st.session_state.pop(brief_key_opus, None)
                         except Exception as e:
@@ -538,7 +543,7 @@ elif page == "Generate Report":
                 if st.button(f"Maximum Depth - Opus ({token})", key=f"opus_gen_{token}"):
                     with st.spinner("Generating via Opus..."):
                         try:
-                            brief, cost = generate_anthropic_brief(token, {}, report_text, model=OPUS)
+                            brief, cost = generate_anthropic_brief(token, {}, report_text, model=OPUS, audience_context=audience_gen)
                             st.session_state[brief_key_opus] = (brief, cost)
                         except Exception as e:
                             st.error(f"Opus error: {e}")
@@ -637,33 +642,39 @@ elif page.startswith("Report:"):
             display_model = "Haiku"
 
         with st.container(border=True):
-            brief_col, btn_col = st.columns([3, 1])
-            with brief_col:
-                st.markdown("#### AI Investment Brief")
-            with btn_col:
+            st.markdown("#### AI Investment Brief")
+            audience_input = st.text_input(
+                "Who is this brief for? (optional)",
+                placeholder="e.g. my own use / cohort member new to DeFi / newsletter reader",
+                key=f"audience_{token_name}",
+            )
+            col_h, col_s, col_o = st.columns(3)
+            with col_h:
                 if st.button("Generate - Haiku", key=f"rpt_haiku_{token_name}", use_container_width=True):
                     with st.spinner("Generating via Haiku..."):
                         try:
-                            brief, cost = generate_anthropic_brief(token_name, {}, md, model=HAIKU)
+                            brief, cost = generate_anthropic_brief(token_name, {}, md, model=HAIKU, audience_context=audience_input)
                             st.session_state[brief_key_haiku] = (brief, cost)
                             st.session_state.pop(brief_key_sonnet, None)
                             st.session_state.pop(brief_key_opus, None)
                             st.rerun()
                         except Exception as e:
                             st.error(f"Haiku error: {e}")
+            with col_s:
                 if st.button("Deep Analysis - Sonnet", key=f"rpt_sonnet_{token_name}", use_container_width=True):
                     with st.spinner("Generating via Sonnet..."):
                         try:
-                            brief, cost = generate_anthropic_brief(token_name, {}, md, model=SONNET)
+                            brief, cost = generate_anthropic_brief(token_name, {}, md, model=SONNET, audience_context=audience_input)
                             st.session_state[brief_key_sonnet] = (brief, cost)
                             st.session_state.pop(brief_key_opus, None)
                             st.rerun()
                         except Exception as e:
                             st.error(f"Sonnet error: {e}")
+            with col_o:
                 if st.button("Maximum Depth - Opus", key=f"rpt_opus_{token_name}", use_container_width=True):
                     with st.spinner("Generating via Opus..."):
                         try:
-                            brief, cost = generate_anthropic_brief(token_name, {}, md, model=OPUS)
+                            brief, cost = generate_anthropic_brief(token_name, {}, md, model=OPUS, audience_context=audience_input)
                             st.session_state[brief_key_opus] = (brief, cost)
                             st.rerun()
                         except Exception as e:

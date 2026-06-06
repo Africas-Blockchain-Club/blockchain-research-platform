@@ -31,10 +31,14 @@ def load_resources_prompt():
     return "\n\n".join(parts)
 
 
-def generate_anthropic_brief(token, data_summary, report_text, model=HAIKU):
+def generate_anthropic_brief(token, data_summary, report_text, model=HAIKU, audience_context=""):
     """
-    Takes the existing forensic report and raw data payload, returns a plain-English
-    investment brief in Peter's voice, plus the estimated USD cost of the call.
+    Takes the existing forensic report and returns a plain-English investment brief
+    in Peter's voice, plus the estimated USD cost of the call.
+
+    audience_context: optional string describing who the brief is for,
+                      e.g. "for my own use", "for a cohort member new to DeFi",
+                      "for my newsletter". Defaults to own use if blank.
     """
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
@@ -43,22 +47,17 @@ def generate_anthropic_brief(token, data_summary, report_text, model=HAIKU):
     client = anthropic.Anthropic(api_key=api_key)
     system_prompt = load_resources_prompt()
 
-    # Trim the report to avoid exceeding context; first 6000 chars covers all phases
     trimmed_report = report_text[:6000] if report_text else ""
-
-    # Pull the key numbers from data_summary for extra grounding
-    token_info = data_summary.get("token_info", {}) if data_summary else {}
-    price = token_info.get("current_price", "N/A")
-    market_cap = token_info.get("market_cap", "N/A")
-    liquidity = token_info.get("liquidity_usd", "N/A")
-    volume = token_info.get("24h_volume", "N/A")
+    audience = audience_context.strip() if audience_context.strip() else "my own investment decision-making (builder-to-builder, no hand-holding)"
 
     user_msg = (
+        "INSTRUCTION: Generate the brief immediately. Do not ask any clarifying questions. "
+        "All the context you need is below.\n\n"
         f"Token: {token}\n"
-        f"Price: ${price} | Market Cap: ${market_cap} | Liquidity: ${liquidity} | 24h Volume: ${volume}\n\n"
+        f"Audience: {audience}\n\n"
         f"Forensic audit report (pipeline output):\n{trimmed_report}\n\n"
         "Write a plain-English investment brief for this token. "
-        "Summarise the key findings from the forensic report in your own voice. "
+        "Adjust the voice and assumed knowledge level to match the stated audience. "
         "State the verdict clearly, name the single biggest risk, and give one specific actionable observation. "
         "Do not repeat the forensic report verbatim; synthesise it. "
         "Keep the brief under 300 words."
