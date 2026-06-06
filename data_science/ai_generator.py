@@ -451,13 +451,14 @@ Where any field shows an error or is unavailable, write "N/A" in the table cell 
 what data source would be needed to complete that field.
 """
 
-    # Token limits per model — set high enough that reports never truncate
+    # Token limits per model — set high enough that reports never truncate.
+    # SOL full report with all educational callouts reaches ~16k tokens.
     _MAX_TOKENS = {
         "claude-haiku-4-5": 8192,
-        "claude-sonnet-4-6": 16000,
-        "claude-opus-4-8": 16000,
+        "claude-sonnet-4-6": 32000,
+        "claude-opus-4-8": 32000,
     }
-    max_tokens = _MAX_TOKENS.get(model, 16000)
+    max_tokens = _MAX_TOKENS.get(model, 32000)
 
     client = anthropic.Anthropic(api_key=api_key)
     response = client.messages.create(

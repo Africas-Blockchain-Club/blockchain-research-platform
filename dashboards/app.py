@@ -23,6 +23,9 @@ sys.path.append(os.path.join(root_path, 'tools'))
 import report_generator
 importlib.reload(report_generator)
 from report_generator import generate_report, extract_blueprint_score, extract_final_verdict, normalise_token
+
+import data_science.anthropic_analyst as _analyst_mod
+importlib.reload(_analyst_mod)
 from data_science.anthropic_analyst import generate_anthropic_brief, HAIKU, SONNET, OPUS
 
 st.set_page_config(page_title="ABC Research Dashboard", layout="wide")
