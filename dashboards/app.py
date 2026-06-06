@@ -688,20 +688,45 @@ elif page.startswith("Report:"):
 
         st.divider()
 
-        # Tabbed phase navigation
+        # Phase navigation - Previous / Next arrows
         sections = split_report_phases(md)
         tab_names = [k for k in sections.keys() if sections[k].strip()]
 
         if len(tab_names) > 1:
-            tabs = st.tabs(tab_names)
-            for tab, name in zip(tabs, tab_names):
-                with tab:
-                    st.markdown(clean_report_for_display(sections[name]), unsafe_allow_html=True)
-                    # If this is Phase 4 / Synthesis, show the chart screenshot!
-                    if "Phase 4" in name and screenshot and screenshot != "None" and os.path.exists(screenshot):
-                        st.image(screenshot, caption=f"DexScreener Live Chart Capture for {token_name.upper()}")
+            phase_key = f"phase_idx_{token_name}"
+            if phase_key not in st.session_state:
+                st.session_state[phase_key] = 0
+
+            # Clamp index in case report was regenerated with fewer sections
+            idx = min(st.session_state[phase_key], len(tab_names) - 1)
+
+            # Navigation bar
+            nav_left, nav_centre, nav_right = st.columns([1, 4, 1])
+            with nav_left:
+                if st.button("← Previous", key=f"prev_{token_name}", disabled=(idx == 0), use_container_width=True):
+                    st.session_state[phase_key] = idx - 1
+                    st.rerun()
+            with nav_centre:
+                st.markdown(
+                    f"<p style='text-align:center; font-weight:600; margin:0.4rem 0;'>"
+                    f"{tab_names[idx]}&nbsp;&nbsp;"
+                    f"<span style='opacity:0.5; font-weight:400;'>({idx + 1} of {len(tab_names)})</span>"
+                    f"</p>",
+                    unsafe_allow_html=True,
+                )
+            with nav_right:
+                if st.button("Next →", key=f"next_{token_name}", disabled=(idx == len(tab_names) - 1), use_container_width=True):
+                    st.session_state[phase_key] = idx + 1
+                    st.rerun()
+
+            st.divider()
+
+            # Render current phase content
+            current_name = tab_names[idx]
+            st.markdown(clean_report_for_display(sections[current_name]), unsafe_allow_html=True)
+            if "Phase 4" in current_name and screenshot and screenshot != "None" and os.path.exists(screenshot):
+                st.image(screenshot, caption=f"DexScreener Live Chart Capture for {token_name.upper()}")
         else:
-            # Fallback: show full report
             st.markdown(clean_report_for_display(md), unsafe_allow_html=True)
 
         st.divider()
