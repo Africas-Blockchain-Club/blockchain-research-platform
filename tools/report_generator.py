@@ -21,6 +21,35 @@ from data_science.ai_generator import generate_ai_report, extract_final_verdict,
 
 load_dotenv()
 
+# Maps common full names and aliases to their canonical ticker symbol.
+# Prevents duplicate reports like SOLANA vs SOL, ETHEREUM vs ETH.
+_TOKEN_ALIASES = {
+    "SOLANA": "SOL",
+    "ETHEREUM": "ETH",
+    "BITCOIN": "BTC",
+    "BINANCE": "BNB",
+    "POLYGON": "POL",
+    "MATIC": "POL",
+    "CARDANO": "ADA",
+    "AVALANCHE": "AVAX",
+    "POLKADOT": "DOT",
+    "CHAINLINK": "LINK",
+    "ARBITRUM": "ARB",
+    "OPTIMISM": "OP",
+    "UNISWAP": "UNI",
+    "AAVE": "AAVE",
+    "COSMOS": "ATOM",
+    "NEAR": "NEAR",
+    "APTOS": "APT",
+    "SUI": "SUI",
+}
+
+
+def normalise_token(token: str) -> str:
+    """Resolve full names and known aliases to the canonical ticker symbol."""
+    upper = token.strip().upper()
+    return _TOKEN_ALIASES.get(upper, upper)
+
 
 def generate_report(token, model="claude-sonnet-4-6", log_fn=None):
     """
@@ -37,7 +66,7 @@ def generate_report(token, model="claude-sonnet-4-6", log_fn=None):
         else:
             print(msg)
 
-    token = token.upper()
+    token = normalise_token(token)
     log(f"Starting forensic pipeline for **{token}**...")
 
     # ---- 1. Data Engineering ----

@@ -22,7 +22,7 @@ if root_path not in sys.path:
 sys.path.append(os.path.join(root_path, 'tools'))
 import report_generator
 importlib.reload(report_generator)
-from report_generator import generate_report, extract_blueprint_score, extract_final_verdict
+from report_generator import generate_report, extract_blueprint_score, extract_final_verdict, normalise_token
 from data_science.anthropic_analyst import generate_anthropic_brief, HAIKU, SONNET, OPUS
 
 st.set_page_config(page_title="ABC Research Dashboard", layout="wide")
@@ -471,9 +471,10 @@ elif page == "Generate Report":
 
     date = st.date_input("Report Date", datetime.date.today())
 
-    all_tokens = [t.lower() for t in tokens]
+    # Normalise so "solana" -> "SOL", "ethereum" -> "ETH" etc. before generating
+    all_tokens = list({normalise_token(t) for t in tokens})
     if custom_token.strip():
-        all_tokens.append(custom_token.strip().lower())
+        all_tokens.append(normalise_token(custom_token.strip()))
 
     if st.button("Generate Reports", type="primary"):
         if not all_tokens:
