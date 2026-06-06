@@ -721,18 +721,28 @@ elif page.startswith("Report:"):
 
             st.divider()
 
+            # Scroll to top if navigation came from the bottom buttons
+            scroll_key = f"scroll_top_{token_name}"
+            if st.session_state.pop(scroll_key, False):
+                import streamlit.components.v1 as components
+                components.html(
+                    "<script>window.scrollTo(0,0); window.parent.scrollTo(0,0);</script>",
+                    height=0,
+                )
+
             # Render current phase content
             current_name = tab_names[idx]
             st.markdown(clean_report_for_display(sections[current_name]), unsafe_allow_html=True)
             if "Phase 4" in current_name and screenshot and screenshot != "None" and os.path.exists(screenshot):
                 st.image(screenshot, caption=f"DexScreener Live Chart Capture for {token_name.upper()}")
 
-            # Bottom navigation - same layout, unique keys
+            # Bottom navigation - sets scroll flag so next render starts at top
             st.divider()
             bnav_left, bnav_centre, bnav_right = st.columns([1, 4, 1])
             with bnav_left:
                 if st.button("← Previous", key=f"prev_bot_{token_name}", disabled=(idx == 0), use_container_width=True):
                     st.session_state[phase_key] = idx - 1
+                    st.session_state[scroll_key] = True
                     st.rerun()
             with bnav_centre:
                 st.markdown(
@@ -745,6 +755,7 @@ elif page.startswith("Report:"):
             with bnav_right:
                 if st.button("Next →", key=f"next_bot_{token_name}", disabled=(idx == len(tab_names) - 1), use_container_width=True):
                     st.session_state[phase_key] = idx + 1
+                    st.session_state[scroll_key] = True
                     st.rerun()
         else:
             st.markdown(clean_report_for_display(md), unsafe_allow_html=True)
