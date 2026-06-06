@@ -726,6 +726,26 @@ elif page.startswith("Report:"):
             st.markdown(clean_report_for_display(sections[current_name]), unsafe_allow_html=True)
             if "Phase 4" in current_name and screenshot and screenshot != "None" and os.path.exists(screenshot):
                 st.image(screenshot, caption=f"DexScreener Live Chart Capture for {token_name.upper()}")
+
+            # Bottom navigation - same layout, unique keys
+            st.divider()
+            bnav_left, bnav_centre, bnav_right = st.columns([1, 4, 1])
+            with bnav_left:
+                if st.button("← Previous", key=f"prev_bot_{token_name}", disabled=(idx == 0), use_container_width=True):
+                    st.session_state[phase_key] = idx - 1
+                    st.rerun()
+            with bnav_centre:
+                st.markdown(
+                    f"<p style='text-align:center; font-weight:600; margin:0.4rem 0;'>"
+                    f"{tab_names[idx]}&nbsp;&nbsp;"
+                    f"<span style='opacity:0.5; font-weight:400;'>({idx + 1} of {len(tab_names)})</span>"
+                    f"</p>",
+                    unsafe_allow_html=True,
+                )
+            with bnav_right:
+                if st.button("Next →", key=f"next_bot_{token_name}", disabled=(idx == len(tab_names) - 1), use_container_width=True):
+                    st.session_state[phase_key] = idx + 1
+                    st.rerun()
         else:
             st.markdown(clean_report_for_display(md), unsafe_allow_html=True)
 
