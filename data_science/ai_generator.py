@@ -347,18 +347,37 @@ Where data is unavailable, write "N/A" in the table cell. Do not fabricate numbe
 
 
 def extract_blueprint_score(report_text):
-    """Extract the Blueprint Score from the generated report."""
+    """
+    Extract the Blueprint Score from the generated report.
+    Tries the Total row first, then falls back to summing visible sub-scores
+    (handles reports that were truncated before the Total row was written).
+    """
     patterns = [
+        # Table Total row: | **Total** | **100** | **67/100** |
         r'\*{0,2}Total\*{0,2}\s*\|[^|]*\|\s*\*{0,2}(\d{1,3})\s*/\s*100\*{0,2}',
-        r'Blueprint\s+Score[^\n]*?\*{0,2}(\d{1,3})\s*/\s*100\*{0,2}',
-        r'(\d{1,3})\s*/\s*100',
+        # Simple Total row without bold
+        r'Total\s*\|[^|]*\|\s*(\d{1,3})\s*/\s*100',
+        # Inline prose: Blueprint Score: 67/100 or Blueprint Score 67/100
+        r'Blueprint\s+Score[^\n]{0,20}?(\d{1,3})\s*/\s*100',
+        # Any X/100 as last resort
+        r'\b(\d{1,3})\s*/\s*100\b',
     ]
     for pattern in patterns:
         match = re.search(pattern, report_text, re.IGNORECASE)
         if match:
             score = int(match.group(1))
-            if 0 <= score <= 100:
+            if 1 <= score <= 100:
                 return score
+
+    # Fallback: sum visible sub-scores from the Blueprint Score table
+    # Handles truncated reports where Total row was never written
+    sub30 = re.findall(r'\|\s*(\d{1,2})\s*/\s*30\s*\|', report_text)
+    sub20 = re.findall(r'\|\s*(\d{1,2})\s*/\s*20\s*\|', report_text)
+    if sub30 or sub20:
+        total = sum(int(s) for s in sub30) + sum(int(s) for s in sub20)
+        if 1 <= total <= 100:
+            return total
+
     return 0
 
 
@@ -366,8 +385,13 @@ def extract_final_verdict(report_text):
     """Extract the Final Verdict rating from the generated report."""
     verdict_options = r'(Strong\s+Buy|Accumulate|Neutral|Distribute|Strong\s+Sell)'
     patterns = [
+        # New table format: | **Rating** | Neutral | (verdict directly after pipe)
+        r'\*{0,2}Rating\*{0,2}\s*\|\s*\*{0,2}' + verdict_options,
+        # Old table format with extra column: | **Rating** | extra | Neutral |
         r'\*{0,2}Rating\*{0,2}\s*\|[^|]*\|\s*\*{0,2}' + verdict_options,
+        # Inline prose: Rating: Strong Buy
         r'\*{0,2}Rating\*{0,2}\s*:\s*\*{0,2}' + verdict_options + r'\*{0,2}',
+        # Section prose: Final Verdict: Strong Buy
         r'(?:Final\s+)?Verdict[^:]*:\s*\*{0,2}' + verdict_options + r'\*{0,2}',
     ]
     for pattern in patterns:
@@ -427,10 +451,18 @@ Where any field shows an error or is unavailable, write "N/A" in the table cell 
 what data source would be needed to complete that field.
 """
 
+    # Token limits per model — set high enough that reports never truncate
+    _MAX_TOKENS = {
+        "claude-haiku-4-5": 8192,
+        "claude-sonnet-4-6": 16000,
+        "claude-opus-4-8": 16000,
+    }
+    max_tokens = _MAX_TOKENS.get(model, 16000)
+
     client = anthropic.Anthropic(api_key=api_key)
     response = client.messages.create(
         model=model,
-        max_tokens=8192,
+        max_tokens=max_tokens,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_prompt}],
     )
