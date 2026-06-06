@@ -381,6 +381,22 @@ def extract_blueprint_score(report_text):
     return 0
 
 
+def infer_verdict_from_score(score):
+    """
+    Derive a verdict from the Blueprint Score when the AI verdict is unavailable.
+    Mirrors the interpretation guide in the system prompt.
+    """
+    if score >= 80:
+        return "Strong Buy"
+    if score >= 60:
+        return "Accumulate"
+    if score >= 40:
+        return "Neutral"
+    if score >= 20:
+        return "Distribute"
+    return "Strong Sell"
+
+
 def extract_final_verdict(report_text):
     """Extract the Final Verdict rating from the generated report."""
     verdict_options = r'(Strong\s+Buy|Accumulate|Neutral|Distribute|Strong\s+Sell)'

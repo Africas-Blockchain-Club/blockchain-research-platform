@@ -17,7 +17,7 @@ from data_engineering.fetchers import (
 )
 from data_engineering.screenshot_bot import capture_dexscreener_chart
 from data_analytics.metrics import compute_derived_metrics, compute_kill_switch_flags
-from data_science.ai_generator import generate_ai_report, extract_final_verdict, extract_blueprint_score
+from data_science.ai_generator import generate_ai_report, extract_final_verdict, extract_blueprint_score, infer_verdict_from_score
 
 load_dotenv()
 
@@ -165,6 +165,9 @@ def generate_report(token, model="claude-sonnet-4-6", log_fn=None):
 
     score = extract_blueprint_score(report_text)
     verdict = extract_final_verdict(report_text)
+    # Fall back to score-derived verdict if the AI did not write a readable Final Verdict
+    if verdict == "Unknown" and score > 0:
+        verdict = infer_verdict_from_score(score)
     log(f"Report complete. Blueprint Score: {score}/100 | Verdict: {verdict}")
 
     # ---- 4. Save ----

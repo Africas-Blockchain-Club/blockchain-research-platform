@@ -23,6 +23,7 @@ sys.path.append(os.path.join(root_path, 'tools'))
 import report_generator
 importlib.reload(report_generator)
 from report_generator import generate_report, extract_blueprint_score, extract_final_verdict, normalise_token
+from data_science.ai_generator import infer_verdict_from_score
 
 import data_science.anthropic_analyst as _analyst_mod
 importlib.reload(_analyst_mod)
@@ -403,6 +404,8 @@ if page == "Overview":
             meta, md = extract_metadata_frontmatter(raw_md)
             score = meta.get("Score", extract_blueprint_score(md))
             verdict = meta.get("Verdict", extract_final_verdict(md))
+            if verdict == "Unknown" and int(score) > 0:
+                verdict = infer_verdict_from_score(int(score))
 
         emoji = extract_verdict_emoji(verdict)
 
@@ -612,6 +615,8 @@ elif page.startswith("Report:"):
         # Extract and display Blueprint Score + Verdict prominently
         score = int(metadata.get("Score", extract_blueprint_score(md)))
         verdict = metadata.get("Verdict", extract_final_verdict(md))
+        if verdict == "Unknown" and score > 0:
+            verdict = infer_verdict_from_score(score)
         screenshot = metadata.get("Screenshot", "None")
         
         score_emoji, score_delta_colour = extract_score_colour(score)
