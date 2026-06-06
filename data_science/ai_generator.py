@@ -74,25 +74,30 @@ REPORT STRUCTURE (follow exactly):
 > **Why we look at this:** Before any numbers, every investment starts with a narrative. Price follows story. This phase captures what the market believes about this token right now, and what the macro environment is doing to that belief.
 
 ### 0.1 Token Snapshot
-| Field | Value |
-|-------|-------|
-| Name | |
-| Symbol | |
-| Chain | |
-| Category | |
-| Price (USD) | |
-| Price (ZAR) | |
-| Market Cap (USD) | |
-| Market Cap (ZAR) | |
-| 24h Change | |
-| 7d Change | |
-| 30d Change | |
-| ATH (USD) | |
-| % Below ATH | |
-| Twitter Followers | |
-| Reddit Subscribers | |
 
-> **Reading this table:** The "% Below ATH" (All-Time High) shows how far price has fallen from its peak - useful context for whether the token is in recovery or still distributing. Social follower counts are a proxy for community size, not quality.
+Use FOUR grouped landscape rows. Do NOT use a two-column portrait table. Fill all columns across the full width.
+
+**Identity**
+| Name | Symbol | Chain | Category | DEX |
+|------|--------|-------|----------|-----|
+| | | | | |
+
+**Price & Performance**
+| Price (USD) | Price (ZAR) | 24h Change | 7d Change | 30d Change |
+|-------------|-------------|------------|-----------|------------|
+| | | | | |
+
+**Market Size & Value**
+| Market Cap (USD) | Market Cap (ZAR) | ATH (USD) | % Below ATH | FDV (USD) |
+|-----------------|-----------------|-----------|-------------|-----------|
+| | | | | |
+
+**Community**
+| Twitter Handle | Subreddit | Twitter Followers | Reddit Subscribers |
+|----------------|-----------|-------------------|-------------------|
+| | | | |
+
+> **Reading this table:** The "% Below ATH" (All-Time High) shows how far price has fallen from its peak - useful context for whether the token is in recovery or still distributing. A token more than 70% below ATH is either in a deep bear market or approaching a structural accumulation zone. Social handle presence confirms the project is active; follower counts require paid API access so may show N/A.
 
 ### 0.2 Recent News & Social Sentiment
 | Headline | Source | Published |

@@ -238,16 +238,28 @@ def split_report_phases(md_text):
     return sections
 
 
+_TABLE_CENTRE_CSS = """
+<style>
+/* Centre all markdown tables in report sections */
+[data-testid="stMarkdownContainer"] table {
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+}
+</style>
+"""
+
+
 def clean_report_for_display(text):
     """
     Preprocess report markdown before passing to st.markdown.
+    - Injects CSS to centre tables.
     - Escapes $ signs so Streamlit does not treat them as LaTeX math delimiters.
     - Replaces any em/en dashes that slipped through AI generation.
     """
     text = text.replace('—', '-').replace('–', '-')
-    # Escape dollar signs: $50 -> \$50 so Streamlit renders them as currency, not LaTeX
     text = text.replace('$', r'\$')
-    return text
+    return _TABLE_CENTRE_CSS + text
 
 
 # ====================== TOP TOKENS (auto-refreshes weekly) ======================
