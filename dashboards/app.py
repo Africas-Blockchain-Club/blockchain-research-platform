@@ -2,12 +2,14 @@ import streamlit as st
 import os
 import sys
 import re
+import uuid
 import datetime
 import markdown
 import html
 from xhtml2pdf import pisa
 from io import BytesIO
 from dotenv import load_dotenv
+from sqlalchemy.exc import IntegrityError
 
 load_dotenv()
 
@@ -22,8 +24,19 @@ if root_path not in sys.path:
 sys.path.append(os.path.join(root_path, 'tools'))
 import report_generator
 importlib.reload(report_generator)
-from report_generator import generate_report, extract_blueprint_score, extract_final_verdict, normalise_token
+from report_generator import (
+    generate_report,
+    fetch_and_analyse,
+    generate_ai_and_save,
+    extract_blueprint_score,
+    extract_final_verdict,
+    normalise_token,
+)
 from data_science.ai_generator import infer_verdict_from_score
+
+import db
+import payment_verifier
+from payment_verifier import PaymentVerificationError
 
 import data_science.anthropic_analyst as _analyst_mod
 importlib.reload(_analyst_mod)
@@ -48,6 +61,8 @@ reports_dir = os.path.join(root_path, "reports")
 
 if not os.path.exists(blueprints_dir): os.makedirs(blueprints_dir)
 if not os.path.exists(reports_dir): os.makedirs(reports_dir)
+
+db.init_db()
 
 blueprint_files = [f for f in os.listdir(blueprints_dir) if f.endswith(".md")]
 
@@ -494,18 +509,24 @@ elif page == "Generate Report":
     if custom_token.strip():
         all_tokens.append(normalise_token(custom_token.strip()))
 
-    if st.button("Generate Reports", type="primary"):
+    if st.button("Fetch Data", type="primary"):
         if not all_tokens:
             st.warning("Please select or enter at least one token.")
         else:
-            generated = []
+            st.session_state.setdefault("pending_payments", {})
             for token in all_tokens:
-                with st.status(f"Generating {token.upper()} report...", expanded=True) as status:
+                with st.status(f"Fetching {token.upper()} data...", expanded=True) as status:
                     try:
-                        path = generate_report(token, model=model_choice, log_fn=status.write)
-                        generated.append((token, path))
+                        result = fetch_and_analyse(token, log_fn=status.write)
+                        st.session_state.pending_payments[token] = {
+                            "data_summary": result["data_summary"],
+                            "kill_switches": result["kill_switches"],
+                            "screenshot_path": result["screenshot_path"],
+                            "model": model_choice,
+                            "request_id": str(uuid.uuid4()),
+                        }
                         status.update(
-                            label=f"{token.upper()} report done.",
+                            label=f"{token.upper()} data ready — pay to unlock the AI report.",
                             state="complete",
                             expanded=False,
                         )
@@ -515,9 +536,65 @@ elif page == "Generate Report":
                             state="error",
                             expanded=True,
                         )
-            if generated:
-                st.session_state.last_generated_tokens = [t.upper() for t, _ in generated]
-                st.rerun()
+
+    # Payment gate - shown once data has been fetched for a token but the AI report
+    # (the paid stage) hasn't run yet. Nothing below this point costs anything until
+    # a transaction hash verifies on-chain.
+    if st.session_state.get("pending_payments"):
+        st.divider()
+        st.subheader("Pay to Unlock")
+        st.caption(
+            f"Each report costs {payment_verifier.REPORT_PRICE_USDC} USDC on Base Sepolia "
+            f"(chain {payment_verifier.CHAIN_ID}). Send it to `{payment_verifier.RECIPIENT_ADDRESS}`, "
+            f"then paste the transaction hash below."
+        )
+        for token in list(st.session_state.pending_payments.keys()):
+            pending = st.session_state.pending_payments[token]
+            with st.container(border=True):
+                st.markdown(f"**{token}** — awaiting payment")
+                tx_hash = st.text_input("Transaction hash", key=f"tx_hash_{token}", placeholder="0x...")
+                if st.button(f"Verify Payment & Generate ({token})", key=f"verify_{token}"):
+                    try:
+                        with st.spinner("Verifying payment on-chain..."):
+                            verified = payment_verifier.verify_payment(tx_hash.strip())
+
+                        payment_id = db.record_payment_attempt(
+                            request_id=pending["request_id"],
+                            token_symbol=token,
+                            payer_address=verified["payer_address"],
+                            recipient_address=payment_verifier.RECIPIENT_ADDRESS,
+                            chain_id=payment_verifier.CHAIN_ID,
+                            asset_contract=payment_verifier.USDC_CONTRACT,
+                            asset_symbol="USDC",
+                            amount_atomic=verified["amount_atomic"],
+                            amount_decimal=verified["amount_decimal"],
+                            tx_hash=tx_hash.strip(),
+                            verification_method=verified["verification_method"],
+                        )
+                        db.mark_payment_confirmed(payment_id, verified["confirmations"])
+
+                        with st.spinner(f"Generating {token} report..."):
+                            generate_ai_and_save(
+                                token,
+                                pending["data_summary"],
+                                pending["kill_switches"],
+                                pending["screenshot_path"],
+                                model=pending["model"],
+                                payment_id=payment_id,
+                            )
+
+                        st.session_state.pending_payments.pop(token, None)
+                        generated_tokens = st.session_state.setdefault("last_generated_tokens", [])
+                        if token.upper() not in generated_tokens:
+                            generated_tokens.append(token.upper())
+                        st.success(f"{token} report generated.")
+                        st.rerun()
+                    except PaymentVerificationError as e:
+                        st.error(f"Payment not verified: {e}")
+                    except IntegrityError:
+                        st.error("This transaction hash has already been used to unlock a report.")
+                    except Exception as e:
+                        st.error(f"Report generation failed after payment was confirmed: {e}")
 
     # AI Investment Brief - shown after a successful generation (persists across rerenders via session_state)
     if st.session_state.get("last_generated_tokens"):

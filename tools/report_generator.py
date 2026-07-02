@@ -18,6 +18,7 @@ from data_engineering.fetchers import (
 from data_engineering.screenshot_bot import capture_dexscreener_chart
 from data_analytics.metrics import compute_derived_metrics, compute_kill_switch_flags
 from data_science.ai_generator import generate_ai_report, extract_final_verdict, extract_blueprint_score, infer_verdict_from_score
+import db
 
 load_dotenv()
 
@@ -51,14 +52,13 @@ def normalise_token(token: str) -> str:
     return _TOKEN_ALIASES.get(upper, upper)
 
 
-def generate_report(token, model="claude-sonnet-4-6", log_fn=None):
+def fetch_and_analyse(token, log_fn=None):
     """
-    Fetch raw data -> compute metrics -> generate report via Anthropic -> save markdown.
+    Free stage: data engineering + analytics only. No AI call, no file write,
+    no DB write. Safe to run before any payment is taken.
 
-    model:  Anthropic model ID. Default is claude-sonnet-4-6.
-            Pass "claude-opus-4-8" for maximum analytical depth.
     log_fn: optional callable(str) for live progress updates in Streamlit.
-    Returns the path of the saved report file.
+    Returns {"data_summary": dict, "kill_switches": dict, "screenshot_path": str|None}.
     """
     def log(msg):
         if log_fn:
@@ -123,7 +123,8 @@ def generate_report(token, model="claude-sonnet-4-6", log_fn=None):
             "total_supply": coingecko_data.get("total_supply") if cg_ok else None,
             "circulating_supply": coingecko_data.get("circulating_supply") if cg_ok else None,
             "max_supply": coingecko_data.get("max_supply") if cg_ok else None,
-            "24h_volume_usd": metrics["volume_24h"],
+            "24h_volume_dex_pair_usd": metrics["volume_24h"],
+            "24h_volume_total_all_exchanges_usd": coingecko_data.get("total_volume_24h_usd") if cg_ok else None,
             "liquidity_usd": metrics["liquidity_usd"],
             "liquidity_base_tokens": metrics["liquidity_base"],
             "liquidity_quote_tokens": metrics["liquidity_quote"],
@@ -158,6 +159,34 @@ def generate_report(token, model="claude-sonnet-4-6", log_fn=None):
         "liquidation_data": liquidation_data,
     }
 
+    return {
+        "data_summary": data_summary,
+        "kill_switches": kill_switches,
+        "screenshot_path": screenshot_path,
+    }
+
+
+def generate_ai_and_save(token, data_summary, kill_switches, screenshot_path, model="claude-sonnet-4-6", log_fn=None, payment_id=None):
+    """
+    Paid stage: the Anthropic call, score/verdict extraction, markdown assembly,
+    local file write, and the authoritative DB row. Only call this once a report
+    has actually been paid for (or, for local-dev scripts, with payment_id=None).
+
+    model:      Anthropic model ID. Default is claude-sonnet-4-6.
+                Pass "claude-opus-4-8" for maximum analytical depth.
+    log_fn:     optional callable(str) for live progress updates in Streamlit.
+    payment_id: the payments.id row this report was unlocked by, or None for
+                unpaywalled local-dev calls.
+    Returns the path of the saved local report file.
+    """
+    def log(msg):
+        if log_fn:
+            log_fn(msg)
+        else:
+            print(msg)
+
+    token = normalise_token(token)
+
     # ---- 3. AI Report Generation ----
 
     log(f"Generating report with **{model}**...")
@@ -187,4 +216,37 @@ def generate_report(token, model="claude-sonnet-4-6", log_fn=None):
         f.write(final_markdown)
 
     log(f"Saved to `{report_path}`")
+
+    db.save_report(
+        token_symbol=token,
+        payment_id=payment_id,
+        model=model,
+        score=score,
+        verdict=verdict,
+        screenshot_path=screenshot_path,
+        markdown=final_markdown,
+    )
+
     return report_path
+
+
+def generate_report(token, model="claude-sonnet-4-6", log_fn=None):
+    """
+    Thin wrapper: fetch_and_analyse() + generate_ai_and_save() in sequence, unpaywalled.
+    Unchanged signature and behaviour for existing local-dev callers
+    (dashboards/app.py's legacy path, debug_btc.py, test_adr.py, test_run.py).
+
+    model:  Anthropic model ID. Default is claude-sonnet-4-6.
+            Pass "claude-opus-4-8" for maximum analytical depth.
+    log_fn: optional callable(str) for live progress updates in Streamlit.
+    Returns the path of the saved report file.
+    """
+    result = fetch_and_analyse(token, log_fn=log_fn)
+    return generate_ai_and_save(
+        token,
+        result["data_summary"],
+        result["kill_switches"],
+        result["screenshot_path"],
+        model=model,
+        log_fn=log_fn,
+    )

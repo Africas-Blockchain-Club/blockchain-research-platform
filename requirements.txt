@@ -12,6 +12,8 @@ beautifulsoup4
 python-dotenv
 google-genai
 anthropic
+sqlalchemy
+psycopg2-binary
 
 # x402 payment demo
 eth-account>=0.13.0
