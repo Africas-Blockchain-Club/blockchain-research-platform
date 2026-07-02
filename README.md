@@ -44,6 +44,12 @@ Single source of truth for liquidity-first forensic audit reports, the Streamlit
    SMTP_PORT=587                       # after a paid generation; leave unset to
    SMTP_USER=...                       # switch email delivery off entirely
    SMTP_PASSWORD=...
+
+   # Paid report generation (payments verified on Base Sepolia before the AI runs)
+   REPORT_RECIPIENT_ADDRESS=0x...      # wallet that receives report payments
+   REPORT_PRICE_USDC=1.10
+   DATABASE_URL=                       # Postgres URL; unset falls back to local SQLite
+   ETHERSCAN_API_KEY=...               # optional fallback when the RPC read fails
    ```
    See `.env.example` for the full list, including Reddit setup steps. Note that `OPENROUTER_API_KEY`, `GOOGLE_API_KEY`, and `GROQ_API_KEY` are leftover from an earlier multi-model version; no code path reads them. Only `ANTHROPIC_API_KEY` is required.
 
@@ -61,14 +67,21 @@ Open **http://localhost:8501**.
 ### Overview
 The landing page shows a live card grid of the ten most recently generated reports, each with its Blueprint Score, Verdict, and an age indicator (green under three days, amber under a week, red beyond that).
 
-### Generate Report
+### Generate Report (paid, verified on-chain)
 - Select tokens from the auto-refreshing top-10-by-utility list, or type a custom ticker.
 - Pick a model depth: `claude-haiku-4-5` (fastest), `claude-sonnet-4-6` (thorough, default), or `claude-opus-4-8` (deepest).
-- Click **Generate Reports**. The pipeline fetches data, computes metrics, runs the AI, extracts the score and verdict, and writes the report to `reports/{TOKEN}_audit_report.md`.
+- Click **Fetch Data**. The free stage runs: data fetching, metrics, Kill Switch checks, and the chart screenshot. Nothing costs anything yet.
+- A **Pay to Unlock** panel then appears for each token. Send the report price (`REPORT_PRICE_USDC`, default 1.10 USDC) on Base Sepolia (chain 84532) to `REPORT_RECIPIENT_ADDRESS`, paste the transaction hash, and optionally enter an email address for delivery.
+- Click **Verify Payment & Generate**. The transaction is verified on-chain (`payment_verifier.py`: direct RPC first, Etherscan/Blockscout fallback), recorded in the database (`db.py`; a used hash cannot unlock a second report), and only then does the paid AI stage run and write `reports/{TOKEN}_audit_report.md`.
+- If an email address was given and SMTP is configured, the finished report and a payment receipt are emailed to the payer (`emailer.py`). A failed send never loses the report; it shows as a warning and the report remains available in the dashboard.
 - After generation, an **AI Investment Brief** panel appears: a short, plain-English summary in Peter's voice (drawn from `/resources/`), generated on demand at the same three depth tiers, optionally tailored to a named audience.
 
+Payment records and generated reports persist to `DATABASE_URL` (Postgres in production, a local SQLite file when unset). Tables are created automatically when the dashboard starts; `scripts/init_db.py` exists for standalone setup.
+
+Local development without payments: call `generate_ai_and_save(..., payment_id=None)` from `tools/report_generator.py` directly; the paywall only guards the dashboard flow.
+
 ### View Reports
-Click any report card or sidebar shortcut to view the full markdown with embedded chart screenshots, or download it as a PDF.
+Click any report card or sidebar shortcut, then use the **Investment Brief / Full Report** toggle: the brief view generates and shows the plain-English summary, the full view pages through the report phase by phase with embedded chart screenshots and a PDF download.
 
 ---
 
