@@ -1,0 +1,17 @@
+{
+  "name": "blockchain-wallet-explorer",
+  "version": "1.0.0",
+  "description": "Ethereum wallet creation, token balance checking, and interaction tracing",
+  "type": "commonjs",
+  "scripts": {
+    "create-wallets": "node createWallets.js",
+    "check-balances": "node checkBalances.js",
+    "check-interactions": "node checkInteractions.js",
+    "simulate": "node simulateInteractions.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "ethers": "^6.9.0"
+  }
+}
