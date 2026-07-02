@@ -479,7 +479,14 @@ if page == "Overview":
 
 elif page == "Generate Report":
     st.header("Generate New Forensic Audit")
-    st.info("Each report covers six layers: narrative and macro context, supply forensics, liquidity depth, DeFi mechanics, derivatives positioning, and a scored verdict with SWOT analysis. Select a token below or type any symbol in the input box.")
+    st.info(
+        "Each report runs five forensic phases: narrative and macro context (Phase 0), "
+        "supply forensics (Phase 1), market structure and liquidity (Phase 2), "
+        "derivatives and sentiment (Phase 3), and a Blueprint Score with SWOT analysis and Final Verdict (Phase 4). "
+        "A Kill Switch checklist flags thin liquidity, unlock cliffs, whale dominance, and wash trading. "
+        "Every section includes an ABC (Africa's Blockchain Club) callout explaining what the numbers mean "
+        "and why they matter - written for both analysts and blockchain developer prospects reading the research for the first time."
+    )
 
     top_tokens, list_updated = fetch_top_tokens()
 
@@ -493,8 +500,9 @@ elif page == "Generate Report":
             placeholder="Select one or more tokens...",
         )
     with col2:
-        _regen_prefill = st.session_state.pop("regen_token", "")
-        custom_token = st.text_input("Other token", value=_regen_prefill, placeholder="e.g., ENA, MATIC")
+        if "regen_token" in st.session_state:
+            st.session_state["custom_token_input"] = st.session_state.pop("regen_token")
+        custom_token = st.text_input("Other token", placeholder="e.g., ENA, MATIC", key="custom_token_input")
     with col3:
         model_choice = st.selectbox(
             "Model",
@@ -721,7 +729,7 @@ elif page.startswith("Report:"):
 
         st.divider()
 
-        # ---- AI Investment Brief - prominent callout, not buried in expander ----
+        # ---- View toggle: Investment Brief vs Full Report ----
         brief_key_haiku = f"brief_{token_name}_{HAIKU}"
         brief_key_sonnet = f"brief_{token_name}_{SONNET}"
         brief_key_opus = f"brief_{token_name}_{OPUS}"
@@ -738,111 +746,84 @@ elif page.startswith("Report:"):
             display_brief, display_cost = st.session_state[brief_key_haiku]
             display_model = "Haiku"
 
-        with st.container(border=True):
-            st.markdown("#### AI Investment Brief")
-            audience_input = st.text_input(
-                "Who is this brief for? (optional)",
-                placeholder="e.g. my own use / cohort member new to DeFi / newsletter reader",
-                key=f"audience_{token_name}",
-            )
-            col_h, col_s, col_o = st.columns(3)
-            with col_h:
-                if st.button("Generate - Haiku", key=f"rpt_haiku_{token_name}", use_container_width=True):
-                    with st.spinner("Generating via Haiku..."):
-                        try:
-                            brief, cost = generate_anthropic_brief(token_name, {}, md, model=HAIKU, audience_context=audience_input)
-                            st.session_state[brief_key_haiku] = (brief, cost)
-                            st.session_state.pop(brief_key_sonnet, None)
-                            st.session_state.pop(brief_key_opus, None)
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Haiku error: {e}")
-            with col_s:
-                if st.button("Deep Analysis - Sonnet", key=f"rpt_sonnet_{token_name}", use_container_width=True):
-                    with st.spinner("Generating via Sonnet..."):
-                        try:
-                            brief, cost = generate_anthropic_brief(token_name, {}, md, model=SONNET, audience_context=audience_input)
-                            st.session_state[brief_key_sonnet] = (brief, cost)
-                            st.session_state.pop(brief_key_opus, None)
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Sonnet error: {e}")
-            with col_o:
-                if st.button("Maximum Depth - Opus", key=f"rpt_opus_{token_name}", use_container_width=True):
-                    with st.spinner("Generating via Opus..."):
-                        try:
-                            brief, cost = generate_anthropic_brief(token_name, {}, md, model=OPUS, audience_context=audience_input)
-                            st.session_state[brief_key_opus] = (brief, cost)
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Opus error: {e}")
+        view_key = f"view_mode_{token_name}"
+        if view_key not in st.session_state:
+            st.session_state[view_key] = "Investment Brief" if display_brief else "Full Report"
 
-            if display_brief:
-                st.markdown(display_brief)
-                st.caption(f"Model: {display_model} | Estimated cost: ${display_cost:.6f}")
-            else:
-                st.info("Click a button above to generate a plain-English brief from this report.")
+        view_mode = st.radio(
+            "View",
+            ["Investment Brief", "Full Report"],
+            index=0 if st.session_state[view_key] == "Investment Brief" else 1,
+            horizontal=True,
+            key=view_key,
+            label_visibility="collapsed",
+        )
 
         st.divider()
 
-        # Phase navigation - Previous / Next arrows
-        sections = split_report_phases(md)
-        tab_names = [k for k in sections.keys() if sections[k].strip()]
-
-        if len(tab_names) > 1:
-            phase_key = f"phase_idx_{token_name}"
-            if phase_key not in st.session_state:
-                st.session_state[phase_key] = 0
-
-            # Clamp index in case report was regenerated with fewer sections
-            idx = min(st.session_state[phase_key], len(tab_names) - 1)
-
-            # Navigation bar
-            nav_left, nav_centre, nav_right = st.columns([1, 4, 1])
-            with nav_left:
-                if st.button("← Previous", key=f"prev_{token_name}", disabled=(idx == 0), use_container_width=True):
-                    st.session_state[phase_key] = idx - 1
-                    st.rerun()
-            with nav_centre:
-                st.markdown(
-                    f"<p style='text-align:center; font-weight:600; margin:0.4rem 0;'>"
-                    f"{tab_names[idx]}&nbsp;&nbsp;"
-                    f"<span style='opacity:0.5; font-weight:400;'>({idx + 1} of {len(tab_names)})</span>"
-                    f"</p>",
-                    unsafe_allow_html=True,
+        if view_mode == "Investment Brief":
+            with st.container(border=True):
+                st.markdown("#### AI Investment Brief")
+                audience_input = st.text_input(
+                    "Who is this brief for? (optional)",
+                    placeholder="e.g. my own use / cohort member new to DeFi / newsletter reader",
+                    key=f"audience_{token_name}",
                 )
-            with nav_right:
-                if st.button("Next →", key=f"next_{token_name}", disabled=(idx == len(tab_names) - 1), use_container_width=True):
-                    st.session_state[phase_key] = idx + 1
-                    st.rerun()
+                col_h, col_s, col_o = st.columns(3)
+                with col_h:
+                    if st.button("Generate - Haiku", key=f"rpt_haiku_{token_name}", use_container_width=True):
+                        with st.spinner("Generating via Haiku..."):
+                            try:
+                                brief, cost = generate_anthropic_brief(token_name, {}, md, model=HAIKU, audience_context=audience_input)
+                                st.session_state[brief_key_haiku] = (brief, cost)
+                                st.session_state.pop(brief_key_sonnet, None)
+                                st.session_state.pop(brief_key_opus, None)
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Haiku error: {e}")
+                with col_s:
+                    if st.button("Deep Analysis - Sonnet", key=f"rpt_sonnet_{token_name}", use_container_width=True):
+                        with st.spinner("Generating via Sonnet..."):
+                            try:
+                                brief, cost = generate_anthropic_brief(token_name, {}, md, model=SONNET, audience_context=audience_input)
+                                st.session_state[brief_key_sonnet] = (brief, cost)
+                                st.session_state.pop(brief_key_opus, None)
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Sonnet error: {e}")
+                with col_o:
+                    if st.button("Maximum Depth - Opus", key=f"rpt_opus_{token_name}", use_container_width=True):
+                        with st.spinner("Generating via Opus..."):
+                            try:
+                                brief, cost = generate_anthropic_brief(token_name, {}, md, model=OPUS, audience_context=audience_input)
+                                st.session_state[brief_key_opus] = (brief, cost)
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Opus error: {e}")
 
-            st.divider()
+                if display_brief:
+                    st.markdown(display_brief)
+                    st.caption(f"Model: {display_model} | Estimated cost: ${display_cost:.6f}")
+                else:
+                    st.info("Click a button above to generate a plain-English brief from this report.")
 
-            # Scroll to top if navigation came from the bottom buttons
-            scroll_key = f"scroll_top_{token_name}"
-            if st.session_state.pop(scroll_key, False):
-                import streamlit.components.v1 as components
-                components.html(
-                    "<script>window.scrollTo(0,0); window.parent.scrollTo(0,0);</script>",
-                    height=0,
-                )
+        else:
+            sections = split_report_phases(md)
+            tab_names = [k for k in sections.keys() if sections[k].strip()]
 
-            # Render current phase content
-            current_name = tab_names[idx]
-            st.markdown(clean_report_for_display(sections[current_name]), unsafe_allow_html=True)
-            if "Phase 4" in current_name and screenshot and screenshot != "None" and os.path.exists(screenshot):
-                st.image(screenshot, caption=f"DexScreener Live Chart Capture for {token_name.upper()}")
+            if len(tab_names) > 1:
+                phase_key = f"phase_idx_{token_name}"
+                if phase_key not in st.session_state:
+                    st.session_state[phase_key] = 0
 
-            # Bottom navigation - only shown when content is long enough to require scrolling
-            if len(sections[current_name]) >= 1500:
-                st.divider()
-                bnav_left, bnav_centre, bnav_right = st.columns([1, 4, 1])
-                with bnav_left:
-                    if st.button("← Previous", key=f"prev_bot_{token_name}", disabled=(idx == 0), use_container_width=True):
+                idx = min(st.session_state[phase_key], len(tab_names) - 1)
+
+                nav_left, nav_centre, nav_right = st.columns([1, 4, 1])
+                with nav_left:
+                    if st.button("← Previous", key=f"prev_{token_name}", disabled=(idx == 0), use_container_width=True):
                         st.session_state[phase_key] = idx - 1
-                        st.session_state[scroll_key] = True
                         st.rerun()
-                with bnav_centre:
+                with nav_centre:
                     st.markdown(
                         f"<p style='text-align:center; font-weight:600; margin:0.4rem 0;'>"
                         f"{tab_names[idx]}&nbsp;&nbsp;"
@@ -850,13 +831,49 @@ elif page.startswith("Report:"):
                         f"</p>",
                         unsafe_allow_html=True,
                     )
-                with bnav_right:
-                    if st.button("Next →", key=f"next_bot_{token_name}", disabled=(idx == len(tab_names) - 1), use_container_width=True):
+                with nav_right:
+                    if st.button("Next →", key=f"next_{token_name}", disabled=(idx == len(tab_names) - 1), use_container_width=True):
                         st.session_state[phase_key] = idx + 1
-                        st.session_state[scroll_key] = True
                         st.rerun()
-        else:
-            st.markdown(clean_report_for_display(md), unsafe_allow_html=True)
+
+                st.divider()
+
+                scroll_key = f"scroll_top_{token_name}"
+                if st.session_state.pop(scroll_key, False):
+                    import streamlit.components.v1 as components
+                    components.html(
+                        "<script>window.scrollTo(0,0); window.parent.scrollTo(0,0);</script>",
+                        height=0,
+                    )
+
+                current_name = tab_names[idx]
+                st.markdown(clean_report_for_display(sections[current_name]), unsafe_allow_html=True)
+                if "Phase 4" in current_name and screenshot and screenshot != "None" and os.path.exists(screenshot):
+                    st.image(screenshot, caption=f"DexScreener Live Chart Capture for {token_name.upper()}")
+
+                if len(sections[current_name]) >= 1500:
+                    st.divider()
+                    bnav_left, bnav_centre, bnav_right = st.columns([1, 4, 1])
+                    with bnav_left:
+                        if st.button("← Previous", key=f"prev_bot_{token_name}", disabled=(idx == 0), use_container_width=True):
+                            st.session_state[phase_key] = idx - 1
+                            st.session_state[scroll_key] = True
+                            st.rerun()
+                    with bnav_centre:
+                        st.markdown(
+                            f"<p style='text-align:center; font-weight:600; margin:0.4rem 0;'>"
+                            f"{tab_names[idx]}&nbsp;&nbsp;"
+                            f"<span style='opacity:0.5; font-weight:400;'>({idx + 1} of {len(tab_names)})</span>"
+                            f"</p>",
+                            unsafe_allow_html=True,
+                        )
+                    with bnav_right:
+                        if st.button("Next →", key=f"next_bot_{token_name}", disabled=(idx == len(tab_names) - 1), use_container_width=True):
+                            st.session_state[phase_key] = idx + 1
+                            st.session_state[scroll_key] = True
+                            st.rerun()
+            else:
+                st.markdown(clean_report_for_display(md), unsafe_allow_html=True)
 
         st.divider()
         md_to_pdf(md, f"{token_name}-audit-latest.pdf")
