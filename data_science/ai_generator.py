@@ -24,6 +24,14 @@ CRITICAL RULES:
 8. No AI filler: no "delve", "tapestry", "vibrant", "crucial", "pivotal", "testament", "underscore".
 9. No emoji on headers or bullet points. Bold only section headers and the Final Verdict rating.
 
+PHASE SIGNAL RULE (mandatory - the last item in every phase):
+After the final piece of commentary in Phases 0, 1, 2, 2.5, and 3, add this exact callout block using real values from the data:
+
+> **Phase [X] Signal: [BULLISH / BEARISH / NEUTRAL]** - [One sentence. Name the single most important number or finding from this phase and state what action it implies for a buy, hold, or sell decision. Reference the actual value.]
+
+Example (do not copy verbatim - use the token's real data):
+> **Phase 2 Signal: BEARISH** - Depth-to-MCap is 0.3%, meaning a $100K sell order moves price an estimated 4.2%; this token cannot support institutional-size exits at current depth and is not suitable for positions above $50K.
+
 VISUAL-FIRST RULE:
 Every phase leads with a data table. Tables are the primary output. If data is unavailable for a field, write "N/A".
 
@@ -276,12 +284,38 @@ Write ONE sentence that connects all four phases:
 
 > **Why we score this way:** The four components reflect the four things that must all be true for a token to be worth buying: the supply must be constrained (scarcity), there must be enough liquidity to exit (depth), holders must be accumulating not distributing (sentiment), and leverage must not be setting up a cascade (derivatives). A perfect score requires all four. A weakness in any single component drags the score down.
 
-| Component | Weight | Score | Key Reasoning |
-|-----------|--------|-------|---------------|
-| Scarcity / Supply Integrity | 30 | /30 | Tokenomics, unlock schedule, FDV risk |
-| Liquidity / Depth | 30 | /30 | Pool depth, stress test results, DEX activity |
-| On-Chain Sentiment | 20 | /20 | Holder behaviour, news catalysts, social signal |
-| Derivative Structure | 20 | /20 | OI trend, funding rate, liquidation risk |
+Score each component using the criteria below. Use actual values from this report to justify every score.
+
+**Scarcity / Supply Integrity (/30)**
+- 25-30: FDV < 2x MCap; circulating supply > 70%; no unlock cliff in 30 days; no concentration Kill Switch
+- 15-24: FDV 2-4x MCap; OR circulating 50-70%; OR minor unlock (< 5% in 30 days)
+- 5-14: FDV 4-10x MCap; OR circulating < 50%; OR unlock cliff 5-15% in 30 days
+- 0-4: FDV > 10x MCap; OR unlock cliff > 15% (Kill Switch override); OR top 10 wallets > 80%
+
+**Liquidity / Depth (/30)**
+- 25-30: Depth-to-MCap > 5%; $1M trade < 1% slippage; Turnover Ratio < 20%
+- 15-24: Depth-to-MCap 1-5%; $1M trade 1-3% slippage
+- 5-14: Depth-to-MCap < 1%; $1M trade > 3% slippage
+- 0-4: Thin Order Books Kill Switch triggered; OR $100K trade > 5% slippage
+
+**On-Chain Sentiment (/20)**
+- 15-20: Price above STH cost basis (accumulation zone); structural catalyst present; no artificial volume flag
+- 10-14: Mixed signals; no clear catalyst; price near STH cost basis
+- 5-9: Price below STH cost basis (distribution zone); negative or noise-only catalyst
+- 0-4: Artificial Volume Kill Switch triggered; OR sustained negative narrative with no structural catalyst
+
+**Derivative Structure (/20)**
+- 15-20: OI rising with price (aligned); funding rate between -0.01% and +0.02%; no liquidation clusters within 10% of current price
+- 10-14: OI mildly divergent from price; moderate funding (0.02-0.05%); manageable liquidation clusters
+- 5-9: OI diverging sharply from price; extreme funding (> 0.05% or < -0.02%); significant liquidation clusters
+- 0-4: Liquidation cascade imminent; OR derivatives data completely unavailable (high uncertainty penalty)
+
+| Component | Weight | Score | Key Reasoning (cite actual values) |
+|-----------|--------|-------|-------------------------------------|
+| Scarcity / Supply Integrity | 30 | /30 | |
+| Liquidity / Depth | 30 | /30 | |
+| On-Chain Sentiment | 20 | /20 | |
+| Derivative Structure | 20 | /20 | |
 | **Total** | **100** | **/100** | |
 
 Score interpretation guide (include this in the report body):
@@ -303,12 +337,27 @@ Score interpretation guide (include this in the report body):
 |-|-------------------------|-------------------|
 | **Market / Macro** | | |
 
+### 4.3.5 Investment Decision Checklist
+
+Answer each question using actual data from this report before completing the verdict table.
+
+| Question | Answer |
+|---|---|
+| Blueprint Score above 60? | Yes / No - [state score] |
+| Any Kill Switch triggered? | Yes / No - [name which, or None] |
+| Macro environment supportive (Risk-On / QE)? | Yes / No - [state current stance] |
+| Can exit $100K with less than 3% slippage? | Yes / No - [state actual slippage from stress test] |
+| Dominant narrative structural or short-term noise? | Structural / Noise - [name the catalyst or lack of one] |
+
 ### 4.4 Final Verdict
+
+Entry Trigger and Exit Trigger MUST reference a specific price level, ratio, or threshold value from this report. Do not write generic conditions.
+
 | Field | Value |
 |-------|-------|
 | **Rating** | Strong Buy / Accumulate / Neutral / Distribute / Strong Sell |
-| Entry Trigger | The specific condition that would make this a buy |
-| Exit Trigger | The specific condition that signals it is time to sell |
+| Entry Trigger | [Specific condition with real value - e.g. "Price holds above $X with OI rising"] |
+| Exit Trigger | [Specific condition with real value - e.g. "Depth-to-MCap drops below 1% OR price breaks below $X"] |
 | Primary Risk | The single biggest thing that could make this thesis wrong |
 | Secondary Risk | The second biggest risk |
 | Time Horizon | Short (days) / Medium (weeks) / Long (months) |
@@ -331,6 +380,136 @@ Score interpretation guide (include this in the report body):
 | Exchange Delisting Risk | Loss of major exchange access destroys liquidity | Yes/No/Unclear | | N/A | |
 
 State clearly whether any kill switch is triggered and what the score override is.
+
+## Phase 5: Long-Term Outlook (1-5 Year Forecast)
+
+> **Why we look at this:** Short-term trades are won by liquidity and momentum. Long-term wealth is built by being early to protocols, chains, and sectors with structural growth ahead of them. This phase steps back from the 24-hour data and asks a different question: is this token worth holding for years, not days? It is the closest equivalent in crypto research to the S&P 500 "buy and hold" thesis - and it will only reach that level of confidence for a small number of assets. Honesty here is more valuable than optimism.
+
+> **Data caveat:** Most crypto tokens have fewer than five years of live market data. Where historical data is thin, this forecast relies on adoption metrics, tokenomics trajectory, and sector analysis. The Conviction Score reflects data availability as much as directional confidence. A score below 60 does not mean the token is bad; it means the long-term thesis is not yet established by data.
+
+### 5.1 Underlying Chain Forecast
+
+> **Why we look at this:** A token is only as strong as the chain it runs on. Chain-level adoption - active addresses, developer activity, transaction volume - is the foundation that all protocol and token value sits on top of. If the chain is losing developers or users, every token on it faces a structural headwind regardless of individual fundamentals.
+
+> **Note on token-chain overlap:** If the token being analysed IS the native asset of the chain (e.g. ETH on Ethereum, SOL on Solana), merge this section with Section 5.3 and label it "5.1 / 5.3 Chain and Token Forecast (Combined)". For altcoins on a parent chain, keep the sections separate.
+
+| Metric | Current State | 1-Year Outlook | 3-Year Outlook | 5-Year Outlook |
+|--------|--------------|----------------|----------------|----------------|
+| Active Addresses (monthly) | | | | |
+| Daily Transaction Volume | | | | |
+| Developer Activity | | | | |
+| Chain TVL (USD) | | | | |
+| Network Revenue (fees/month) | | | | |
+| Competitor Chains | | | | |
+
+> **Reading this table:** Developer activity (measured by GitHub commits and active contributors) is the most reliable leading indicator of a chain's health. A chain losing developers is losing its future; a chain growing developers is building it. Active addresses show whether real users are arriving or leaving. Network revenue shows whether the chain captures value from its usage or is subsidising activity with token inflation.
+
+Write 2-3 sentences on the chain's structural trajectory. State whether the chain is gaining or losing ground to its closest competitor, and name the single biggest catalyst that could accelerate chain adoption over the next three years.
+
+### 5.2 Protocol Forecast
+
+> **Why we look at this:** The protocol is the business that the token represents a share of. Just as a stock is only worth holding long-term if the underlying company is growing, a token is only worth holding if the protocol is solving a real problem with growing capital confidence. TVL trajectory over years is the closest crypto equivalent to earnings growth in equity research.
+
+> **Conditional instruction:** If this token has no meaningful protocol (memecoin, pure governance token with no revenue or TVL), write: "N/A - this token does not operate as a DeFi protocol. Long-term value is driven by narrative and network effect rather than protocol fundamentals. See Section 5.3 for token-level forecast." Then skip to Section 5.3.
+
+| Metric | Current State | 1-Year Outlook | 3-Year Outlook | 5-Year Outlook |
+|--------|--------------|----------------|----------------|----------------|
+| TVL Trajectory | | | | |
+| Protocol Revenue (monthly) | | | | |
+| User Growth Rate | | | | |
+| FDV / TVL Ratio Trajectory | | | | |
+| Competitive Position | | | | |
+| Revenue Accrual to Token Holders | Yes / No / Partial | | | |
+
+> **Reading this table:** A protocol whose TVL grows consistently over three or more years is demonstrating that real capital trusts it. The FDV/TVL ratio trending downward means the protocol is earning its valuation - the token price is being justified by actual usage. Revenue accrual to token holders is critical: if the protocol earns fees but they do not flow to token holders, holding the token is speculative on future governance changes, not current cashflow.
+
+Write 2-3 sentences on the protocol's competitive moat. Name the single biggest threat to its market position over five years - whether from a competing protocol, a regulatory change, or a technology shift.
+
+### 5.3 Token Forecast
+
+> **Why we look at this:** A protocol can grow while its token stagnates if the tokenomics are poorly designed. This section separates the token's long-term supply and demand dynamics from the protocol's performance. Supply pressure - the ongoing release of locked tokens - is the most overlooked factor in long-term token performance.
+
+| Metric | Current State | 1-Year Outlook | 3-Year Outlook | 5-Year Outlook |
+|--------|--------------|----------------|----------------|----------------|
+| Supply Pressure Trajectory | | | | |
+| Remaining Unlock Schedule | | | | |
+| Burn / Deflationary Mechanism | | | | |
+| Adoption-Driven Demand Drivers | | | | |
+| Regulatory Trajectory | | | | |
+| Sector Growth Alignment | | | | |
+
+> **Reading this table:** A token whose supply pressure decreases over time (unlock schedule thinning, burn mechanism active, declining issuance rate) while demand drivers grow is structurally positioned for appreciation. A token whose supply keeps expanding with no demand-side offset will dilute existing holders regardless of how well the protocol performs. Regulatory trajectory is the highest-variance input here - a single regulatory classification event can reset the entire forecast.
+
+Write 2-3 sentences on the token's long-term supply and demand dynamic. State plainly whether the token captures value from protocol growth (i.e. protocol revenue flows to token holders through burns, staking rewards, or buybacks), or whether it is purely speculative on future adoption.
+
+### 5.4 Scenario Analysis
+
+> **Why we run scenarios:** No single forecast is certain. Scenarios show the range of outcomes and the specific conditions that lead to each one. The Base Case is the most likely outcome given current data; the Bull Case shows what accelerated adoption looks like; the Bear Case defines the exit signal - the condition that breaks the long-term thesis. Presenting all three is more honest than a single price target.
+
+| Scenario | Trigger Conditions (must be specific) | Chain Outlook | Protocol Outlook | Token Outlook | Probability Estimate |
+|----------|---------------------------------------|--------------|-----------------|---------------|---------------------|
+| Bull Case | | | | | |
+| Base Case | | | | | |
+| Bear Case | | | | | |
+
+> **Reading this table:** Trigger conditions must be specific and observable - not "if the market goes up" but "if monthly active addresses exceed X and FDV/TVL drops below Y". The Bear Case trigger is the most important column: it is your exit signal. If those conditions appear in a future report on this token, the long-term thesis is broken.
+
+**Long-Term Thesis (Base Case):**
+
+Write one paragraph of 3-4 sentences. State: (1) what this token is and what problem it solves, (2) why it will or will not have structural value in five years based on the data above, (3) the single biggest risk to that view, and (4) the single biggest catalyst that could make the Bull Case real. This is the plain-English answer to the question: "Is this worth holding for years?" State yes or no and defend it. Do not hedge into meaninglessness.
+
+### 5.5 Long-Term Conviction Score
+
+> **Why we score long-term separately:** The Blueprint Score tells you whether now is a good time to enter. The Long-Term Conviction Score tells you whether the underlying asset is worth holding for years. A token can score 75/100 on the Blueprint Score (good short-term entry) and 35/100 on Long-Term Conviction (structurally weak over time). Both scores matter. A high Blueprint Score with low Long-Term Conviction means: trade it, do not hold it. A low Blueprint Score with high Long-Term Conviction means: wait for a better entry, but this is worth owning.
+
+Score each component using the criteria below. Use actual signals from this report to justify every number.
+
+**Adoption Trajectory (/25)**
+- 20-25: Consistent month-on-month active address growth; developer activity increasing; evidence of institutional or enterprise adoption
+- 12-19: Stable adoption with no clear growth catalyst; developer activity flat; user base not declining
+- 5-11: Declining active addresses or developer attrition; losing ground to a named competitor
+- 0-4: Evidence of abandonment; no developer activity in recent months; user base collapsing
+
+**Tokenomics Trajectory (/20)**
+- 15-20: Supply pressure decreasing over time (unlock schedule thinning); burn or deflationary mechanism active; token captures protocol revenue through fees, buybacks, or staking
+- 10-14: Supply pressure stable; minor dilution risk; no revenue capture but tokenomics not deteriorating
+- 5-9: Ongoing significant unlock schedule with no offsetting burn; supply expanding faster than demand
+- 0-4: Hyperinflationary schedule; no tokenomics data available; token has no value capture mechanism
+
+**Regulatory Direction (/20)**
+- 15-20: CFTC commodity classification confirmed or clearly likely; no active SEC enforcement risk; operating in compliant jurisdictions with no delisting risk
+- 10-14: Regulatory status unclear but no active enforcement action; operating in mixed-compliance jurisdictions
+- 5-9: Active SEC investigation or credible security classification risk; major exchange delistings possible within 12 months
+- 0-4: Active regulatory enforcement in progress; exchange delistings confirmed or imminent
+
+**Sector and Protocol Thesis (/20)**
+- 15-20: Token operates in a structurally growing sector (L1 infrastructure, DeFi, real-world asset tokenisation); protocol has a demonstrable competitive moat; revenue accrues to token holders
+- 10-14: Sector growth visible but highly competitive; protocol has real usage but no clear moat against better-funded competitors
+- 5-9: Sector crowded or in structural decline; protocol TVL falling; token value is speculative on future utility that has not materialised
+- 0-4: No clear sector fit or use case; protocol revenue is zero or fabricated; vaporware risk present
+
+**Cycle Positioning (/15)**
+- 12-15: Early-to-mid bull cycle (approximately 6 to 18 months post-Bitcoin halving); BTC dominance declining; altcoin conditions forming; entering now captures the full cycle move
+- 8-11: Mid-cycle; reasonable entry but the optimal accumulation window has partially closed
+- 3-7: Late cycle or early bear; entering now requires 2 to 3 years of patience before the next structural recovery
+- 0-2: Deep bear cycle with high probability of further drawdown; only suitable for dollar-cost averaging over years, not lump-sum entry
+
+| Component | Weight | Score | Key Reasoning (cite actual signals) |
+|-----------|--------|-------|--------------------------------------|
+| Adoption Trajectory | 25 | /25 | |
+| Tokenomics Trajectory | 20 | /20 | |
+| Regulatory Direction | 20 | /20 | |
+| Sector and Protocol Thesis | 20 | /20 | |
+| Cycle Positioning | 15 | /15 | |
+| **Total** | **100** | **/100** | |
+
+Conviction Rating (include this in the report body):
+- 80-100: High Conviction. Structural growth thesis is supported by data across multiple components. Suitable for a 3 to 5 year hold with appropriate position sizing. This tier is rare; most tokens will not reach it.
+- 60-79: Medium Conviction. Likely to grow but carries meaningful execution risk. Suitable for a 1 to 3 year hold with active monitoring every quarter.
+- 40-59: Speculative. The outcome is genuinely uncertain. Position size must reflect this; treat as a high-risk allocation within a diversified portfolio.
+- Below 40: Low Conviction. Structural headwinds outweigh growth potential at current data. Not suitable for a long-term hold without a significant change in the underlying thesis.
+
+> **Phase 5 Signal: [HIGH CONVICTION / MEDIUM CONVICTION / SPECULATIVE / LOW CONVICTION]** - [One sentence: the single most important long-term finding and what it implies for a multi-year hold decision. Reference the actual score and the component that most influenced it.]
 
 ## Source Layer
 | Source | What It Provides | Reliability |
@@ -467,14 +646,15 @@ Where any field shows an error or is unavailable, write "N/A" in the table cell 
 what data source would be needed to complete that field.
 """
 
-    # Token limits per model — set high enough that reports never truncate.
-    # SOL full report with all educational callouts reaches ~16k tokens.
+    # Token limits per model.
+    # Sonnet tops out ~16k for a full report; Opus is slower so cap lower to
+    # stay well under Anthropic's 10-minute non-streaming limit (~35 tok/s).
     _MAX_TOKENS = {
         "claude-haiku-4-5": 8192,
-        "claude-sonnet-4-6": 32000,
-        "claude-opus-4-8": 32000,
+        "claude-sonnet-4-6": 16000,
+        "claude-opus-4-8": 10000,
     }
-    max_tokens = _MAX_TOKENS.get(model, 32000)
+    max_tokens = _MAX_TOKENS.get(model, 16000)
 
     client = anthropic.Anthropic(api_key=api_key)
     response = client.messages.create(
@@ -483,7 +663,6 @@ what data source would be needed to complete that field.
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_prompt}],
     )
-
     report_text = response.content[0].text
 
     if report_text:

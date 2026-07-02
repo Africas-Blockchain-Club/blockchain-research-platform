@@ -3,6 +3,7 @@ import re
 import os
 import urllib.request
 import urllib.parse
+from email.utils import parsedate_to_datetime
 
 
 # ====================== COINGECKO ======================
@@ -76,6 +77,7 @@ def fetch_coingecko_data(token):
             "30d_change_pct": market.get("price_change_percentage_30d"),
             "ath_usd": market.get("ath", {}).get("usd"),
             "ath_change_pct": market.get("ath_change_percentage", {}).get("usd"),
+            "total_volume_24h_usd": market.get("total_volume", {}).get("usd"),
             "total_supply": market.get("total_supply"),
             "circulating_supply": market.get("circulating_supply"),
             "max_supply": market.get("max_supply"),
@@ -207,6 +209,13 @@ def fetch_cryptopanic_news(token):
                 "source": source,
                 "published_at": date_m.group(1).strip() if date_m else "",
             })
+        def _parse_date(h):
+            try:
+                return parsedate_to_datetime(h["published_at"])
+            except Exception:
+                return None
+
+        headlines.sort(key=lambda h: (_parse_date(h) is not None, _parse_date(h)), reverse=True)
         return headlines if headlines else [{"note": f"No news found for {token}."}]
     except Exception as e:
         return [{"error": f"News fetch failed: {str(e)}"}]
