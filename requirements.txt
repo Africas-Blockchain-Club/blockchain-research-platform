@@ -12,3 +12,7 @@ beautifulsoup4
 python-dotenv
 google-genai
 anthropic
+
+# x402 payment demo
+eth-account>=0.13.0
+flask>=3.0.0
