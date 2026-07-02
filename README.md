@@ -40,6 +40,10 @@ Single source of truth for liquidity-first forensic audit reports, the Streamlit
    COINGECKO_API_KEY=CG-...           # raises CoinGecko rate limit from 30 to 500 req/min
    REDDIT_CLIENT_ID=...                # subreddit subscriber counts
    REDDIT_CLIENT_SECRET=...
+   SMTP_HOST=smtp.gmail.com            # emails the report and receipt to a payer
+   SMTP_PORT=587                       # after a paid generation; leave unset to
+   SMTP_USER=...                       # switch email delivery off entirely
+   SMTP_PASSWORD=...
    ```
    See `.env.example` for the full list, including Reddit setup steps. Note that `OPENROUTER_API_KEY`, `GOOGLE_API_KEY`, and `GROQ_API_KEY` are leftover from an earlier multi-model version; no code path reads them. Only `ANTHROPIC_API_KEY` is required.
 

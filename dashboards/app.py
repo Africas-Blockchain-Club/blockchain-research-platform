@@ -35,6 +35,7 @@ from report_generator import (
 from data_science.ai_generator import infer_verdict_from_score
 
 import db
+import emailer
 import payment_verifier
 from payment_verifier import PaymentVerificationError
 
@@ -561,6 +562,14 @@ elif page == "Generate Report":
             with st.container(border=True):
                 st.markdown(f"**{token}** — awaiting payment")
                 tx_hash = st.text_input("Transaction hash", key=f"tx_hash_{token}", placeholder="0x...")
+                if emailer.is_configured():
+                    payer_email = st.text_input(
+                        "Email for your report and receipt (optional)",
+                        key=f"payer_email_{token}",
+                        placeholder="you@example.com",
+                    )
+                else:
+                    payer_email = ""
                 if st.button(f"Verify Payment & Generate ({token})", key=f"verify_{token}"):
                     try:
                         with st.spinner("Verifying payment on-chain..."):
@@ -577,6 +586,7 @@ elif page == "Generate Report":
                             amount_atomic=verified["amount_atomic"],
                             amount_decimal=verified["amount_decimal"],
                             tx_hash=tx_hash.strip(),
+                            payer_email=payer_email.strip() or None,
                             verification_method=verified["verification_method"],
                         )
                         db.mark_payment_confirmed(payment_id, verified["confirmations"])
@@ -590,6 +600,35 @@ elif page == "Generate Report":
                                 model=pending["model"],
                                 payment_id=payment_id,
                             )
+
+                        # Email delivery happens after the report is saved: a send
+                        # failure must never lose a paid report. Failures surface as
+                        # a visible warning, never silently.
+                        if payer_email.strip():
+                            saved = db.get_latest_report(token)
+                            try:
+                                emailer.send_report_receipt(
+                                    payer_email=payer_email.strip(),
+                                    token=token,
+                                    report_markdown=saved["markdown"],
+                                    receipt={
+                                        "amount_decimal": verified["amount_decimal"],
+                                        "chain_id": payment_verifier.CHAIN_ID,
+                                        "tx_hash": tx_hash.strip(),
+                                        "score": saved["score"],
+                                        "verdict": saved["verdict"],
+                                    },
+                                )
+                                st.session_state.setdefault("email_notices", {})[token] = (
+                                    "success",
+                                    f"Report and receipt emailed to {payer_email.strip()}.",
+                                )
+                            except (emailer.EmailNotConfiguredError, emailer.EmailDeliveryError) as e:
+                                st.session_state.setdefault("email_notices", {})[token] = (
+                                    "warning",
+                                    f"Your {token} report was generated and is available below, "
+                                    f"but the email could not be sent: {e}",
+                                )
 
                         st.session_state.pending_payments.pop(token, None)
                         generated_tokens = st.session_state.setdefault("last_generated_tokens", [])
@@ -607,6 +646,14 @@ elif page == "Generate Report":
     # AI Investment Brief - shown after a successful generation (persists across rerenders via session_state)
     if st.session_state.get("last_generated_tokens"):
         st.divider()
+
+        # Email delivery outcomes survive the rerun via session_state; show once, then clear.
+        for _token, (level, message) in st.session_state.pop("email_notices", {}).items():
+            if level == "success":
+                st.success(message)
+            else:
+                st.warning(message)
+
         st.subheader("AI Investment Brief")
 
         for token in st.session_state.last_generated_tokens:
