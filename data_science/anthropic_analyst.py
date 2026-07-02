@@ -7,11 +7,13 @@ RESOURCES_DIR = Path(__file__).parent.parent.parent / "resources"
 USAGE_LOG = Path(__file__).parent.parent / "usage_log.txt"
 
 HAIKU = "claude-haiku-4-5"
-SONNET = "claude-sonnet-4-6"
+SONNET = "claude-sonnet-5"
 OPUS = "claude-opus-4-8"
 MAX_TOKENS = {HAIKU: 1024, SONNET: 2048, OPUS: 4096}
-COST_PER_INPUT = {HAIKU: 0.00000025, SONNET: 0.000003, OPUS: 0.000015}
-COST_PER_OUTPUT = {HAIKU: 0.00000125, SONNET: 0.000015, OPUS: 0.000075}
+# USD per token, from the current price list: Haiku 4.5 $1/$5 per million,
+# Sonnet 5 $3/$15, Opus 4.8 $5/$25
+COST_PER_INPUT = {HAIKU: 0.000001, SONNET: 0.000003, OPUS: 0.000005}
+COST_PER_OUTPUT = {HAIKU: 0.000005, SONNET: 0.000015, OPUS: 0.000025}
 
 _RESOURCE_FILES = [
     "about-me.md",

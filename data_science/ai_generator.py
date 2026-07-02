@@ -596,10 +596,10 @@ def extract_final_verdict(report_text):
     return "Unknown"
 
 
-def generate_ai_report(token, data_summary, kill_switches, model="claude-sonnet-4-6"):
+def generate_ai_report(token, data_summary, kill_switches, model="claude-sonnet-5"):
     """
     Generate the forensic audit report using an Anthropic model.
-    Defaults to claude-sonnet-4-6. Pass model="claude-opus-4-8" for maximum depth.
+    Defaults to claude-sonnet-5. Pass model="claude-opus-4-8" for maximum depth.
     """
     from datetime import datetime
     date_str = datetime.now().strftime("%d %b %Y")
@@ -647,12 +647,16 @@ what data source would be needed to complete that field.
 """
 
     # Token limits per model.
-    # Sonnet tops out ~16k for a full report; Opus is slower so cap lower to
-    # stay well under Anthropic's 10-minute non-streaming limit (~35 tok/s).
+    # Sonnet tops out ~16k for a full report; Opus-tier and Fable are slower so
+    # cap lower to stay well under Anthropic's 10-minute non-streaming limit.
     _MAX_TOKENS = {
         "claude-haiku-4-5": 8192,
         "claude-sonnet-4-6": 16000,
+        "claude-sonnet-5": 16000,
+        "claude-opus-4-6": 10000,
+        "claude-opus-4-7": 10000,
         "claude-opus-4-8": 10000,
+        "claude-fable-5": 10000,
     }
     max_tokens = _MAX_TOKENS.get(model, 16000)
 
@@ -663,6 +667,14 @@ what data source would be needed to complete that field.
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_prompt}],
     )
+    # Claude Fable 5 (and newer models) can decline a request via safety
+    # classifiers: HTTP 200 with stop_reason "refusal" and empty content.
+    # Fail loud rather than crash on content[0].
+    if response.stop_reason == "refusal" or not response.content:
+        raise RuntimeError(
+            f"{model} declined to generate this report (stop_reason: {response.stop_reason}). "
+            "Retry with a different model, for example claude-opus-4-8."
+        )
     report_text = response.content[0].text
 
     if report_text:

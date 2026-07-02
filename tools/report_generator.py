@@ -166,13 +166,13 @@ def fetch_and_analyse(token, log_fn=None):
     }
 
 
-def generate_ai_and_save(token, data_summary, kill_switches, screenshot_path, model="claude-sonnet-4-6", log_fn=None, payment_id=None):
+def generate_ai_and_save(token, data_summary, kill_switches, screenshot_path, model="claude-sonnet-5", log_fn=None, payment_id=None):
     """
     Paid stage: the Anthropic call, score/verdict extraction, markdown assembly,
     local file write, and the authoritative DB row. Only call this once a report
     has actually been paid for (or, for local-dev scripts, with payment_id=None).
 
-    model:      Anthropic model ID. Default is claude-sonnet-4-6.
+    model:      Anthropic model ID. Default is claude-sonnet-5.
                 Pass "claude-opus-4-8" for maximum analytical depth.
     log_fn:     optional callable(str) for live progress updates in Streamlit.
     payment_id: the payments.id row this report was unlocked by, or None for
@@ -230,13 +230,13 @@ def generate_ai_and_save(token, data_summary, kill_switches, screenshot_path, mo
     return report_path
 
 
-def generate_report(token, model="claude-sonnet-4-6", log_fn=None):
+def generate_report(token, model="claude-sonnet-5", log_fn=None):
     """
     Thin wrapper: fetch_and_analyse() + generate_ai_and_save() in sequence, unpaywalled.
     Unchanged signature and behaviour for existing local-dev callers
     (dashboards/app.py's legacy path, debug_btc.py, test_adr.py, test_run.py).
 
-    model:  Anthropic model ID. Default is claude-sonnet-4-6.
+    model:  Anthropic model ID. Default is claude-sonnet-5.
             Pass "claude-opus-4-8" for maximum analytical depth.
     log_fn: optional callable(str) for live progress updates in Streamlit.
     Returns the path of the saved report file.

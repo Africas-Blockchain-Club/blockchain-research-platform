@@ -507,8 +507,20 @@ elif page == "Generate Report":
     with col3:
         model_choice = st.selectbox(
             "Model",
-            ["claude-sonnet-4-6", "claude-haiku-4-5", "claude-opus-4-8"],
-            help="Haiku is fastest. Sonnet is thorough. Opus goes deepest."
+            [
+                "claude-sonnet-5",
+                "claude-sonnet-4-6",
+                "claude-opus-4-8",
+                "claude-opus-4-7",
+                "claude-opus-4-6",
+                "claude-haiku-4-5",
+                "claude-fable-5",
+            ],
+            help=(
+                "Haiku is fastest and cheapest. Sonnet 5 is the best speed/depth balance. "
+                "Opus 4.8 goes deepest at Opus tier. Fable 5 is the most capable model "
+                "(premium pricing; may decline high-risk topics)."
+            ),
         )
 
     date = st.date_input("Report Date", datetime.date.today())

@@ -69,7 +69,7 @@ The landing page shows a live card grid of the ten most recently generated repor
 
 ### Generate Report (paid, verified on-chain)
 - Select tokens from the auto-refreshing top-10-by-utility list, or type a custom ticker.
-- Pick a model depth: `claude-haiku-4-5` (fastest), `claude-sonnet-4-6` (thorough, default), or `claude-opus-4-8` (deepest).
+- Pick a model. All current Claude models are available: `claude-sonnet-5` (default; best speed and depth balance), `claude-sonnet-4-6`, `claude-opus-4-8` (deepest at Opus tier), `claude-opus-4-7`, `claude-opus-4-6`, `claude-haiku-4-5` (fastest and cheapest), and `claude-fable-5` (the most capable model; premium pricing, and it may decline high-risk topics).
 - Click **Fetch Data**. The free stage runs: data fetching, metrics, Kill Switch checks, and the chart screenshot. Nothing costs anything yet.
 - A **Pay to Unlock** panel then appears for each token. Send the report price (`REPORT_PRICE_USDC`, default 1.10 USDC) on Base Sepolia (chain 84532) to `REPORT_RECIPIENT_ADDRESS`, paste the transaction hash, and optionally enter an email address for delivery.
 - Click **Verify Payment & Generate**. The transaction is verified on-chain (`payment_verifier.py`: direct RPC first, Etherscan/Blockscout fallback), recorded in the database (`db.py`; a used hash cannot unlock a second report), and only then does the paid AI stage run and write `reports/{TOKEN}_audit_report.md`.
