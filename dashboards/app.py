@@ -97,7 +97,7 @@ for rep in report_files:
     display_reports.append(f"Report: {token_name}")
 
 # Sidebar only shows primary nav; reports open via card clicks
-SIDEBAR_PAGES = ["Overview", "Generate Report"]
+SIDEBAR_PAGES = ["Overview", "Generate Report", "Attack Cost"]
 all_pages = SIDEBAR_PAGES + display_reports
 
 if "selected_page" not in st.session_state:
@@ -821,6 +821,107 @@ elif page.startswith("Blueprint:"):
     st.markdown(md)
     st.divider()
     md_to_pdf(md, f"{blueprint_name.replace('.md','')}.pdf")
+
+elif page == "Attack Cost":
+    # Session 4 feature: price an attack on Ethereum with live data.
+    # The lesson: a blockchain is not secure because attack is impossible;
+    # it is secure because the attack is a fire that burns the arsonist first.
+    import requests as _requests
+
+    st.header("What Does It Cost to Attack Ethereum?")
+    st.info(
+        "Our payment gate trusts Base, a Layer 2 rollup that settles on Ethereum. "
+        "That trust is not faith - it is a price tag. Ethereum is secured by validators "
+        "who each lock up 32 ETH as a deposit. To rewrite history or halt the chain, an "
+        "attacker must control a large share of all deposits, and the protocol burns "
+        "(slashes) deposits used to cheat. This page prices that attack with live data."
+    )
+
+    @st.cache_data(ttl=300)
+    def fetch_attack_inputs():
+        """Live ETH price in USD and the USD/ZAR rate. Returns (eth_usd, usd_zar, sources)."""
+        eth_usd, usd_zar = None, 19.0
+        sources = []
+        try:
+            r = _requests.get(
+                "https://api.coingecko.com/api/v3/simple/price",
+                params={"ids": "ethereum", "vs_currencies": "usd,zar"},
+                timeout=8,
+            )
+            r.raise_for_status()
+            eth = r.json().get("ethereum", {})
+            eth_usd = eth.get("usd")
+            if eth.get("zar") and eth.get("usd"):
+                usd_zar = eth["zar"] / eth["usd"]
+            if eth_usd:
+                sources.append("CoinGecko (live ETH price)")
+        except Exception:
+            pass
+        return eth_usd, usd_zar, sources
+
+    eth_usd, usd_zar, sources = fetch_attack_inputs()
+
+    # Defined off state: when the price feed is unavailable, say so loudly and
+    # let the presenter drive the number by hand. The lesson survives an outage.
+    if eth_usd is None:
+        st.warning(
+            "The live price feed is unavailable right now - set the ETH price "
+            "manually from any exchange or price site."
+        )
+    col_a, col_b = st.columns(2)
+    with col_a:
+        staked_eth = st.number_input(
+            "Total ETH staked (read the live figure from beaconcha.in)",
+            min_value=1_000_000.0,
+            value=34_000_000.0,
+            step=500_000.0,
+            format="%.0f",
+        )
+    with col_b:
+        eth_usd = st.number_input(
+            "ETH price (USD)",
+            min_value=1.0,
+            value=float(eth_usd or 3000),
+            step=50.0,
+            format="%.0f",
+        )
+
+    attack_mode = st.radio(
+        "What is the attacker trying to do?",
+        [
+            "Stall finality - stop the chain agreeing (needs ~34% of stake)",
+            "Control consensus - censor and reorder at will (needs ~51% of stake)",
+        ],
+        horizontal=False,
+    )
+    share = 0.34 if attack_mode.startswith("Stall") else 0.51
+
+    eth_needed = staked_eth * share
+    cost_usd = eth_needed * eth_usd
+    cost_zar = cost_usd * usd_zar
+    reports_equivalent = cost_usd / float(payment_verifier.REPORT_PRICE_USDC)
+
+    m1, m2, m3 = st.columns(3)
+    m1.metric("ETH the attacker must acquire", f"{eth_needed:,.0f} ETH")
+    m2.metric("Cost in US Dollars", f"${cost_usd:,.0f}")
+    m3.metric("Cost in Rand", f"R{cost_zar:,.0f}")
+
+    st.markdown(
+        f"> **Reading these numbers:** to threaten the chain our R20 payment travels on, "
+        f"an attacker must first buy roughly **{eth_needed:,.0f} ETH** - about "
+        f"**R{cost_zar:,.0f}**. That is the price of admission before the attack even starts, "
+        f"and it equals the revenue from **{reports_equivalent:,.0f}** of our "
+        f"{payment_verifier.REPORT_PRICE_USDC} USDC reports."
+    )
+    st.markdown(
+        "> **Why the attack fails anyway:** the purchase itself drives the ETH price up, "
+        "a successful attack crashes the value of everything the attacker just bought, "
+        "and the protocol slashes (burns) the deposits used to cheat. "
+        "A blockchain is not secure because attack is impossible. It is secure because "
+        "the attack is a fire that burns the arsonist first."
+    )
+    if sources:
+        st.caption("Live sources: " + ", ".join(sources) + ". Refreshes every 5 minutes.")
 
 elif page.startswith("Report:"):
     token_name = page.split(": ")[1].upper()
