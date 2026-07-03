@@ -6,7 +6,7 @@ REPORT_RECIPIENT_ADDRESS on Base Sepolia. Tries a direct RPC read first; if the
 RPC is unreachable, falls back to the same lookup via Etherscan's unified
 multichain API, then Blockscout. All three read the same on-chain receipt, so
 a definitive rejection (wrong amount, wrong recipient, reverted tx) from any
-one of them is trusted immediately rather than retried against the others —
+one of them is trusted immediately rather than retried against the others -
 only transport failures (timeouts, unreachable host) fall through to the next
 source. Chain, contract, recipient, and price are config, not hard-coded, and
 every failure raises PaymentVerificationError with a specific reason; nothing
@@ -27,7 +27,7 @@ USDC_DECIMALS = 6
 MIN_CONFIRMATIONS = int(os.getenv("PAYMENT_MIN_CONFIRMATIONS", "1"))
 REQUEST_TIMEOUT = 10
 
-# keccak256("Transfer(address,address,uint256)") — the ERC-20 transfer event topic
+# keccak256("Transfer(address,address,uint256)") - the ERC-20 transfer event topic
 TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 
 # (verification_method, base_url, api_key_env, needs_chainid_param)
@@ -38,7 +38,7 @@ _EXPLORER_FALLBACKS = [
 
 
 class PaymentVerificationError(Exception):
-    """Raised for any unverified payment — callers must show this to the user, never swallow it."""
+    """Raised for any unverified payment - callers must show this to the user, never swallow it."""
 
 
 def _rpc_call(method, params):
@@ -117,11 +117,11 @@ def verify_payment(tx_hash: str) -> dict:
 
     Returns {"payer_address", "amount_atomic", "amount_decimal",
              "verification_method", "confirmations"} on success.
-    Raises PaymentVerificationError with a specific reason on any failure —
+    Raises PaymentVerificationError with a specific reason on any failure -
     including when every lookup source is unreachable.
     """
     if not RECIPIENT_ADDRESS:
-        raise PaymentVerificationError("REPORT_RECIPIENT_ADDRESS is not configured — cannot verify payments")
+        raise PaymentVerificationError("REPORT_RECIPIENT_ADDRESS is not configured - cannot verify payments")
     if not tx_hash or not tx_hash.startswith("0x"):
         raise PaymentVerificationError("that doesn't look like a transaction hash (expected 0x...)")
 
@@ -150,7 +150,7 @@ def verify_payment(tx_hash: str) -> dict:
         return _validate_receipt(receipt, latest_block, verification_method)
 
     raise PaymentVerificationError(
-        "could not verify this transaction — every lookup source failed: " + "; ".join(transport_errors)
+        "could not verify this transaction - every lookup source failed: " + "; ".join(transport_errors)
     )
 
 

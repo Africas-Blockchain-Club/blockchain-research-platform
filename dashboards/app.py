@@ -87,7 +87,7 @@ blueprint_files = [f for f in os.listdir(blueprints_dir) if f.endswith(".md")]
 
 import glob
 _raw_report_paths = glob.glob(os.path.join(reports_dir, "*_audit_report.md"))
-# Newest first, cap at 10 for the dashboard — older files stay on disk
+# Newest first, cap at 10 for the dashboard - older files stay on disk
 _raw_report_paths.sort(key=lambda p: os.path.getmtime(p), reverse=True)
 report_files = [os.path.relpath(p, reports_dir) for p in _raw_report_paths[:10]]
 
@@ -138,7 +138,7 @@ with st.sidebar:
         if _past_payments:
             st.caption(f"Reports unlocked by this wallet: {len(_past_payments)}")
             for _p in _past_payments[:5]:
-                st.caption(f"• {_p['token_symbol']} — {str(_p['created_at'])[:10]}")
+                st.caption(f"• {_p['token_symbol']} - {str(_p['created_at'])[:10]}")
         else:
             st.caption("No reports unlocked by this wallet yet.")
     else:
@@ -589,7 +589,7 @@ elif page == "Generate Report":
                             "request_id": str(uuid.uuid4()),
                         }
                         status.update(
-                            label=f"{token.upper()} data ready — pay to unlock the AI report.",
+                            label=f"{token.upper()} data ready - pay to unlock the AI report.",
                             state="complete",
                             expanded=False,
                         )
@@ -696,7 +696,7 @@ elif page == "Generate Report":
         for token in list(st.session_state.pending_payments.keys()):
             pending = st.session_state.pending_payments[token]
             with st.container(border=True):
-                st.markdown(f"**{token}** — awaiting payment")
+                st.markdown(f"**{token}** - awaiting payment")
                 if emailer.is_configured():
                     payer_email = st.text_input(
                         "Email for your report and receipt (optional - enter it before paying)",
