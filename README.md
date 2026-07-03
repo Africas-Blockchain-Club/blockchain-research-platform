@@ -2,6 +2,8 @@
 
 Single source of truth for liquidity-first forensic audit reports, the Streamlit dashboard, and the AI tooling behind both.
 
+Built in the open by Peter Manda with AI assistance (Anthropic's Claude), as a working example of the AI-assisted engineering this workshop series teaches. Every commit records the collaboration - that is deliberate. Using AI well means directing it, verifying it, and saying so.
+
 ---
 
 ## The Build Journey
@@ -134,7 +136,7 @@ Screenshot: data/images/ETH_chart.png
 ```
 Score and verdict are extracted from the report text with a chain of regex patterns; if the AI never writes a readable Final Verdict line, the verdict is inferred from the score band instead (`infer_verdict_from_score` in `data_science/ai_generator.py`).
 
-**Blueprint**: `blueprints/token-analysis-blueprint-v1.0.md` defines the five-phase forensic structure (Phase 0 Overview & Narrative, Phase 1 Supply Forensics, Phase 2 Market Structure, Phase 3 Derivatives & Sentiment, Phase 4 Synthesis & Blueprint Score), plus a Kill Switch checklist (thin order books, supply unlock cliffs, concentration risk, wash trading) and a source layer. The system prompt in `data_science/ai_generator.py` enforces this structure exactly; phase headings must not be renamed or the dashboard's tab parser breaks.
+**Blueprint**: `blueprints/blockchain-research-blueprint-v2.0.md` defines the research structure - no longer token analysis alone, but the blockchain behind the token as well. It follows the Research section of the Africa's Blockchain Club curriculum (define objective, identify sources, analyse technology, study market data, evaluate team and community, assess regulatory risk, SWOT, document findings) across Phases 0 to 4 (narrative and macro context, supply forensics, AMM math, market structure, DeFi mechanics, derivatives, synthesis), a Kill Switch checklist (structural and regulatory), and Phase 5 - a 1-5 year forecast of the chain, the protocol, and the token with a separate Long-Term Conviction Score. Every phase ends with a BULLISH/BEARISH/NEUTRAL signal callout. The system prompt in `data_science/ai_generator.py` enforces this structure exactly; phase headings must not be renamed or the dashboard's tab parser breaks.
 
 **Adding a new task or blueprint**: create `blueprints/new-task-blueprint-v1.0.md` following the existing structure. No code changes are needed; the dashboard auto-detects any blueprint file.
 
@@ -145,7 +147,7 @@ Score and verdict are extracted from the report text with a chain of regex patte
 ```
 research-team/
 ├── blueprints/
-│   └── token-analysis-blueprint-v1.0.md
+│   └── blockchain-research-blueprint-v2.0.md
 ├── reports/
 │   └── {TOKEN}_audit_report.md          ← one file per token, overwritten on regeneration
 ├── dashboards/
