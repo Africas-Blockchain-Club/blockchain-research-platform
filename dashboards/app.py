@@ -39,6 +39,16 @@ import emailer
 import payment_verifier
 from payment_verifier import PaymentVerificationError
 
+import streamlit.components.v1 as components
+
+# One-click wallet payment (MetaMask and other EIP-1193 wallets). A plain-HTML
+# custom component: no build step, no npm dependency. Returns
+# {"tx_hash": ..., "payer_wallet": ...} once the user approves the transfer.
+wallet_pay = components.declare_component(
+    "wallet_pay",
+    path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "wallet_pay"),
+)
+
 import data_science.anthropic_analyst as _analyst_mod
 importlib.reload(_analyst_mod)
 from data_science.anthropic_analyst import generate_anthropic_brief, HAIKU, SONNET, OPUS
@@ -558,102 +568,148 @@ elif page == "Generate Report":
                             expanded=True,
                         )
 
+    def process_paid_generation(token, pending, tx_hash, payer_email):
+        """Verify the payment on-chain (waiting for a fresh transaction to mine),
+        record it, run the paid AI stage, then email the report if an address was
+        given. Returns True when the report was generated; shows errors and
+        returns False otherwise."""
+        tx_hash = tx_hash.strip()
+        try:
+            with st.spinner("Verifying payment on-chain..."):
+                verified = payment_verifier.wait_for_payment(tx_hash)
+
+            payment_id = db.record_payment_attempt(
+                request_id=pending["request_id"],
+                token_symbol=token,
+                payer_address=verified["payer_address"],
+                recipient_address=payment_verifier.RECIPIENT_ADDRESS,
+                chain_id=payment_verifier.CHAIN_ID,
+                asset_contract=payment_verifier.USDC_CONTRACT,
+                asset_symbol="USDC",
+                amount_atomic=verified["amount_atomic"],
+                amount_decimal=verified["amount_decimal"],
+                tx_hash=tx_hash,
+                payer_email=payer_email.strip() or None,
+                verification_method=verified["verification_method"],
+            )
+            db.mark_payment_confirmed(payment_id, verified["confirmations"])
+
+            with st.spinner(f"Generating {token} report..."):
+                generate_ai_and_save(
+                    token,
+                    pending["data_summary"],
+                    pending["kill_switches"],
+                    pending["screenshot_path"],
+                    model=pending["model"],
+                    payment_id=payment_id,
+                )
+
+            # Email delivery happens after the report is saved: a send failure
+            # must never lose a paid report. Failures surface as a visible
+            # warning, never silently.
+            if payer_email.strip():
+                saved = db.get_latest_report(token)
+                try:
+                    emailer.send_report_receipt(
+                        payer_email=payer_email.strip(),
+                        token=token,
+                        report_markdown=saved["markdown"],
+                        receipt={
+                            "amount_decimal": verified["amount_decimal"],
+                            "chain_id": payment_verifier.CHAIN_ID,
+                            "tx_hash": tx_hash,
+                            "score": saved["score"],
+                            "verdict": saved["verdict"],
+                        },
+                    )
+                    st.session_state.setdefault("email_notices", {})[token] = (
+                        "success",
+                        f"Report and receipt emailed to {payer_email.strip()}.",
+                    )
+                except (emailer.EmailNotConfiguredError, emailer.EmailDeliveryError) as e:
+                    st.session_state.setdefault("email_notices", {})[token] = (
+                        "warning",
+                        f"Your {token} report was generated and is available below, "
+                        f"but the email could not be sent: {e}",
+                    )
+
+            st.session_state.pending_payments.pop(token, None)
+            generated_tokens = st.session_state.setdefault("last_generated_tokens", [])
+            if token.upper() not in generated_tokens:
+                generated_tokens.append(token.upper())
+            return True
+        except PaymentVerificationError as e:
+            st.error(f"Payment not verified: {e}")
+        except IntegrityError:
+            st.error("This transaction hash has already been used to unlock a report.")
+        except Exception as e:
+            st.error(f"Report generation failed after payment was confirmed: {e}")
+        return False
+
     # Payment gate - shown once data has been fetched for a token but the AI report
     # (the paid stage) hasn't run yet. Nothing below this point costs anything until
-    # a transaction hash verifies on-chain.
+    # a transaction verifies on-chain.
     if st.session_state.get("pending_payments"):
         st.divider()
         st.subheader("Pay to Unlock")
         st.caption(
             f"Each report costs {payment_verifier.REPORT_PRICE_USDC} USDC on Base Sepolia "
-            f"(chain {payment_verifier.CHAIN_ID}). Send it to `{payment_verifier.RECIPIENT_ADDRESS}`, "
-            f"then paste the transaction hash below."
+            f"(chain {payment_verifier.CHAIN_ID}). Click the pay button and approve the "
+            f"transfer in your wallet - the report generates automatically once the "
+            f"payment confirms."
         )
+        amount_atomic = int(payment_verifier.REPORT_PRICE_USDC * (10 ** payment_verifier.USDC_DECIMALS))
+        processed_wallet_txs = st.session_state.setdefault("processed_wallet_txs", set())
+
         for token in list(st.session_state.pending_payments.keys()):
             pending = st.session_state.pending_payments[token]
             with st.container(border=True):
                 st.markdown(f"**{token}** — awaiting payment")
-                tx_hash = st.text_input("Transaction hash", key=f"tx_hash_{token}", placeholder="0x...")
                 if emailer.is_configured():
                     payer_email = st.text_input(
-                        "Email for your report and receipt (optional)",
+                        "Email for your report and receipt (optional - enter it before paying)",
                         key=f"payer_email_{token}",
                         placeholder="you@example.com",
                     )
                 else:
                     payer_email = ""
-                if st.button(f"Verify Payment & Generate ({token})", key=f"verify_{token}"):
-                    try:
-                        with st.spinner("Verifying payment on-chain..."):
-                            verified = payment_verifier.verify_payment(tx_hash.strip())
 
-                        payment_id = db.record_payment_attempt(
-                            request_id=pending["request_id"],
-                            token_symbol=token,
-                            payer_address=verified["payer_address"],
-                            recipient_address=payment_verifier.RECIPIENT_ADDRESS,
-                            chain_id=payment_verifier.CHAIN_ID,
-                            asset_contract=payment_verifier.USDC_CONTRACT,
-                            asset_symbol="USDC",
-                            amount_atomic=verified["amount_atomic"],
-                            amount_decimal=verified["amount_decimal"],
-                            tx_hash=tx_hash.strip(),
-                            payer_email=payer_email.strip() or None,
-                            verification_method=verified["verification_method"],
-                        )
-                        db.mark_payment_confirmed(payment_id, verified["confirmations"])
+                wallet_result = wallet_pay(
+                    token=token,
+                    price=str(payment_verifier.REPORT_PRICE_USDC),
+                    recipient=payment_verifier.RECIPIENT_ADDRESS,
+                    usdc_contract=payment_verifier.USDC_CONTRACT,
+                    chain_id=payment_verifier.CHAIN_ID,
+                    chain_name="Base Sepolia",
+                    rpc_url=payment_verifier.RPC_URL,
+                    explorer_url="https://sepolia.basescan.org",
+                    amount_atomic=str(amount_atomic),
+                    key=f"wallet_pay_{token}",
+                    default=None,
+                )
 
-                        with st.spinner(f"Generating {token} report..."):
-                            generate_ai_and_save(
-                                token,
-                                pending["data_summary"],
-                                pending["kill_switches"],
-                                pending["screenshot_path"],
-                                model=pending["model"],
-                                payment_id=payment_id,
-                            )
+                # The component re-emits its last value on every rerun, so a
+                # processed-hash guard stops the same payment being handled twice.
+                if wallet_result and wallet_result.get("tx_hash"):
+                    wallet_tx = wallet_result["tx_hash"].strip()
+                    if wallet_tx not in processed_wallet_txs:
+                        processed_wallet_txs.add(wallet_tx)
+                        if process_paid_generation(token, pending, wallet_tx, payer_email):
+                            st.success(f"{token} report generated.")
+                            st.rerun()
 
-                        # Email delivery happens after the report is saved: a send
-                        # failure must never lose a paid report. Failures surface as
-                        # a visible warning, never silently.
-                        if payer_email.strip():
-                            saved = db.get_latest_report(token)
-                            try:
-                                emailer.send_report_receipt(
-                                    payer_email=payer_email.strip(),
-                                    token=token,
-                                    report_markdown=saved["markdown"],
-                                    receipt={
-                                        "amount_decimal": verified["amount_decimal"],
-                                        "chain_id": payment_verifier.CHAIN_ID,
-                                        "tx_hash": tx_hash.strip(),
-                                        "score": saved["score"],
-                                        "verdict": saved["verdict"],
-                                    },
-                                )
-                                st.session_state.setdefault("email_notices", {})[token] = (
-                                    "success",
-                                    f"Report and receipt emailed to {payer_email.strip()}.",
-                                )
-                            except (emailer.EmailNotConfiguredError, emailer.EmailDeliveryError) as e:
-                                st.session_state.setdefault("email_notices", {})[token] = (
-                                    "warning",
-                                    f"Your {token} report was generated and is available below, "
-                                    f"but the email could not be sent: {e}",
-                                )
-
-                        st.session_state.pending_payments.pop(token, None)
-                        generated_tokens = st.session_state.setdefault("last_generated_tokens", [])
-                        if token.upper() not in generated_tokens:
-                            generated_tokens.append(token.upper())
-                        st.success(f"{token} report generated.")
-                        st.rerun()
-                    except PaymentVerificationError as e:
-                        st.error(f"Payment not verified: {e}")
-                    except IntegrityError:
-                        st.error("This transaction hash has already been used to unlock a report.")
-                    except Exception as e:
-                        st.error(f"Report generation failed after payment was confirmed: {e}")
+                # Fallback for users without a wallet extension: pay from any
+                # wallet or exchange and paste the transaction hash.
+                with st.expander("No wallet extension? Pay manually instead"):
+                    st.caption(
+                        f"Send {payment_verifier.REPORT_PRICE_USDC} USDC on Base Sepolia to "
+                        f"`{payment_verifier.RECIPIENT_ADDRESS}`, then paste the transaction hash."
+                    )
+                    tx_hash = st.text_input("Transaction hash", key=f"tx_hash_{token}", placeholder="0x...")
+                    if st.button(f"Verify Payment & Generate ({token})", key=f"verify_{token}"):
+                        if process_paid_generation(token, pending, tx_hash, payer_email):
+                            st.success(f"{token} report generated.")
+                            st.rerun()
 
     # AI Investment Brief - shown after a successful generation (persists across rerenders via session_state)
     if st.session_state.get("last_generated_tokens"):

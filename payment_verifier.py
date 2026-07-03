@@ -13,6 +13,7 @@ every failure raises PaymentVerificationError with a specific reason; nothing
 is ever treated as paid by default.
 """
 import os
+import time
 from decimal import Decimal
 
 import requests
@@ -151,3 +152,28 @@ def verify_payment(tx_hash: str) -> dict:
     raise PaymentVerificationError(
         "could not verify this transaction — every lookup source failed: " + "; ".join(transport_errors)
     )
+
+
+def wait_for_payment(tx_hash: str, timeout_seconds: int = 90, poll_seconds: int = 3, log_fn=None) -> dict:
+    """
+    Like verify_payment, but tolerates a freshly broadcast transaction: retries
+    while the receipt is not yet mined or lacks confirmations, up to
+    timeout_seconds. Definitive rejections (wrong amount, wrong recipient,
+    reverted) raise immediately. Raises PaymentVerificationError on timeout.
+    """
+    deadline = time.monotonic() + timeout_seconds
+    while True:
+        try:
+            return verify_payment(tx_hash)
+        except PaymentVerificationError as exc:
+            message = str(exc)
+            retryable = (
+                "not found" in message
+                or "confirmation(s) so far" in message
+                or "every lookup source failed" in message
+            )
+            if not retryable or time.monotonic() >= deadline:
+                raise
+            if log_fn:
+                log_fn("Waiting for the transaction to be mined...")
+            time.sleep(poll_seconds)

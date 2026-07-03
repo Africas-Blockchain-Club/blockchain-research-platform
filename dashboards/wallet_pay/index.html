@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<!--
+  Streamlit custom component: one-click USDC payment through a browser wallet.
+
+  Speaks the Streamlit component postMessage protocol directly (componentReady,
+  render, setComponentValue, setFrameHeight) so no build step or npm package is
+  needed. Talks to the injected EIP-1193 provider (window.ethereum - MetaMask,
+  Coinbase Wallet, Rabby, and similar): connects, switches or adds the target
+  chain, then sends an ERC-20 transfer(recipient, amount) and returns the
+  transaction hash to Python. The off state is explicit: with no wallet
+  extension present, the button reports it and the manual hash entry in the
+  dashboard remains the fallback path.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin: 0; font-family: "Source Sans Pro", sans-serif; }
+  #pay {
+    width: 100%; padding: 0.55rem 0.75rem; border-radius: 0.5rem;
+    border: 1px solid rgba(49, 51, 63, 0.2); background: #ff4b4b; color: white;
+    font-size: 1rem; font-weight: 600; cursor: pointer;
+  }
+  #pay:disabled { opacity: 0.6; cursor: default; }
+  #status { margin-top: 0.5rem; font-size: 0.85rem; line-height: 1.4; }
+  #status.ok { color: #31333f; }
+  #status.err { color: #d33; }
+  @media (prefers-color-scheme: dark) {
+    #status.ok { color: #fafafa; }
+  }
+</style>
+</head>
+<body>
+<button id="pay" disabled>Loading...</button>
+<div id="status"></div>
+<script>
+"use strict";
+
+let cfg = null;
+let paying = false;
+const btn = document.getElementById("pay");
+const statusEl = document.getElementById("status");
+
+function send(msg) {
+  window.parent.postMessage(Object.assign({ isStreamlitMessage: true }, msg), "*");
+}
+function setComponentValue(value) {
+  send({ type: "streamlit:setComponentValue", dataType: "json", value: value });
+}
+function setHeight() {
+  send({ type: "streamlit:setFrameHeight", height: document.body.scrollHeight + 12 });
+}
+function setStatus(text, isError) {
+  statusEl.textContent = text;
+  statusEl.className = isError ? "err" : "ok";
+  setHeight();
+}
+
+window.addEventListener("message", function (event) {
+  const data = event.data;
+  if (!data || data.type !== "streamlit:render") return;
+  cfg = data.args;
+  btn.textContent = "Pay " + cfg.price + " USDC with your wallet";
+  if (!paying) btn.disabled = false;
+  setHeight();
+});
+
+async function pay() {
+  if (!cfg) return;
+  if (!window.ethereum) {
+    setStatus(
+      "No browser wallet detected. Install MetaMask (or another wallet extension), " +
+      "or use the manual option below to paste a transaction hash.",
+      true
+    );
+    return;
+  }
+  paying = true;
+  btn.disabled = true;
+  try {
+    setStatus("Connecting to your wallet...");
+    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+    const from = accounts[0];
+
+    const chainIdHex = "0x" + Number(cfg.chain_id).toString(16);
+    setStatus("Switching to " + cfg.chain_name + "...");
+    try {
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: chainIdHex }],
+      });
+    } catch (switchErr) {
+      if (switchErr && switchErr.code === 4902) {
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [{
+            chainId: chainIdHex,
+            chainName: cfg.chain_name,
+            nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+            rpcUrls: [cfg.rpc_url],
+            blockExplorerUrls: [cfg.explorer_url],
+          }],
+        });
+      } else {
+        throw switchErr;
+      }
+    }
+
+    // ERC-20 transfer(address,uint256): selector a9059cbb + two 32-byte args
+    const recipient = cfg.recipient.toLowerCase().replace(/^0x/, "").padStart(64, "0");
+    const amount = BigInt(cfg.amount_atomic).toString(16).padStart(64, "0");
+    const dataHex = "0xa9059cbb" + recipient + amount;
+
+    setStatus("Confirm the payment of " + cfg.price + " USDC in your wallet...");
+    const txHash = await window.ethereum.request({
+      method: "eth_sendTransaction",
+      params: [{ from: from, to: cfg.usdc_contract, data: dataHex }],
+    });
+
+    setStatus(
+      "Payment sent (" + txHash.slice(0, 12) + "...). " +
+      "Verifying on-chain and generating your report - this can take a minute."
+    );
+    setComponentValue({ tx_hash: txHash, payer_wallet: from });
+  } catch (err) {
+    const message = err && err.message ? err.message : String(err);
+    setStatus("Payment did not complete: " + message, true);
+    paying = false;
+    btn.disabled = false;
+  }
+}
+
+btn.addEventListener("click", pay);
+send({ type: "streamlit:componentReady", apiVersion: 1 });
+setHeight();
+</script>
+</body>
+</html>
