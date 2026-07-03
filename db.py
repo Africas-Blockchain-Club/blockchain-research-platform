@@ -191,6 +191,24 @@ def get_latest_report(token_symbol):
         return dict(row) if row else None
 
 
+def get_payments_by_payer(payer_address, limit=20):
+    """Returns confirmed payments made by a wallet address, newest first.
+    Backs the Session 3 wallet sign-in: your address is your purchase history."""
+    with get_engine().connect() as conn:
+        rows = (
+            conn.execute(
+                select(payments)
+                .where(payments.c.payer_address == payer_address.lower())
+                .where(payments.c.status == "confirmed")
+                .order_by(payments.c.created_at.desc())
+                .limit(limit)
+            )
+            .mappings()
+            .all()
+        )
+        return [dict(r) for r in rows]
+
+
 def list_recent_reports(limit=10):
     """Returns the N most recent reports across all tokens, newest first."""
     with get_engine().connect() as conn:

@@ -49,6 +49,14 @@ wallet_pay = components.declare_component(
     path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "wallet_pay"),
 )
 
+# Session 3 identity feature: sign in with a wallet address (Web3 identity)
+# instead of an account and password (Web2 identity). Optional - the dashboard
+# works without it. Returns {"address": ...} once connected.
+wallet_connect = components.declare_component(
+    "wallet_connect",
+    path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "wallet_connect"),
+)
+
 import data_science.anthropic_analyst as _analyst_mod
 importlib.reload(_analyst_mod)
 from data_science.anthropic_analyst import generate_anthropic_brief, HAIKU, SONNET, OPUS
@@ -114,6 +122,30 @@ st.sidebar.radio(
     key="sidebar_radio",
     on_change=update_page,
 )
+
+# Web3 identity (Session 3): sign in with a wallet. The address is the
+# identity - no password, no account recovery, no provider who can suspend it.
+with st.sidebar:
+    st.markdown("---")
+    st.caption("Web3 identity")
+    _identity = wallet_connect(key="wallet_identity_component", default=None)
+    if _identity and _identity.get("address"):
+        st.session_state["wallet_identity"] = _identity["address"]
+    _wallet_address = st.session_state.get("wallet_identity")
+    if _wallet_address:
+        st.success(f"Signed in as {_wallet_address[:6]}...{_wallet_address[-4:]}")
+        _past_payments = db.get_payments_by_payer(_wallet_address)
+        if _past_payments:
+            st.caption(f"Reports unlocked by this wallet: {len(_past_payments)}")
+            for _p in _past_payments[:5]:
+                st.caption(f"• {_p['token_symbol']} — {str(_p['created_at'])[:10]}")
+        else:
+            st.caption("No reports unlocked by this wallet yet.")
+    else:
+        st.caption(
+            "Your wallet address is an identity you own outright - "
+            "unlike an email account, nobody can suspend it."
+        )
 
 # Sidebar: show report shortcuts as plain links when reports exist
 if display_reports:

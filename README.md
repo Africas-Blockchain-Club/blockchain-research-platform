@@ -4,6 +4,22 @@ Single source of truth for liquidity-first forensic audit reports, the Streamlit
 
 ---
 
+## The Build Journey
+
+This platform is the protagonist of the Exclusive Friday Web3 & AI Workshop series. It started as a researcher of blockchain use cases, and every session's topic gets built into it as a working feature - so the cohort does not attend lectures about Web3, they watch one codebase evolve into it, commit by commit.
+
+Each session is documented **after** it runs. If you have forked this repo, keep pulling: the next feature lands here after the next Friday session, and the meeting invite tells you the topic before the code tells you the answer.
+
+| Session | Topic | What the platform gained | Lesson notes |
+|---|---|---|---|
+| 2 | Smart contracts and security | Our first deployed contracts: the `SessionFaucet` class treasury and the `StudentRequest` challenge (`contracts/`) | [`sessions/session-2`](../sessions/session-2-smart-contracts-and-security.md) |
+| 3 | Web3 vs Web2 identity, self-custody, AI agents that hold and spend crypto | One-click wallet payments, sign in with your wallet, email delivery as the Web2 counterpart, and the `x402/` agent-payment seed | [`sessions/session-3`](../sessions/session-3-identity-self-custody-and-paying-agents.md) |
+| 4 to 8 | Announced in the session invites | Landing here after each session runs | Coming after each Friday |
+
+**Where this is heading:** by the final session, the platform that today researches tokens will have been paid by humans, paid for itself through an AI agent, been audited, and been handed to the community that watched it grow. Follow the lesson notes in [`sessions/`](../sessions/) to walk the same road.
+
+---
+
 ## Quick Start
 
 1. **Clone the repo**

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<!--
+  Streamlit custom component: sign in with a browser wallet.
+
+  The Session 3 identity feature: a wallet address is a Web3 identity the user
+  owns outright, unlike an email address which a provider can suspend. This
+  component connects to the injected EIP-1193 provider (MetaMask and similar)
+  and returns the selected address to Python. Off state: with no wallet
+  extension present, the button says so and the dashboard works exactly as
+  before - signing in is optional.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin: 0; font-family: "Source Sans Pro", sans-serif; }
+  #connect {
+    width: 100%; padding: 0.4rem 0.6rem; border-radius: 0.5rem;
+    border: 1px solid rgba(49, 51, 63, 0.3); background: transparent;
+    font-size: 0.85rem; font-weight: 600; cursor: pointer; color: inherit;
+  }
+  #connect:disabled { opacity: 0.6; cursor: default; }
+  #status { margin-top: 0.35rem; font-size: 0.75rem; line-height: 1.35; }
+  #status.err { color: #d33; }
+  @media (prefers-color-scheme: dark) { body { color: #fafafa; } }
+</style>
+</head>
+<body>
+<button id="connect">Sign in with your wallet</button>
+<div id="status"></div>
+<script>
+"use strict";
+
+const btn = document.getElementById("connect");
+const statusEl = document.getElementById("status");
+
+function send(msg) {
+  window.parent.postMessage(Object.assign({ isStreamlitMessage: true }, msg), "*");
+}
+function setHeight() {
+  send({ type: "streamlit:setFrameHeight", height: document.body.scrollHeight + 10 });
+}
+function setStatus(text, isError) {
+  statusEl.textContent = text;
+  statusEl.className = isError ? "err" : "";
+  setHeight();
+}
+
+window.addEventListener("message", function (event) {
+  const data = event.data;
+  if (!data || data.type !== "streamlit:render") return;
+  setHeight();
+});
+
+btn.addEventListener("click", async function () {
+  if (!window.ethereum) {
+    setStatus("No browser wallet detected. Install MetaMask to sign in - the dashboard still works without it.", true);
+    return;
+  }
+  btn.disabled = true;
+  try {
+    setStatus("Connecting...");
+    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+    setStatus("");
+    send({ type: "streamlit:setComponentValue", dataType: "json", value: { address: accounts[0] } });
+  } catch (err) {
+    const message = err && err.message ? err.message : String(err);
+    setStatus("Could not connect: " + message, true);
+    btn.disabled = false;
+  }
+});
+
+send({ type: "streamlit:componentReady", apiVersion: 1 });
+setHeight();
+</script>
+</body>
+</html>
