@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en-ZA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ settings.app_name }}{% endblock %} | {{ settings.brand_name }}</title>
+<meta name="description" content="{% block description %}Learn to research a blockchain: what it is for, how it is secured, how its network is running, and what the public data on its native asset shows. Educational research, not financial advice.{% endblock %}">
+<link rel="icon" href="/static/abc-logo-tile-180.png">
+<script src="/static/theme.js"></script>
+<link rel="stylesheet" href="/static/abc-shell.css">
+<link rel="stylesheet" href="/static/site.css">
+</head>
+<body data-home="{{ '1' if home else '0' }}">
+{% if home %}
+<div class="stage" id="stage" aria-hidden="true"><img id="stageStill" alt=""><video id="stageVideo" muted loop playsinline preload="none"></video><div class="shade"></div><div class="tiles" id="tiles"></div></div>
+{% endif %}
+<header class="topbar" id="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/" aria-label="{{ settings.app_name }} home">
+      <img src="/static/abc-logo-tile.png" alt="" width="40" height="40">
+      <span class="brand-text"><span class="wordmark">ABC Research</span><br><span class="brand-sub">Blockchain Research Platform</span></span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="/blockchains/" {% if page == 'blockchains' %}aria-current="page"{% endif %}>Blockchains</a>
+      <a class="secondary" href="/reports/" {% if page == 'reports' %}aria-current="page"{% endif %}>Reports</a>
+      <a class="secondary" href="/how-it-works.html" {% if page == 'method' %}aria-current="page"{% endif %}>How it works</a>
+      <a class="btn" href="{{ app_url }}/research">Research</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" type="button"></button>
+  </div>
+</header>
+{% block hero %}{% endblock %}
+<main id="app">
+  <div class="wrap">
+    {% block content %}{% endblock %}
+    <section class="notice" aria-label="Education, not advice">
+      <span class="kicker">Education, not advice</span>
+      <p>{{ disclaimer }} {{ settings.brand_name }} is not an authorised financial services provider. Crypto assets are high risk; for advice on your own situation, speak to a provider authorised by the FSCA.</p>
+    </section>
+  </div>
+</main>
+<footer class="site">
+  <div>
+    <p><strong>{{ settings.app_name }}</strong> by {{ settings.brand_name }} · Build {{ build }}</p>
+    <nav aria-label="Footer">
+      <a href="/blockchains/">Blockchains</a><a href="/reports/">Reports</a><a href="/how-it-works.html">How it works</a>
+      <a href="{{ app_url }}/research">Research</a><a href="{{ app_url }}/attack-cost">Attack cost calculator</a>
+      <a href="{{ settings.repo_url }}" rel="noopener">Source code</a><a href="{{ settings.repo_url }}/security/policy" rel="noopener">Security</a>
+    </nav>
+  </div>
+</footer>
+<script src="/static/wtc-shell.js"></script>
+<script src="/static/site.js"></script>
+</body>
+</html>

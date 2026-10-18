@@ -1,5 +1,4 @@
 """Shared page pieces. Every value that reaches HTML is escaped here."""
-import datetime
 from html import escape
 
 import streamlit as st
@@ -52,32 +51,6 @@ def risk_cards(checks):
     st.html(f'<div class="brp-grid three">{"".join(cards)}</div>')
 
 
-def generated_label(meta):
-    try:
-        when = datetime.datetime.fromisoformat(meta["generated_at"])
-        return when.strftime("%d %b %Y, %H:%M UTC")
-    except (KeyError, ValueError):
-        return "unknown date"
-
-
-def mode_pill(meta):
-    if meta.get("mode") == "ai":
-        return f'<span class="brp-pill ai">AI write-up ({escape(meta.get("model") or "unknown model")})</span>'
-    return '<span class="brp-pill">Data only, no AI</span>'
-
-
-def report_card_html(meta, href):
-    return (
-        '<article class="brp-card">'
-        f"{mode_pill(meta)}"
-        f"<h3>{escape(meta.get('name') or meta['token'])} ({escape(meta['token'])})</h3>"
-        f'<p>{meta["flagged"]} flagged, {meta["clear"]} clear, {meta["no_data"]} with no data</p>'
-        f'<span class="brp-meta">Data from {generated_label(meta)}</span>'
-        f'<a class="brp-link" href="{escape(href)}" target="_self">Read the report</a>'
-        "</article>"
-    )
-
-
 def footer():
     ai_state = "AI write-ups on" if SETTINGS.ai_enabled else "AI write-ups off"
     if not SETTINGS.payments_enabled:
@@ -86,6 +59,7 @@ def footer():
         import payment_verifier
 
         pay_state = "testnet payment demo on" if payment_verifier.IS_TESTNET else "paid AI write-ups on"
+    site = escape(SETTINGS.site_url)
     st.html(
         '<footer class="brp-footer">'
         f"<p><strong>{escape(SETTINGS.app_name)}</strong> by {escape(SETTINGS.brand_name)}. "
@@ -93,6 +67,9 @@ def footer():
         "<p>Not an authorised financial services provider. Crypto assets are high risk. "
         "For advice on your own situation, speak to a provider authorised by the FSCA.</p>"
         f'<p>Build {escape(BUILD)} · {ai_state} · {pay_state} · '
+        f'<a href="{site}/blockchains/" target="_self">Blockchains</a> · '
+        f'<a href="{site}/reports/" target="_self">Reports</a> · '
+        f'<a href="{site}/how-it-works.html" target="_self">How it works</a> · '
         f'<a href="{escape(SETTINGS.repo_url)}" target="_blank" rel="noopener">Source code</a></p>'
         "</footer>"
     )

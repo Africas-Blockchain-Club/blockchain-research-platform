@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chain_card, report_card %}
+{% block hero %}
+<section class="hero-stage">
+  <div class="inner">
+    <span class="kicker">{{ settings.brand_name }}</span>
+    <h1 class="display"><span class="line">Learn to</span> <span class="line">research a</span> <span class="line accent">blockchain</span></h1>
+    <p class="lede">What is it for? How is it secured? How is its network running today? Start with seven blockchains, read the live data, and learn what every number means. This platform teaches research; it never tells you what to buy or sell.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="/blockchains/">Explore the blockchains</a>
+      <a class="btn btn-onmedia" href="{{ app_url }}/research">Research one live</a>
+    </div>
+    <img class="hero-mascot" src="/static/abc-mascot.png" alt="" width="320" height="346">
+  </div>
+</section>
+{% endblock %}
+{% block content %}
+<section id="blockchains">
+  <div class="sec-head">
+    <span class="kicker">Start here</span>
+    <h2>Seven blockchains, seven different designs</h2>
+    <p class="muted">Each one solves a different problem in a different way. Prices and network data refresh every 15 minutes.</p>
+  </div>
+  <div class="chain-grid">{% for card in cards %}{{ chain_card(card) }}{% endfor %}</div>
+</section>
+<section>
+  <div class="sec-head"><span class="kicker">How it works</span><h2>Three questions, in order</h2></div>
+  <div class="grid-cards three">
+    <article class="card glass"><h3>1. What is the chain for?</h3><p class="muted">Its purpose, how it reaches agreement, and why its native asset exists, from hand-checked profiles with official sources.</p></article>
+    <article class="card glass"><h3>2. How is it running?</h3><p class="muted">Live network data: blocks, fees, validators or hash rate, throughput, and developer activity.</p></article>
+    <article class="card glass"><h3>3. What does the data show?</h3><p class="muted">Ten rule-based risk checks on the native asset and a report that explains every table, so you can check the next chain on your own.</p></article>
+  </div>
+</section>
+{% if reports %}
+<section>
+  <div class="sec-head"><span class="kicker">Latest research</span><h2>Recent reports</h2></div>
+  <div class="chain-grid">{% for meta in reports %}{{ report_card(meta) }}{% endfor %}</div>
+</section>
+{% endif %}
+{% endblock %}

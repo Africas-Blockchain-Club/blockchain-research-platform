@@ -2,9 +2,9 @@
 Entry point: streamlit run dashboards/app.py
 
 Sets up the page, the theme and the top navigation, then hands over to the
-view for the chosen page. Screens follow the job in the order a learner does
-it: start at Home, research a token, read the reports, then the worked
-example and the method behind it.
+view for the chosen page. This app serves live research (with payments) and
+the attack cost calculator; everything else is the static site in sitegen/,
+which loads instantly. In production both sit behind Caddy, the app at /app.
 """
 import logging
 import sys
@@ -21,7 +21,7 @@ import db  # noqa: E402
 from config import ROOT_DIR, SETTINGS  # noqa: E402
 from dashboards.ui.components import footer  # noqa: E402
 from dashboards.ui.theme import apply_theme  # noqa: E402
-from dashboards.views import attack_cost, home, method, reports, research  # noqa: E402
+from dashboards.views import attack_cost, research  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
@@ -61,18 +61,17 @@ apply_theme()
 # The ABC logo tile when it is present; a fork without it gets a tile drawn from config
 BRAND_LOGO = ROOT_DIR / "dashboards" / "static" / "abc-logo-tile.png"
 if BRAND_LOGO.exists():
-    st.logo(str(BRAND_LOGO), size="large", link=None)
+    st.logo(str(BRAND_LOGO), size="large", link=f"{SETTINGS.site_url}/")
 else:
     _write_logo()
     st.logo(str(LOGO_PATH), size="large", link=None)
 db.init_db()
 
+# The public pages (home, blockchains, reports, method) are the static site;
+# this app holds only what needs a live server.
 pages = [
-    st.Page(home.render, title="Home", icon=":material/home:", url_path="home", default=True),
-    st.Page(research.render, title="Research a token", icon=":material/search:", url_path="research"),
-    st.Page(reports.render, title="Reports", icon=":material/description:", url_path="reports"),
+    st.Page(research.render, title="Research", icon=":material/search:", url_path="research", default=True),
     st.Page(attack_cost.render, title="Attack cost", icon=":material/shield:", url_path="attack-cost"),
-    st.Page(method.render, title="How it works", icon=":material/info:", url_path="how-it-works"),
 ]
 st.navigation(pages, position="top").run()
 footer()

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chain_card %}
+{% block title %}Blockchains{% endblock %}
+{% block content %}
+<section>
+  <div class="sec-head">
+    <span class="kicker">Blockchains</span>
+    <h1>Seven blockchains to learn from</h1>
+    <p class="muted">Profiles checked against official sources on {{ checked }}. Live data refreshes every 15 minutes. Any other blockchain can be researched live in the research app.</p>
+  </div>
+  <div class="chain-grid">{% for card in cards %}{{ chain_card(card) }}{% endfor %}</div>
+</section>
+{% endblock %}

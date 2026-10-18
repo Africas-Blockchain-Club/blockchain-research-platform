@@ -20,11 +20,15 @@ ROOT_DIR = Path(__file__).resolve().parent
 DATA_DIR = Path(os.getenv("DATA_DIR") or ROOT_DIR)
 REPORTS_DIR = DATA_DIR / "reports"
 BLUEPRINTS_DIR = ROOT_DIR / "blueprints"
+# The static public site is generated here and served by Caddy in production
+SITE_DIR = Path(os.getenv("SITE_DIR") or DATA_DIR / "site")
+# Snapshots of live network data for the featured chains, refreshed in the background
+NETWORK_DIR = DATA_DIR / "network"
 IMAGES_DIR = DATA_DIR / "data" / "images"
 
 # Bump on every release. The footer shows it so a screenshot always says
 # which build it came from.
-BUILD = "2026.10.18-5"
+BUILD = "2026.10.19-1"
 
 # Current Claude models, cheapest last. Haiku is left out on purpose: a
 # research write-up needs the depth of Sonnet or Opus.
@@ -54,11 +58,6 @@ class Settings:
     brand_accent: str = field(default_factory=lambda: os.getenv("BRAND_ACCENT") or "#b75000")
     # The accent on a dark ground must be lighter to keep AA contrast.
     brand_accent_dark: str = field(default_factory=lambda: os.getenv("BRAND_ACCENT_DARK") or "#f99c00")
-    # Streamlit serves .mp4 as text/plain, which browsers refuse to play, so the
-    # home video comes from a CDN that reads the public repository. Empty turns
-    # the video off; the still image shows either way.
-    home_video_url: str = field(default_factory=lambda: os.getenv("HOME_VIDEO_URL", "https://cdn.jsdelivr.net/gh/"
-        "Africas-Blockchain-Club/blockchain-research-platform@main/dashboards/static/01_home_loop.mp4").strip())
     repo_url: str = field(default_factory=lambda: os.getenv("REPO_URL")
         or "https://github.com/Africas-Blockchain-Club/blockchain-research-platform")
 
@@ -70,6 +69,12 @@ class Settings:
     ai_fallback_model: str = field(default_factory=lambda: (os.getenv("AI_FALLBACK_MODEL") or "claude-opus-5-5").strip())
     # Reasoning depth. Leave empty for a model that does not accept the effort setting.
     ai_effort: str = field(default_factory=lambda: os.getenv("AI_EFFORT", "high").strip())
+
+    # Where the static site and the research app live. In production both sit
+    # behind one Caddy server, so the defaults are paths on the same host.
+    site_url: str = field(default_factory=lambda: (os.getenv("SITE_URL") or "").rstrip("/"))
+    app_url: str = field(default_factory=lambda: (os.getenv("APP_URL") or "/app").rstrip("/"))
+    site_build_on_save: bool = field(default_factory=lambda: _flag("SITE_BUILD_ON_SAVE", True))
 
     # Chart screenshots need Playwright and a browser; switch off on small hosts.
     screenshots_enabled: bool = field(default_factory=lambda: _flag("SCREENSHOTS_ENABLED", True))

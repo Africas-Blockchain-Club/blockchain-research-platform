@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}How it works{% endblock %}
+{% block content %}
+<section class="split">
+  <div class="prose">
+    <span class="kicker">How it works</span>
+    <h1>Research, not advice</h1>
+    <p class="lede">What this platform does, what it will never do, and how to check its work.</p>
+
+    <h2>Blockchain first</h2>
+    <p>A coin's price says little about the system underneath it. Every report starts with the blockchain: what it was built for, how its computers agree on the order of transactions, what an attacker would need to control, and how its network is running right now. Only then does it turn to the native asset: its supply, its market and how it trades.</p>
+    <p>Seven blockchains have hand-checked profiles with official sources: {% for p in featured %}{{ p.chain }}{{ ", " if not loop.last else "." }}{% endfor %} Any other blockchain can be researched live from its public data.</p>
+
+    <h2>What it will never do</h2>
+    <ul>
+      <li>Tell you to buy, sell or hold anything.</li>
+      <li>Give a blockchain or a coin a rating, a score, a verdict or a target price.</li>
+      <li>Tailor anything to your money, goals or circumstances.</li>
+    </ul>
+    <p>Those things are financial advice. In South Africa, giving financial advice on crypto assets requires authorisation from the Financial Sector Conduct Authority (FSCA), and {{ settings.brand_name }} is not an authorised provider. Every AI write-up is checked for advice-style wording before it is saved, and a write-up that fails the check is not published.</p>
+
+    <h2>The risk checks</h2>
+    <p>Each check compares one number with a teaching threshold. The thresholds make patterns visible to learners; they are not industry standards. The checks are never added into a score. <strong>No data</strong> means the platform could not measure something, which is not the same as the risk being absent.</p>
+    <div class="table-scroll"><table>
+      <tr><th>Check</th><th>Teaching threshold</th><th>Source</th></tr>
+      {% for c in checks %}<tr><td>{{ c.name }}</td><td>{{ c.threshold }}</td><td>{{ c.source }}</td></tr>{% endfor %}
+    </table></div>
+
+    <h2>Data-only reports and AI write-ups</h2>
+    <p>A <strong>data-only report</strong> is built by code from public data. It needs no AI and costs nothing. An <strong>AI write-up</strong> adds plain-English explanation from the same data. AI can make mistakes, so every write-up names the model that wrote it, and every number should be checked against the sources listed at its end.</p>
+
+    <h2>How this site is built</h2>
+    <p>The pages you are reading are plain HTML, rebuilt whenever a report is saved and whenever the live network data refreshes, so they load instantly. Live research and payments run in a separate research app. The source code, tests, security policy and threat model are public: <a href="{{ settings.repo_url }}" rel="noopener">{{ settings.repo_url }}</a>.</p>
+  </div>
+  <aside class="card glass">
+    <span class="kicker">Start</span>
+    <a class="btn btn-primary" href="/blockchains/">Explore the blockchains</a>
+    <a class="btn btn-ghost" href="{{ app_url }}/research">Research one live</a>
+    <a class="btn btn-ghost" href="{{ app_url }}/attack-cost">What does an attack cost?</a>
+  </aside>
+</section>
+{% endblock %}

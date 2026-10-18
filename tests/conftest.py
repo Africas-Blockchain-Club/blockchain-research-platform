@@ -6,6 +6,8 @@ from pathlib import Path
 os.environ["AI_ENABLED"] = "false"
 os.environ["PAYMENTS_ENABLED"] = "false"
 os.environ["SCREENSHOTS_ENABLED"] = "false"
+# Tests build the site explicitly where they need it
+os.environ["SITE_BUILD_ON_SAVE"] = "false"
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:

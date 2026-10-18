@@ -9,7 +9,6 @@ until a transaction verifies on-chain.
 import re
 import uuid
 
-import requests
 import streamlit as st
 from sqlalchemy.exc import IntegrityError
 
@@ -19,6 +18,7 @@ import payment_verifier
 from config import SETTINGS
 from dashboards.ui.components import disclaimer_notice, notice, page_header, risk_cards, stat_tiles
 from dashboards.ui.wallet import wallet_connect, wallet_pay
+from data_analytics.chains import FEATURED, PROFILES
 from data_analytics.risk_profile import summarise_checks
 from data_science.compliance import AdviceLanguageError
 from data_science.llm import AIRefusalError, AIResponseError, AIUnavailableError
@@ -26,44 +26,25 @@ from payment_verifier import PaymentVerificationError
 from tools import report_store
 from tools.report_generator import fetch_and_analyse, normalise_token, save_ai_report, save_data_report
 
-STABLECOINS = {"USDT", "USDC", "BUSD", "DAI", "TUSD", "USDD", "FRAX", "USDP", "GUSD",
-               "LUSD", "SUSD", "CUSD", "FDUSD", "PYUSD", "USDE", "EURC", "USDS"}
-FALLBACK_TOP_TOKENS = ["BTC", "ETH", "SOL", "BNB", "AVAX", "DOT", "LINK", "ADA", "ARB", "OP"]
 AI_ERRORS = (AIUnavailableError, AIRefusalError, AIResponseError, AdviceLanguageError)
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
-@st.cache_data(ttl=604800, show_spinner=False)  # the list changes slowly; refresh weekly
-def top_tokens():
-    """The ten largest non-stablecoin tokens by market cap, or a fixed list
-    when CoinGecko cannot be reached. Returns (symbols, note)."""
-    try:
-        resp = requests.get(
-            "https://api.coingecko.com/api/v3/coins/markets",
-            params={"vs_currency": "usd", "order": "market_cap_desc", "per_page": 50, "page": 1},
-            timeout=10,
-        )
-        resp.raise_for_status()
-        symbols = []
-        for coin in resp.json():
-            symbol = coin.get("symbol", "").upper()
-            if symbol and symbol not in STABLECOINS and symbol not in symbols:
-                symbols.append(symbol)
-            if len(symbols) == 10:
-                break
-        return symbols, "Ten largest by market cap, from CoinGecko"
-    except Exception:
-        return FALLBACK_TOP_TOKENS, "CoinGecko was unavailable, so this is a fixed list"
-
-
 def _choose_token():
-    symbols, note = top_tokens()
+    featured = [f"{PROFILES[s]['chain']} ({s})" for s in FEATURED]
+    # A link from the static site (?token=XRP) arrives with its blockchain chosen
+    linked = normalise_token(st.query_params.get("token", ""))
+    preset = next((i for i, s in enumerate(FEATURED) if s == linked), None)
     col_pick, col_type = st.columns(2)
     with col_pick:
-        picked = st.selectbox("Pick a token", symbols, index=None, placeholder="Choose a token", help=note)
+        picked = st.selectbox("Pick a blockchain", featured, index=preset, placeholder="Choose a blockchain",
+                              help="The seven blockchains with hand-checked profiles and live network data.")
     with col_type:
-        typed = st.text_input("Or type a ticker or name", placeholder="For example ENA or solana")
-    raw = typed.strip() or (picked or "")
+        typed = st.text_input("Or type any blockchain or coin", value="" if preset is not None else linked,
+                              placeholder="For example Cardano or ADA")
+    if picked and not typed.strip():
+        return FEATURED[featured.index(picked)]
+    raw = typed.strip()
     return normalise_token(raw) if raw else ""
 
 
@@ -82,7 +63,10 @@ def _fetch(token):
 
 def _saved(meta):
     st.success(f"The {meta['token']} report is saved.")
-    st.html(f'<a class="brp-link" href="reports?token={meta["token"]}" target="_self">Read the {meta["token"]} report</a>')
+    st.html(
+        f'<a class="brp-link" href="{SETTINGS.site_url}/reports/{meta["token"]}.html" target="_self">'
+        f'Read the {meta["token"]} report</a>'
+    )
 
 
 def _write_ai(analysis, model, payment_id=None):
@@ -309,17 +293,17 @@ def _wallet_identity():
 
 def render():
     page_header(
-        "Step 1: free data",
-        "Research a token",
-        "Fetch the public data first. It is free, and it shows the risk checks straight away.",
+        "Live research",
+        "Research a blockchain",
+        "Fetch the live data first: the blockchain's network, its native asset and the risk checks. It is free.",
     )
     disclaimer_notice()
 
     token = _choose_token()
-    fetch = st.button("Fetch the data" if token else "Choose a token first", type="primary", disabled=not token)
+    fetch = st.button("Fetch the data" if token else "Choose a blockchain first", type="primary", disabled=not token)
     if fetch:
         if not report_store.is_valid_token(token):
-            st.error("Tickers use letters and digits only, for example SOL. Check the spelling and try again.")
+            st.error("Use a blockchain name or its coin's ticker, for example Cardano or ADA. Check the spelling and try again.")
         else:
             _fetch(token)
 
@@ -328,6 +312,20 @@ def render():
         return
 
     st.divider()
+    chain = analysis["data_summary"].get("blockchain") or {}
+    profile, network = chain.get("profile"), chain.get("network")
+    if profile:
+        st.subheader(f"{profile['chain']}: what it is for")
+        st.markdown(profile["purpose"])
+    if network and network.get("metrics"):
+        st.subheader("The network right now")
+        st.table({"Measure": [m["name"] for m in network["metrics"]],
+                  "Value": [m["value"] for m in network["metrics"]],
+                  "What it means": [m["meaning"] for m in network["metrics"]]})
+        st.caption(f"Source: {network['source']}.")
+    elif network:
+        notice("Network data unavailable", f"The network could not be read: {network.get('error')}", tone="warn")
+
     st.subheader(f"Risk checks for {analysis['token']}")
     stat_tiles(summarise_checks(analysis["risk_checks"]))
     risk_cards(analysis["risk_checks"])

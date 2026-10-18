@@ -18,15 +18,16 @@ from config import SETTINGS
 
 SHORT_DISCLAIMER = (
     "Educational research only, not financial advice. Nothing here recommends "
-    "buying, selling or holding any token."
+    "buying, selling or holding any crypto asset."
 )
 
 
 def long_disclaimer():
     return (
         "> **Educational research, not financial advice.** This report explains what public "
-        "data says about a token so that you can learn to read it. It does not recommend "
-        "buying, selling or holding any token, and it does not take your circumstances into "
+        "data says about a blockchain and its native asset so that you can learn to read it. It "
+        "does not recommend buying, selling or holding any crypto asset, and it does not take your "
+        "circumstances into "
         f"account. {SETTINGS.brand_name} is not an authorised financial services provider. "
         "Crypto assets are high risk and their price can fall to zero. Before you invest, "
         "speak to a financial services provider authorised by the Financial Sector Conduct "
