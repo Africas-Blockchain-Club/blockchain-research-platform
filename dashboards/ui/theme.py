@@ -12,7 +12,8 @@ rather than copied (see docs/FRONTEND.md):
 - the theme follows Streamlit's own light/dark setting (st.context.theme),
   falling back to the operating system preference, dark when there is none;
 - navigation is Streamlit's top navigation bar, not the shell's menu;
-- media are served by Streamlit's static file server (dashboards/static).
+- the public pages (home, blockchains, reports) are the static site in
+  sitegen/; this app keeps only live research and the attack cost page.
 """
 import streamlit as st
 
@@ -114,36 +115,6 @@ header[data-testid="stHeader"] {
 [data-testid="stMarkdownContainer"] blockquote { border-left:3px solid var(--blue); background:var(--wash); padding:0.75rem 1rem; border-radius:0 12px 12px 0; color:var(--text); }
 
 /* Shared components */
-/* Home stage: the muted video loop behind a dark overlay, the still as poster and
-   fallback, the brand band gradient underneath when no media loads */
-.brp-stage { position:relative; overflow:hidden; border-radius:16px; color:#fff;
-  background:linear-gradient(120deg,var(--band-a) 0%,var(--band-b) 100%);
-  min-height:clamp(420px, calc(100svh - 160px), 640px); display:grid; align-items:end; }
-.brp-stage video, .brp-stage .brp-still { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-.brp-stage::after { content:""; position:absolute; inset:0;
-  background:linear-gradient(0deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.55) 45%, rgba(0,0,0,0.35) 100%); }
-.brp-stage-inner { position:relative; z-index:1; display:grid; gap:1.5rem; align-items:end;
-  padding:clamp(1.75rem,6vw,4rem) clamp(1.25rem,5vw,3.5rem); grid-template-columns:1fr; }
-@media (min-width:900px) { .brp-stage-inner { grid-template-columns:1.4fr 0.6fr; } }
-.brp-stage-copy { display:grid; gap:1rem; }
-.brp-mascot { width:100%; max-width:20rem; height:auto; justify-self:end; filter:drop-shadow(0 20px 40px rgba(0,0,0,0.5)); }
-@media (max-width:899px) { .brp-mascot { display:none; } }
-@media (prefers-reduced-motion:reduce) { .brp-stage video { display:none; } }
-.brp-kicker { font-size:0.75rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--subtle); }
-.brp-stage .brp-kicker { color:var(--band-text); }
-.brp-display { margin:0; font-weight:var(--w-display); letter-spacing:var(--track-display);
-  line-height:1.0; font-size:min(clamp(2.5rem,7.5vw,5rem),9vh); color:#fff; }
-.brp-display .line { display:block; }
-.brp-display .accent { color:#f99c00; }
-.brp-lede { margin:0; max-width:52ch; font-weight:var(--w-light); font-size:clamp(1.05rem,2.2vw,1.25rem); line-height:1.5; color:rgba(255,255,255,0.85); }
-.brp-actions { display:flex; flex-wrap:wrap; gap:0.75rem; margin-top:0.25rem; }
-.brp-btn { display:inline-flex; align-items:center; justify-content:center; min-height:48px; padding:0.7rem 1.6rem;
-  border-radius:999px; font-weight:600; font-size:1rem; text-decoration:none !important; border:1.5px solid transparent; }
-/* On the stage the ground is always dark, so the bright amber holds in both themes */
-.brp-btn-light { background:#f99c00; color:#0a0a0a !important; }
-.brp-btn-outline { background:rgba(255,255,255,0.10); border-color:rgba(255,255,255,0.35); color:#fff !important; backdrop-filter:blur(6px); }
-.brp-btn-light:hover, .brp-btn-outline:hover { box-shadow:0 0 25px 4px var(--glow); }
-
 .brp-head { display:grid; gap:0.4rem; margin:0.5rem 0 1rem; }
 .brp-head h1 { margin:0; padding:0; color:var(--head); font-weight:800; font-size:clamp(1.75rem,4vw,2.5rem); line-height:1.1; }
 .brp-head p { margin:0; color:var(--muted); font-weight:var(--w-light); font-size:clamp(1.0rem,2vw,1.15rem); }
@@ -189,7 +160,7 @@ header[data-testid="stHeader"] {
 
 /* Sections fade and rise once; nothing moves for people who ask for less motion */
 @media (prefers-reduced-motion:no-preference) {
-  .brp-stage-copy, .brp-head { animation:brp-rise 0.5s ease-out both; }
+  .brp-head { animation:brp-rise 0.5s ease-out both; }
   @keyframes brp-rise { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
 }
 """

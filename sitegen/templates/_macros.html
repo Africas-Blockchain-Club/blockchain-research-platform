@@ -1,0 +1,24 @@
+{% macro chain_card(card) -%}
+<a class="card glass chain-card" href="/blockchains/{{ card.profile.slug }}.html">
+  <span class="kicker">{{ card.profile.chain }} · {{ card.symbol }}</span>
+  {% if card.price and card.price.usd %}
+  <span class="price">${{ "{:,.2f}".format(card.price.usd) }}</span>
+  <span class="change">R{{ "{:,.2f}".format(card.price.zar) }} · {{ "{:+.2f}".format(card.price.usd_24h_change or 0) }}% in 24 hours</span>
+  {% endif %}
+  <p class="muted">{{ card.profile.purpose }}</p>
+  {% if card.network.metrics %}
+  <ul class="metric-list">
+    {% for m in card.network.metrics[:2] %}<li>{{ m.name }}: <strong>{{ m.value }}</strong></li>{% endfor %}
+  </ul>
+  {% endif %}
+</a>
+{%- endmacro %}
+
+{% macro report_card(meta) -%}
+<a class="card glass chain-card" href="/reports/{{ meta.token }}.html">
+  <span class="kicker">{{ 'AI write-up' if meta.mode == 'ai' else 'Data only' }}</span>
+  <h3>{{ meta.name }} ({{ meta.token }})</h3>
+  <p class="muted">{{ meta["flagged"] }} flagged · {{ meta["clear"] }} clear · {{ meta["no_data"] }} no data</p>
+  <span class="small muted">Data from {{ meta.generated_at | when }}</span>
+</a>
+{%- endmacro %}

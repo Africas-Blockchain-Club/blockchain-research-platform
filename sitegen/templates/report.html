@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ meta.name }} ({{ meta.token }}) report{% endblock %}
+{% block content %}
+<section class="split">
+  <div class="prose">
+    <span class="kicker">{{ 'AI write-up by ' ~ meta.model if meta.mode == 'ai' else 'Data-only report, no AI' }}</span>
+    <h1>{{ profile.chain ~ ' (' ~ meta.token ~ ')' if profile else meta.name ~ ' (' ~ meta.token ~ ')' }}</h1>
+    <p class="muted">Data from {{ meta.generated_at | when }}</p>
+    {{ long_disclaimer }}
+    <h2 id="risk-checks">Risk checks</h2>
+    <div class="stats3">
+      <div class="stat"><span class="v">{{ counts["flagged"] }}</span><span class="k">Flagged</span></div>
+      <div class="stat"><span class="v">{{ counts["clear"] }}</span><span class="k">Clear</span></div>
+      <div class="stat"><span class="v">{{ counts["no_data"] }}</span><span class="k">No data</span></div>
+    </div>
+    <p class="muted">Each check compares one number with a teaching threshold. No data means the platform could not measure it, not that the risk is absent. The checks are never added into a score.</p>
+    <div class="grid-cards three">
+      {% for c in meta.risk_checks %}
+      <article class="card glass {{ c.status }}">
+        <span class="status {{ c.status }}">{{ status_labels[c.status] }}</span>
+        <h3>{{ c.name }}</h3>
+        <p><strong>Measured:</strong> {{ c.value }}</p>
+        <p><strong>Teaching threshold:</strong> {{ c.threshold }}</p>
+        <p class="muted">{{ c.meaning }}</p>
+        <span class="small muted">Source: {{ c.source }}</span>
+      </article>
+      {% endfor %}
+    </div>
+    {% for title, html in sections %}<div id="s{{ loop.index }}">{{ html }}</div>{% endfor %}
+  </div>
+  <aside class="card glass">
+    <span class="kicker">In this report</span>
+    <a href="#risk-checks">Risk checks</a>
+    {% for title, html in sections %}<a href="#s{{ loop.index }}">{{ title }}</a>{% endfor %}
+    <span class="aside-rule" aria-hidden="true"></span>
+    {% if has_pdf %}<a class="btn btn-ghost" href="/reports/{{ meta.token }}.pdf" download>Download PDF</a>{% endif %}
+    <a class="btn btn-ghost" href="/reports/{{ meta.token }}.md" download>Download markdown</a>
+    <a class="btn btn-primary" href="{{ app_url }}/research?token={{ meta.token }}">Refresh with live data</a>
+  </aside>
+</section>
+{% endblock %}

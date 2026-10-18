@@ -1,0 +1,69 @@
+/* Site-specific additions on top of abc-shell.css. Tokens only; no new colours. */
+
+/* Navigation: one row; on narrow screens it scrolls inside itself, never the page */
+.nav { display:flex; gap:0.25rem; align-items:center; overflow-x:auto; scrollbar-width:none; min-width:0; }
+.nav::-webkit-scrollbar { display:none; }
+.nav a { white-space:nowrap; text-decoration:none; color:var(--muted); font-weight:600; font-size:0.9375rem; padding:0.6rem 0.8rem; border-radius:var(--pill); min-height:44px; display:inline-flex; align-items:center; }
+.nav a:hover, .nav a[aria-current="page"] { color:var(--head); background:var(--glass); }
+.nav a.btn { color:var(--on-blue); background:var(--blue); padding:0.6rem 1.1rem; }
+.nav a.btn:hover { color:var(--on-blue); background:var(--blue-hover); }
+body.is-home .topbar.clear .nav a:not(.btn) { color:rgba(255,255,255,0.88); }
+@media (max-width:640px) { .brand-text { display:none; } }
+.brand { text-decoration:none; color:inherit; }
+.brand img { border-radius:0; }
+
+/* Home hero: the elephant stands beside the headline on wide screens */
+.hero-stage .inner { position:relative; }
+.hero-mascot { position:absolute; right:var(--pad); bottom:clamp(1.5rem,5vh,3rem); width:min(26vw, 20rem); height:auto; filter:drop-shadow(0 20px 40px rgba(0,0,0,0.5)); pointer-events:none; }
+@media (max-width:899px) { .hero-mascot { display:none; } }
+.display .accent { color:#f99c00; }
+/* ABC tiles: amber instead of WTC blue on phones */
+@media (max-width:767px) { .tile.t-blue { background:rgba(249,156,0,0.45); } }
+
+/* Blockchain cards */
+.chain-grid { display:grid; gap:1rem; grid-template-columns:1fr; }
+@media (min-width:720px) { .chain-grid { grid-template-columns:repeat(2,1fr); } }
+@media (min-width:1100px) { .chain-grid { grid-template-columns:repeat(3,1fr); } }
+.chain-card { text-decoration:none; color:inherit; }
+.chain-card:hover { border-color:var(--blue); box-shadow:0 0 25px 2px var(--accent-glow); }
+.chain-card .price { font-size:1.5rem; font-weight:800; color:var(--head); font-variant-numeric:tabular-nums; }
+.chain-card .change { font-size:0.9375rem; color:var(--muted); }
+.metric-list { display:grid; gap:0.35rem; margin:0; padding:0; list-style:none; font-size:0.9375rem; color:var(--muted); }
+.metric-list strong { color:var(--head); font-weight:600; }
+
+/* Long text pages: a reading column with a sticky side panel from 1000px */
+.split { display:grid; gap:1.5rem; grid-template-columns:1fr; }
+@media (min-width:1000px) { .split { grid-template-columns:minmax(0,1fr) 20rem; align-items:start; } .split aside { position:sticky; top:84px; } }
+
+/* Report prose */
+.prose { display:flex; flex-direction:column; gap:1rem; min-width:0; }
+.prose h2 { margin-top:1rem; } .prose h3 { margin-top:0.5rem; }
+.prose p, .prose li { color:var(--text); font-size:1rem; line-height:var(--lh-body); }
+.prose blockquote { margin:0; border-left:3px solid var(--blue); background:var(--glass); padding:0.75rem 1rem; border-radius:0 12px 12px 0; }
+.prose a { color:var(--blue); word-break:break-word; }
+.table-scroll { width:100%; overflow-x:auto; }
+.prose table { width:100%; border-collapse:collapse; font-size:0.9375rem; }
+.prose th, .prose td { text-align:left; padding:0.6rem 0.65rem; border-bottom:1px solid var(--line); vertical-align:top; }
+.prose th { font-size:0.75rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--subtle); }
+
+/* Risk checks */
+.status { display:inline-flex; width:fit-content; font-size:0.8125rem; font-weight:700; padding:0.2rem 0.7rem; border-radius:var(--pill); background:var(--wash); color:var(--muted); }
+.status.flagged { background:var(--warn-wash); color:var(--warn); }
+.card.flagged { border-left:4px solid var(--warn); }
+.card.no_data { border-left:4px dashed var(--line-strong); }
+.stats3 { display:grid; gap:0.75rem; grid-template-columns:repeat(3,1fr); }
+.stat { background:var(--glass); border:1px solid var(--glass-line); border-radius:12px; padding:0.9rem 1rem; display:grid; gap:0.15rem; }
+.stat .v { font-size:1.75rem; font-weight:800; color:var(--head); font-variant-numeric:tabular-nums; }
+.stat .k { font-size:0.8125rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--subtle); }
+
+.notice { border-radius:12px; padding:1rem 1.2rem; background:var(--blue-wash); display:grid; gap:0.3rem; }
+.notice .kicker { color:var(--blue); }
+.split aside { display:flex; flex-direction:column; gap:0.75rem; } .split aside .price { font-size:1.75rem; font-weight:800; color:var(--head); }
+.mascot-fill { width:100%; height:auto; }
+/* Phones: keep the main action (Research) and the first section in view; the rest are in the footer */
+@media (max-width:640px) { .nav a.secondary { display:none; } .nav { overflow:visible; } }
+footer.site nav { display:flex; flex-wrap:wrap; gap:0.25rem 1rem; margin-top:0.5rem; }
+footer.site a { color:var(--blue); }
+.split aside a:not(.btn) { color:var(--blue); text-decoration:none; font-weight:600; min-height:32px; display:inline-flex; align-items:center; }
+.split aside a:not(.btn):hover { text-decoration:underline; }
+.aside-rule { display:block; border-top:1px solid var(--line); margin:0.25rem 0; }

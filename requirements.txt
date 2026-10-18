@@ -1,6 +1,8 @@
 # Runtime dependencies, pinned so every fork installs the same versions.
 anthropic==0.105.2
+Jinja2==3.1.6
 Markdown==3.10.2
+MarkupSafe==3.0.4
 playwright==1.58.0
 psycopg2-binary==2.9.12
 python-dotenv==1.2.1

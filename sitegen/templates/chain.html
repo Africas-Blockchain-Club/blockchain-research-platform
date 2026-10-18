@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% set p = card.profile %}
+{% block title %}{{ p.chain }}{% endblock %}
+{% block description %}{{ p.chain }}: what it is for, how it reaches agreement, and how its network is running right now. Educational research, not financial advice.{% endblock %}
+{% block content %}
+<section class="split">
+  <div class="prose">
+    <span class="kicker">Blockchain profile · {{ card.symbol }}</span>
+    <h1>{{ p.chain }}</h1>
+    <p class="lede">{{ p.purpose }}</p>
+    <h2>How it works</h2>
+    <div class="table-scroll"><table>
+      <tr><th>Launched</th><td>{{ p.launched }}</td></tr>
+      <tr><th>How it reaches agreement</th><td>{{ p.consensus }}</td></tr>
+      <tr><th>What can be built on it</th><td>{{ p.programmability }}</td></tr>
+      <tr><th>What {{ card.symbol }} does</th><td>{{ p.asset_role }}</td></tr>
+      <tr><th>Main uses today</th><td>{{ p.uses | join(", ") }}</td></tr>
+    </table></div>
+    <h2>The network right now</h2>
+    {% if card.network.metrics %}
+    <div class="table-scroll"><table>
+      <tr><th>Measure</th><th>Value</th><th>What it means</th></tr>
+      {% for m in card.network.metrics %}<tr><td>{{ m.name }}</td><td><strong>{{ m.value }}</strong></td><td>{{ m.meaning }}</td></tr>{% endfor %}
+    </table></div>
+    <p class="small muted">Source: {{ card.network.source }}. Read {{ card.fetched_at | when }}.</p>
+    {% elif card.network.error %}
+    <p>The network could not be read at the last refresh ({{ card.network.error }}).</p>
+    {% else %}
+    <p>Live network data appears here after the first refresh.</p>
+    {% endif %}
+    <h2>Check it yourself</h2>
+    <ul>{% for url in p.learn_more %}<li><a href="{{ url }}" rel="noopener">{{ url }}</a></li>{% endfor %}
+      <li><a href="https://github.com/{{ p.repo }}" rel="noopener">github.com/{{ p.repo }}</a> (main client software)</li></ul>
+    <p class="small muted">Profile checked against these sources on {{ checked }}.</p>
+  </div>
+  <aside class="card glass">
+    <span class="kicker">{{ card.symbol }}</span>
+    {% if card.price and card.price.usd %}
+    <span class="price">${{ "{:,.2f}".format(card.price.usd) }}</span>
+    <span class="muted">R{{ "{:,.2f}".format(card.price.zar) }} · {{ "{:+.2f}".format(card.price.usd_24h_change or 0) }}% in 24 hours</span>
+    {% endif %}
+    {% if card.report %}
+    <a class="btn btn-primary" href="/reports/{{ card.symbol }}.html">Read the full report</a>
+    <span class="small muted">Report data from {{ card.report.generated_at | when }}</span>
+    {% endif %}
+    <a class="btn btn-ghost" href="{{ app_url }}/research?token={{ card.symbol }}">Research it live</a>
+  </aside>
+</section>
+{% endblock %}

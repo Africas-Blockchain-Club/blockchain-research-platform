@@ -11,12 +11,15 @@ by a model, so they cannot be dropped or reworded by one.
 """
 import datetime
 import json
+import logging
 import re
 
 import db
-from config import REPORTS_DIR
+from config import REPORTS_DIR, SETTINGS
 from data_analytics.risk_profile import risk_checks_markdown, summarise_checks
 from data_science.compliance import long_disclaimer
+
+log = logging.getLogger(__name__)
 
 FORMAT_VERSION = 3
 MODE_AI = "ai"
@@ -132,7 +135,21 @@ def save_report(token, body, *, mode, model, risk_checks, data_summary, screensh
         screenshot_path=screenshot_path,
         markdown=frontmatter + markdown,
     )
+    _rebuild_site()
     return meta
+
+
+def _rebuild_site():
+    """Publish the new report on the static site. A failed rebuild is logged
+    loudly but never loses the saved report; the next rebuild picks it up."""
+    if not SETTINGS.site_build_on_save:
+        return
+    try:
+        from sitegen.build import build_site
+
+        build_site()
+    except Exception:
+        log.exception("The report was saved, but the static site could not be rebuilt")
 
 
 def strip_frontmatter(text):

@@ -18,6 +18,7 @@ CHECKED = "18 October 2026"
 
 PROFILES = {
     "BTC": {
+        "coingecko_id": "bitcoin",
         "repo": "bitcoin/bitcoin",
         "chain": "Bitcoin",
         "slug": "bitcoin",
@@ -31,6 +32,7 @@ PROFILES = {
         "learn_more": ["https://bitcoin.org/bitcoin.pdf", "https://developer.bitcoin.org/devguide/"],
     },
     "ETH": {
+        "coingecko_id": "ethereum",
         "repo": "ethereum/go-ethereum",
         "chain": "Ethereum",
         "slug": "ethereum",
@@ -44,6 +46,7 @@ PROFILES = {
         "learn_more": ["https://ethereum.org/en/developers/docs/", "https://ethereum.org/en/roadmap/merge/"],
     },
     "SOL": {
+        "coingecko_id": "solana",
         "repo": "anza-xyz/agave",
         "chain": "Solana",
         "slug": "solana",
@@ -57,6 +60,7 @@ PROFILES = {
         "learn_more": ["https://solana.com/docs", "https://solana.com/solana-whitepaper.pdf"],
     },
     "XRP": {
+        "coingecko_id": "ripple",
         "repo": "XRPLF/rippled",
         "chain": "XRP Ledger",
         "slug": "xrp-ledger",
@@ -70,6 +74,7 @@ PROFILES = {
         "learn_more": ["https://xrpl.org/docs", "https://xrpl.org/docs/concepts/consensus-protocol"],
     },
     "BNB": {
+        "coingecko_id": "binancecoin",
         "repo": "bnb-chain/bsc",
         "chain": "BNB Chain",
         "slug": "bnb-chain",
@@ -83,6 +88,7 @@ PROFILES = {
         "learn_more": ["https://docs.bnbchain.org/", "https://www.bnbchain.org/en/bnb-smart-chain"],
     },
     "AVAX": {
+        "coingecko_id": "avalanche-2",
         "repo": "ava-labs/avalanchego",
         "chain": "Avalanche",
         "slug": "avalanche",
@@ -96,6 +102,7 @@ PROFILES = {
         "learn_more": ["https://build.avax.network/docs", "https://www.avax.network/"],
     },
     "HYPE": {
+        "coingecko_id": "hyperliquid",
         "repo": "hyperliquid-dex/node",
         "chain": "Hyperliquid",
         "slug": "hyperliquid",
