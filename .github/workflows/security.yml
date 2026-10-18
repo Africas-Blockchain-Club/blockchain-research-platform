@@ -77,7 +77,8 @@ jobs:
           curl -fsS http://localhost:8080/ | grep -q "Learn to"
           curl -fsSI http://localhost:8080/ | grep -qi "content-security-policy"
           # The slim image has no ps; read each process owner from /proc instead
-          owners=$(docker exec app sh -c 'for p in /proc/[0-9]*; do tr "\0" " " < $p/cmdline 2>/dev/null | grep -qE "caddy run|streamlit run|refresh_networks" && stat -c %U $p; done' | sort -u)
+          # (the probe's own shell runs as root and contains the pattern, so it skips itself)
+          owners=$(docker exec app sh -c 'for p in /proc/[0-9]*; do [ "$p" = "/proc/$$" ] && continue; tr "\0" " " < $p/cmdline 2>/dev/null | grep -qE "caddy run|streamlit run|refresh_networks" && stat -c %U $p; done; true' | sort -u)
           echo "Process owners: $owners"
           test "$owners" = "app"
           docker logs app | tail -20
