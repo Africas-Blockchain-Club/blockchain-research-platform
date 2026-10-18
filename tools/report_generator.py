@@ -16,6 +16,7 @@ import datetime
 import logging
 
 from config import SETTINGS
+from data_analytics.chains import CHAIN_ALIASES, profile
 from data_analytics.data_report import build_data_report, quoted_passages
 from data_analytics.metrics import compute_derived_metrics
 from data_analytics.risk_profile import compute_risk_checks
@@ -31,6 +32,8 @@ from data_engineering.fetchers import (
     fetch_usd_zar,
     token_contracts,
 )
+from data_engineering.github_activity import fetch_github_activity
+from data_engineering.networks import fetch_network
 from data_engineering.screenshot_bot import capture_dexscreener_chart
 from data_science.ai_generator import generate_ai_report, validate_structure
 from data_science.compliance import assert_educational
@@ -61,9 +64,10 @@ _TOKEN_ALIASES = {
 
 
 def normalise_token(token):
-    """Resolve full names and known aliases to the canonical ticker symbol."""
-    upper = token.strip().upper()
-    return _TOKEN_ALIASES.get(upper, upper)
+    """Resolve chain names, full names and known aliases to the native asset's
+    ticker symbol, so "Bitcoin", "solana" and "XRP Ledger" all work."""
+    upper = " ".join(token.strip().upper().split())
+    return CHAIN_ALIASES.get(upper) or _TOKEN_ALIASES.get(upper, upper)
 
 
 def _listed_on_coingecko(coingecko_data):
@@ -107,6 +111,9 @@ def fetch_and_analyse(token, log_fn=None):
     defillama_data = fetch_defillama_data(token, name=coingecko_data.get("name"))
     ultrasound_data = fetch_ultrasound_data(token) if token == "ETH" else {}
 
+    say("Reading the blockchain's live network data...")
+    network = fetch_network(token)
+
     rate, rate_source = fetch_usd_zar()
     if rate is None:
         say(f"Live exchange rate unavailable ({rate_source}); using the configured rate of {SETTINGS.fallback_usd_zar} ZAR per USD.")
@@ -116,8 +123,11 @@ def fetch_and_analyse(token, log_fn=None):
     cg_ok = "error" not in coingecko_data
     cg = coingecko_data if cg_ok else {}
     data_summary = {
-        "source_of_truth": "DexScreener (on-chain pool) + CoinGecko (market and project) + Google News RSS (headlines)",
+        "source_of_truth": "Blockchain profile (hand-checked) + public network endpoints + CoinGecko (market, project, developer activity) + DexScreener (on-chain pool) + DefiLlama + Google News RSS",
         "fx": {"usd_zar": rate, "source": rate_source},
+        # The chain first: its hand-checked profile (featured chains) and live network data
+        "blockchain": {"profile": profile(token), "network": network},
+        "developer_activity": fetch_github_activity((profile(token) or {}).get("repo")),
         "token_info": {
             "name": cg.get("name") or dex_data.get("name"),
             "symbol": token,

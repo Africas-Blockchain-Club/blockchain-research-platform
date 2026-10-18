@@ -57,63 +57,96 @@ def build_data_report(token, data_summary, date_str):
     rate = (data_summary.get("fx") or {}).get("usd_zar") or 0
     money = lambda v: usd_zar(v, rate)  # noqa: E731 - local shorthand keeps the tables readable
 
-    parts = [f"# {token} Research Report - {date_str}", ""]
+    chain = data_summary.get("blockchain") or {}
+    prof = chain.get("profile")
+    network = chain.get("network")
+    developer = data_summary.get("developer_activity") or {}
+    title = f"{prof['chain']} ({token})" if prof else token
+    parts = [f"# {title} Blockchain Research Report - {date_str}", ""]
 
     parts += [
         "## How to Read This Report",
         "",
-        "> This is the data-only version of the report: every number comes straight from the "
-        "sources listed at the end, and no AI wrote any of it. Phase 0 sets out what the token is. "
-        "Phase 1 looks at supply: how many tokens exist and how many are trading. Phase 1.5 and "
-        "Phase 2 show how the main exchange pool prices the token and what a large sale would do "
-        "to that price. Phase 3 covers leveraged trading. The risk checks then compare the data "
-        "against teaching thresholds. A check that says \"No data\" means the platform could not "
-        "measure it, not that the risk is absent.",
+        "> This is the data-only version of the report: every number comes straight from the sources "
+        "listed at the end, and no AI wrote any of it. Phase 0 explains the blockchain itself: what it is "
+        "for, how it reaches agreement, and how its network is running right now. Phase 1 turns to its "
+        "native asset: price, market size and supply. Phase 1.5 and Phase 2 show how its main exchange "
+        "pool sets the price. Phase 3 covers leveraged trading. The risk checks then compare the data with "
+        "teaching thresholds. A check that says \"No data\" means the platform could not measure it, not "
+        "that the risk is absent.",
+        "",
+        "## Phase 0: The Blockchain",
         "",
     ]
+    if prof:
+        parts += [
+            "### 0.1 What It Is For",
+            "",
+            prof["purpose"],
+            "",
+            _table(["Question", "Answer"], [
+                ["Launched", prof["launched"]],
+                ["How it reaches agreement", _clean(prof["consensus"])],
+                ["What can be built on it", _clean(prof["programmability"])],
+                ["What the native asset does", _clean(prof["asset_role"])],
+                ["Main uses today", _clean(", ".join(prof["uses"]))],
+            ]),
+            "",
+            "> **Reading this table:** the consensus method decides who can add blocks and what an attacker "
+            "would need to control. The native asset's role tells you why anyone needs to hold it.",
+            "",
+            "Check these facts at the source: " + ", ".join(prof["learn_more"]) + ".",
+            "",
+        ]
+    else:
+        parts += [
+            "### 0.1 What It Is For",
+            "",
+            "This is not one of the featured blockchains, so there is no hand-checked profile. Start with the "
+            "project's own documentation and the description in Phase 1, and treat both as claims to check.",
+            "",
+        ]
+    parts += ["### 0.2 The Network Right Now", ""]
+    if network and network.get("metrics"):
+        parts += [
+            _table(["Measure", "Value", "What It Means"],
+                   [[m["name"], m["value"], _clean(m["meaning"])] for m in network["metrics"]]),
+            "",
+            f"Source: {_clean(network['source'])}. Read at the time of this report; the network keeps moving.",
+            "",
+        ]
+    elif network:
+        parts += [f"The network could not be read: {_clean(network.get('error'))}.", ""]
+    else:
+        parts += ["Live network data is available for the featured blockchains only.", ""]
 
-    description = _clean(social.get("token_description"), 700)
+    defi = data_summary.get("protocol_analytics") or {}
+    developer = developer or {}
+    if developer.get("repo") and not developer.get("error"):
+        dev_rows = [
+            ["Main client repository", f"[{developer['repo']}]({developer.get('url')})",
+             "The software most of the network's computers run"],
+            ["Commits in the last 4 weeks", count(developer.get("commits_4_weeks")),
+             "Code changes accepted recently. Steady work is a sign of a maintained network"],
+            ["Last change", _clean(developer.get("last_push")), "When the repository last changed"],
+            ["Stars", count(developer.get("stars")), "Public interest from developers, not quality"],
+        ]
+    else:
+        reason = developer.get("error") if developer else "no main repository is listed for this chain"
+        dev_rows = [["Developer activity", "N/A", _clean(f"Could not be read ({reason})")]]
+    if defi.get("kind") == "chain":
+        dev_rows.append(["Value locked in its apps (TVL)", money(defi.get("tvl_usd")),
+                         "Money deposited in apps built on this chain: a sign of real use"])
     parts += [
-        "## Phase 0: Overview and Narrative",
+        "### 0.3 Building and Use",
         "",
-        "### 0.1 Token Snapshot",
+        _table(["Measure", "Value", "What It Means"], dev_rows),
         "",
-        "**Identity**",
+        "> **Reading this table:** developer numbers come from one main repository on GitHub. Many chains "
+        "develop across several repositories, some partly in private, so treat this as a partial view of the "
+        "effort, not a measure of success.",
         "",
-        _table(
-            ["Name", "Symbol", "Chain", "Main DEX", "Categories"],
-            [[_clean(info.get("name")), token, _clean(info.get("chain")), _clean(info.get("dex")),
-              _clean(", ".join((social.get("token_categories") or [])[:4]))]],
-        ),
-        "",
-        "**Price and Performance**",
-        "",
-        _table(
-            ["Price", "24h Change", "7d Change", "30d Change"],
-            [[money(info.get("current_price_usd")), pct(info.get("24h_change_pct")),
-              pct(info.get("7d_change_pct")), pct(info.get("30d_change_pct"))]],
-        ),
-        "",
-        "**Market Size**",
-        "",
-        _table(
-            ["Market Cap", "Fully Diluted Value", "All-Time High", "Change From All-Time High"],
-            [[money(info.get("market_cap_usd")), money(info.get("fully_diluted_valuation_usd")),
-              usd(info.get("ath_usd")), pct(info.get("ath_change_pct"))]],
-        ),
-        "",
-        "> **Reading this table:** market cap is price multiplied by circulating supply. Fully "
-        "diluted value uses the maximum supply instead, so the gap between the two shows how many "
-        "tokens are still to come.",
-        "",
-        "### 0.2 What the Project Says About Itself",
-        "",
-        f"> {description}",
-        "",
-        "This is the project's own description, as listed on CoinGecko. Treat it as a claim to "
-        "check, not as evidence.",
-        "",
-        "### 0.3 Recent News Headlines",
+        "### 0.4 Recent News Headlines",
         "",
     ]
 
@@ -128,26 +161,51 @@ def build_data_report(token, data_summary, date_str):
     else:
         parts += ["No headlines could be fetched.", ""]
 
+    description = _clean(social.get("token_description"), 700)
     circulating, total, maximum = (info.get("circulating_supply"), info.get("total_supply"), info.get("max_supply"))
     reference = to_float(maximum) or to_float(total)
     share = (to_float(circulating) / reference * 100) if to_float(circulating) and reference else None
     parts += [
-        "## Phase 1: Supply",
+        "## Phase 1: The Native Asset",
         "",
-        "### 1.1 Supply Overview",
+        "### 1.1 Snapshot",
+        "",
+        _table(
+            ["Name", "Symbol", "Price", "24h Change", "7d Change", "30d Change"],
+            [[_clean(info.get("name")), token, money(info.get("current_price_usd")), pct(info.get("24h_change_pct")),
+              pct(info.get("7d_change_pct")), pct(info.get("30d_change_pct"))]],
+        ),
+        "",
+        _table(
+            ["Market Cap", "Fully Diluted Value", "All-Time High", "Change From All-Time High"],
+            [[money(info.get("market_cap_usd")), money(info.get("fully_diluted_valuation_usd")),
+              usd(info.get("ath_usd")), pct(info.get("ath_change_pct"))]],
+        ),
+        "",
+        "> **Reading this table:** market cap is price multiplied by circulating supply. Fully "
+        "diluted value uses the maximum supply instead, so the gap between the two shows how many "
+        "coins are still to come.",
+        "",
+        "### 1.2 How the Project Describes Itself",
+        "",
+        f"> {description}",
+        "",
+        "This is the project's own description, as listed on CoinGecko. Treat it as a claim to check, not as evidence.",
+        "",
+        "### 1.3 Supply",
         "",
         _table(
             ["Metric", "Value", "What This Means"],
             [
-                ["Circulating Supply", count(circulating), "Tokens trading in the market today"],
-                ["Total Supply", count(total), "Tokens created so far, including locked tokens"],
-                ["Maximum Supply", count(maximum), "The hard cap, if the project has one"],
+                ["Circulating Supply", count(circulating), "Coins trading in the market today"],
+                ["Total Supply", count(total), "Coins created so far, including locked ones"],
+                ["Maximum Supply", count(maximum), "The hard cap, if there is one"],
                 ["Share Circulating", pct(share, 1), "A low share means more supply can still reach the market"],
             ],
         ),
         "",
-        "> **Reading this table:** a token with no maximum supply can keep issuing new tokens. "
-        "Check the project's documents for its issuance rules and vesting schedule.",
+        "> **Reading this table:** an asset with no maximum supply can keep issuing new coins. "
+        "Check the project's documents for its issuance rules.",
         "",
     ]
 
@@ -220,7 +278,7 @@ def build_data_report(token, data_summary, date_str):
         parts += ["Pool depth or price was not available, so the estimate cannot be shown.", ""]
 
     defi = data_summary.get("protocol_analytics") or {}
-    parts += ["## Phase 2.5: DeFi Mechanics", ""]
+    parts += ["## Phase 2.5: DeFi Activity", ""]
     if defi and "error" not in defi and "note" not in defi:
         labels = {"kind": "Tracked as", "name": "Name on DefiLlama", "tvl_usd": "Total value locked (TVL)",
                   "category": "Category", "chains": "Chains", "match": "How it was matched"}
