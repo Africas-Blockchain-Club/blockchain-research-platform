@@ -61,7 +61,10 @@ apply_theme()
 # The ABC logo tile when it is present; a fork without it gets a tile drawn from config
 BRAND_LOGO = ROOT_DIR / "dashboards" / "static" / "abc-logo-tile.png"
 if BRAND_LOGO.exists():
-    st.logo(str(BRAND_LOGO), size="large", link=f"{SETTINGS.site_url}/")
+    # Streamlit accepts only absolute links on the logo; on the same host the
+    # page's own "All blockchains" link leads back to the site instead
+    site_link = f"{SETTINGS.site_url}/" if SETTINGS.site_url.startswith("http") else None
+    st.logo(str(BRAND_LOGO), size="large", link=site_link)
 else:
     _write_logo()
     st.logo(str(LOGO_PATH), size="large", link=None)

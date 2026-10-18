@@ -43,7 +43,7 @@
     <a class="btn btn-primary" href="/reports/{{ card.symbol }}.html">Read the full report</a>
     <span class="small muted">Report data from {{ card.report.generated_at | when }}</span>
     {% endif %}
-    <a class="btn btn-ghost" href="{{ app_url }}/research?token={{ card.symbol }}">Research it live</a>
+    <a class="btn btn-ghost" href="{{ app_url }}/?token={{ card.symbol }}">Research it live</a>
   </aside>
 </section>
 {% endblock %}

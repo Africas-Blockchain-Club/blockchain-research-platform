@@ -2,13 +2,13 @@
 Token: XRP
 Mode: data
 Model: none
-Generated: 2026-10-18T19:08:03.447661+00:00
+Generated: 2026-10-18T19:33:07.666325+00:00
 Format: 3
 ---
 
 # XRP Ledger (XRP) Blockchain Research Report - 18 October 2026
 
-> **Educational research, not financial advice.** This report explains what public data says about a token so that you can learn to read it. It does not recommend buying, selling or holding any token, and it does not take your circumstances into account. Africa's Blockchain Club is not an authorised financial services provider. Crypto assets are high risk and their price can fall to zero. Before you invest, speak to a financial services provider authorised by the Financial Sector Conduct Authority (FSCA).
+> **Educational research, not financial advice.** This report explains what public data says about a blockchain and its native asset so that you can learn to read it. It does not recommend buying, selling or holding any crypto asset, and it does not take your circumstances into account. Africa's Blockchain Club is not an authorised financial services provider. Crypto assets are high risk and their price can fall to zero. Before you invest, speak to a financial services provider authorised by the Financial Sector Conduct Authority (FSCA).
 
 
 ## How to Read This Report
@@ -37,7 +37,7 @@ Check these facts at the source: https://xrpl.org/docs, https://xrpl.org/docs/co
 
 | Measure | Value | What It Means |
 |---|---|---|
-| Latest validated ledger | 107,745,619 | The XRP Ledger closes a new ledger version every few seconds. |
+| Latest validated ledger | 107,745,999 | The XRP Ledger closes a new ledger version every few seconds. |
 | Time to reach agreement | 3.00 seconds | How long the validators took to agree on the last ledger. |
 | Validators in the last round | 35 | Validators that proposed in the last consensus round: a direct measure of how many parties agreed. |
 | Base transaction fee | 0.000010 XRP | This fee is destroyed, not paid to anyone. |
@@ -48,24 +48,25 @@ Source: Public XRP Ledger server (https://xrplcluster.com/). Read at the time of
 
 | Measure | Value | What It Means |
 |---|---|---|
-| Commits in the last 4 weeks | N/A | Code changes in the main repositories. Steady work is a sign of a maintained project |
-| Contributors to merged pull requests | N/A | How many people have had code accepted |
-| Repository stars | N/A | Public interest from developers, not quality |
-| Value locked in its apps (TVL) | $38,312,816 (R631,778,333) | Money deposited in apps built on this chain: a sign of real use |
+| Main client repository | [XRPLF/rippled](https://github.com/XRPLF/rippled) | The software most of the network's computers run |
+| Commits in the last 4 weeks | 142 | Code changes accepted recently. Steady work is a sign of a maintained network |
+| Last change | 17 October 2026 | When the repository last changed |
+| Stars | 5,230 | Public interest from developers, not quality |
+| Value locked in its apps (TVL) | $38,325,407 (R631,985,962) | Money deposited in apps built on this chain: a sign of real use |
 
-> **Reading this table:** developer numbers come from the code repositories CoinGecko links to the project. They show effort, not success; compare the same measure across chains.
+> **Reading this table:** developer numbers come from one main repository on GitHub. Many chains develop across several repositories, some partly in private, so treat this as a partial view of the effort, not a measure of success.
 
 ### 0.4 Recent News Headlines
 
 | Headline | Source | Published |
 |---|---|---|
-| XRP ETFs Just Ended a 13-Week Inflow Streak. What Broke It? | AOL.com | Sun, 18 Oct 2026 18:17:17 GMT |
+| Ripple News: XRP Ledger Is Not Trying To Be Ethereum, Says David Schwartz As He Reveals 2027 Plan | CryptoRank | Sun, 18 Oct 2026 18:23:44 GMT |
+| XRP ETFs Just Ended a 13-Week Inflow Streak. What Broke It? | Yahoo Finance | Sun, 18 Oct 2026 18:17:17 GMT |
 | XRP ETFs Just Ended a 13-Week Inflow Streak. What Broke It? | 24/7 Wall St. | Sun, 18 Oct 2026 18:17:00 GMT |
 | XRP price at Oct 18, 2026 at 3pm EDT Crypto Prediction Market | Robinhood | Sun, 18 Oct 2026 18:12:31 GMT |
 | Spot Ripple (XRP) ETFs Reach the End of an Era, Solana (SOL) Funds Can’t Catch a Break | CryptoRank | Sun, 18 Oct 2026 15:51:10 GMT |
 | XRP price prediction: 398 XRP burned in a day against 1 billion from the escrow | CryptoTicker | Sun, 18 Oct 2026 15:29:12 GMT |
 | Sui Is Back Under $1 Despite a 35% Gain This Month. Is It a Better Buy Than XRP? | 24/7 Wall St. | Sun, 18 Oct 2026 14:50:00 GMT |
-| Circle Paid Its Partners $819 Million in Six Months. Can Ripple’s RLUSD Compete? | Yahoo Finance | Sun, 18 Oct 2026 12:31:32 GMT |
 | Ripple and XRP Weekly Wrap: Institutional Wins, Nasdaq Debut, and Price Struggles | CryptoPotato | Sun, 18 Oct 2026 06:30:00 GMT |
 
 > **Reading this table:** headlines show what people are talking about, not what is true. Open the source and check who is making each claim.
@@ -76,11 +77,11 @@ Source: Public XRP Ledger server (https://xrplcluster.com/). Read at the time of
 
 | Name | Symbol | Price | 24h Change | 7d Change | 30d Change |
 |---|---|---|---|---|---|
-| XRP | XRP | $1.27 (R21) | -1.74% | -9.50% | -8.09% |
+| XRP | XRP | $1.27 (R21) | -2.29% | -9.98% | -8.58% |
 
 | Market Cap | Fully Diluted Value | All-Time High | Change From All-Time High |
 |---|---|---|---|
-| $80,389,885,928 (R1,325,629,218,953) | $127,322,564,292 (R2,099,549,085,175) | $3.65 | -65.06% |
+| $80,078,427,461 (R1,320,493,268,832) | $126,829,272,254 (R2,091,414,699,468) | $3.65 | -65.25% |
 
 > **Reading this table:** market cap is price multiplied by circulating supply. Fully diluted value uses the maximum supply instead, so the gap between the two shows how many coins are still to come.
 
@@ -109,9 +110,9 @@ Most decentralised exchanges price a token with the constant product formula: x 
 
 | Variable | Value |
 |---|---|
-| Tokens in pool (x) | 999,771,561 |
-| Paired tokens in pool (y) | 7,056 |
-| k = x multiplied by y | 7,054,729,856,336 |
+| Tokens in pool (x) | 999,771,563 |
+| Paired tokens in pool (y) | 7,058 |
+| k = x multiplied by y | 7,056,850,985,796 |
 | Price change if 10% of x is bought out | 23.5% |
 
 ## Phase 2: Market Structure
@@ -120,9 +121,9 @@ Most decentralised exchanges price a token with the constant product formula: x 
 
 | Metric | Value | What This Measures |
 |---|---|---|
-| Main DEX pool liquidity | $1,369,797,370 (R22,587,958,626) | Money in the main pool backing the price |
-| 24h volume, main DEX pool | $208,151 (R3,432,414) | Trading in that one pool |
-| 24h volume, all exchanges | $1,106,136,803 (R18,240,195,881) | Trading everywhere CoinGecko tracks |
+| Main DEX pool liquidity | $1,369,797,374 (R22,587,958,695) | Money in the main pool backing the price |
+| 24h volume, main DEX pool | $207,151 (R3,415,925) | Trading in that one pool |
+| 24h volume, all exchanges | $1,113,881,263 (R18,367,902,027) | Trading everywhere CoinGecko tracks |
 
 ### 2.2 What a Large Sale Would Do
 
@@ -142,7 +143,7 @@ Most decentralised exchanges price a token with the constant product formula: x 
 |---|---|
 | Tracked as | chain |
 | Name on DefiLlama | XRPL |
-| Total value locked (TVL) | $38,312,816 (R631,778,333) |
+| Total value locked (TVL) | $38,325,407 (R631,985,962) |
 | How it was matched | native token of this chain |
 
 > **Reading this table:** total value locked is the money deposited in a chain's or protocol's smart contracts. It shows how much the system is used, not what the token is worth.
@@ -168,14 +169,14 @@ Derivatives data is not connected. It needs a COINGLASS_API_KEY in .env.
 | Check | Result | Measured | Teaching threshold | What it means |
 |---|---|---|---|---|
 | Unusually high trading volume | Clear | 1.4% of market cap traded in 24 hours | More than 100% of market cap traded in 24 hours | When more than the whole market cap changes hands in a day, part of that volume is often wash trading (one party trading with itself to make a token look busy). |
-| Thin on-chain liquidity | Clear | 1.70% of market cap in the main DEX pool | Less than 1% of market cap in the main DEX pool | A thin pool means a single large sale moves the price sharply (slippage). Large, established tokens trade mostly on centralised exchanges, so this check says most about tokens that trade mainly on DEXs. |
+| Thin on-chain liquidity | Clear | 1.71% of market cap in the main DEX pool | Less than 1% of market cap in the main DEX pool | A thin pool means a single large sale moves the price sharply (slippage). Large, established tokens trade mostly on centralised exchanges, so this check says most about tokens that trade mainly on DEXs. |
 | Large future supply (dilution) | Clear | Fully diluted value is 1.58 times market cap | Fully diluted value more than 3 times market cap | A large gap means many tokens are still to be released. Each release adds supply, and existing holders own a smaller share of the total afterwards. |
 | Most supply not yet circulating | Clear | 63.1% of supply circulating | Less than 50% of supply circulating | A low float means the price today is set by a small part of the supply. The rest is held by teams, investors or treasuries and can reach the market later. |
 | Large token unlock in the next 30 days | No data | N/A | More than 15% of supply unlocking within 30 days | Large unlocks often add selling pressure around the unlock date. This platform does not yet read an unlock schedule source, so check the project's own vesting documents. |
 | Supply held by a few wallets | No data | N/A | Top 10 wallets holding more than 80% of supply | When a few wallets hold most of the supply, one decision by one holder can move the price. Check a block explorer's holder list, and remember exchange and contract wallets hold tokens for many people. |
 | Not tracked by major data sites | Clear | Listed on CoinGecko and CoinMarketCap | Absent from both CoinGecko and CoinMarketCap | Untracked tokens have less independent price and supply data, and scams are more common among them. A listing is not an endorsement either. |
-| Large fall from all-time high | Clear | -65.1% from all-time high of $3.65 | Price more than 70% below its all-time high | A deep drawdown shows how volatile the token has been. It does not show whether the price will recover; many tokens never return to an earlier high. |
-| Large price swing in 30 days | Clear | -8.1% over 30 days | Price moved more than 30% up or down in 30 days | Large swings in either direction mean the value of any holding can change quickly. |
+| Large fall from all-time high | Clear | -65.2% from all-time high of $3.65 | Price more than 70% below its all-time high | A deep drawdown shows how volatile the token has been. It does not show whether the price will recover; many tokens never return to an earlier high. |
+| Large price swing in 30 days | Clear | -8.6% over 30 days | Price moved more than 30% up or down in 30 days | Large swings in either direction mean the value of any holding can change quickly. |
 | Heavy leveraged trading | No data | N/A | Open interest above 10% of market cap | Heavy leverage can turn a small price move into a large one, because forced closures (liquidations) trigger more buying or selling. |
 
 ## Sources and Limitations
@@ -190,6 +191,6 @@ Derivatives data is not connected. It needs a COINGLASS_API_KEY in .env.
 | Coinglass | Open interest and liquidations (needs an API key) |
 | Ultrasound.money | ETH burn data (ETH only) |
 
-- The data is a snapshot taken on 18 October 2026 at 19:08 UTC. Markets move; check the sources for current values.
+- The data is a snapshot taken on 18 October 2026 at 19:33 UTC. Markets move; check the sources for current values.
 - The risk-check thresholds are teaching thresholds chosen by this platform, not industry standards.
 - This is the data-only report. No AI wrote any part of it.

@@ -6,6 +6,6 @@
   <div class="sec-head"><span class="kicker">Reports</span><h1>Research reports</h1>
     <p class="muted">Every report saved on this platform, newest first.</p></div>
   {% if reports %}<div class="chain-grid">{% for meta in reports %}{{ report_card(meta) }}{% endfor %}</div>
-  {% else %}<p>No reports yet. <a href="{{ app_url }}/research">Research a blockchain</a> to create the first one.</p>{% endif %}
+  {% else %}<p>No reports yet. <a href="{{ app_url }}/">Research a blockchain</a> to create the first one.</p>{% endif %}
 </section>
 {% endblock %}

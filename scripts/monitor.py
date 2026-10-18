@@ -14,6 +14,7 @@ Nothing here pays, writes a report, or calls an AI model.
 """
 import argparse
 import os
+import re
 import socket
 import sys
 import time
@@ -45,7 +46,7 @@ def check_health():
     last_error = None
     for attempt in range(3):
         try:
-            resp = requests.get(f"{SITE}/_stcore/health", timeout=20)
+            resp = requests.get(f"{SITE}/app/_stcore/health", timeout=20)
             if resp.status_code == 200 and resp.text.strip() == "ok":
                 return f"health endpoint answered ok in {resp.elapsed.total_seconds():.1f}s"
             last_error = f"status {resp.status_code}: {resp.text[:80]}"
@@ -81,12 +82,15 @@ def check_payment_networks():
 def check_pages():
     from playwright.sync_api import sync_playwright
 
+    # The static site, then the research app behind /app
     pages = [
         ("/", "Learn to"),
-        ("/research", "Research a token"),
-        ("/reports", "Research reports"),
-        ("/attack-cost", "What does it cost to attack Ethereum?"),
-        ("/how-it-works", "Research, not advice"),
+        ("/blockchains/", "Seven blockchains to learn from"),
+        ("/blockchains/bitcoin.html", "The network right now"),
+        ("/reports/", "Research reports"),
+        ("/how-it-works.html", "Research, not advice"),
+        ("/app/", "Research a blockchain"),
+        ("/app/attack-cost", "What does it cost to attack Ethereum?"),
     ]
     footer = ""
     with sync_playwright() as p:
@@ -97,22 +101,35 @@ def check_pages():
         for path, heading in pages:
             page.goto(SITE + path, timeout=60000)
             page.get_by_text(heading, exact=False).first.wait_for(timeout=60000)
+            if page.get_by_text("Page not found").count() and path.startswith("/app"):
+                raise RuntimeError(f"{path} shows Streamlit's 'Page not found' dialog")
             crashed = page.locator('[data-testid="stException"]')
             if crashed.count():
                 raise RuntimeError(f"{path} shows an error: {crashed.first.inner_text()[:200]}")
-        page.goto(SITE + "/reports", timeout=60000)
-        page.get_by_text("Research reports").first.wait_for(timeout=60000)
-        reports = page.locator("a.brp-link")
+        page.goto(SITE + "/reports/", timeout=60000)
+        reports = page.locator("a.chain-card")
         if reports.count():
-            page.goto(SITE + "/" + reports.first.get_attribute("href"), timeout=60000)
-            page.get_by_role("tab", name="Risk checks").wait_for(timeout=60000)
+            page.goto(SITE + reports.first.get_attribute("href"), timeout=60000)
+            page.get_by_text("Risk checks").first.wait_for(timeout=60000)
+        page.goto(SITE + "/", timeout=60000)
+        site_footer = page.locator("footer.site").inner_text()
+        page.goto(SITE + "/app/", timeout=60000)
+        page.get_by_text("Research a blockchain").first.wait_for(timeout=60000)
         footer = page.locator(".brp-footer").last.inner_text()
+        site_build = re.search(r"Build (\S+)", site_footer)
+        app_build = re.search(r"Build (\S+)", footer)
+        if not site_build or not app_build or site_build.group(1) != app_build.group(1):
+            raise RuntimeError(f"the site and the app run different builds ({site_build and site_build.group(1)}, "
+                               f"{app_build and app_build.group(1)})")
+        csp = page.request.get(SITE + "/").headers.get("content-security-policy", "")
+        if "script-src 'self'" not in csp:
+            raise RuntimeError("the static site is missing its content security policy")
         browser.close()
     if errors:
         raise RuntimeError(f"browser errors: {errors[:3]}")
     status_line = next((line for line in footer.splitlines() if line.strip().startswith("Build")), "build unknown")
     status = " · ".join(part.strip() for part in status_line.split("·")[:3])
-    return f"{len(pages)} pages and a report render with no errors ({status})"
+    return f"{len(pages)} pages and a report render with no errors, security headers present ({status})"
 
 
 def check_pipeline():
