@@ -1,9 +1,12 @@
 import os
-import re
 import urllib.parse
 from email.utils import parsedate_to_datetime
 
 import requests
+from defusedxml import ElementTree as DefusedET
+
+MAX_FEED_BYTES = 2_000_000
+
 
 # ====================== COINGECKO ======================
 
@@ -222,27 +225,25 @@ def fetch_cryptopanic_news(token):
     try:
         resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
         resp.raise_for_status()
-        xml = resp.text
-
-        # Extract individual <item> blocks
-        items = re.findall(r"<item>(.*?)</item>", xml, re.DOTALL)
+        if len(resp.content) > MAX_FEED_BYTES:
+            raise ValueError(f"news feed larger than {MAX_FEED_BYTES} bytes")
+        # A hardened XML parser: no entity expansion, no external entities, and no
+        # hand-written regular expressions over text someone else controls
+        channel = DefusedET.fromstring(resp.content).find("channel")
         headlines = []
-        for item in items[:12]:
-            title_m = re.search(r"<title>(.*?)</title>", item, re.DOTALL)
-            date_m = re.search(r"<pubDate>(.*?)</pubDate>", item, re.DOTALL)
-            source_m = re.search(r'<source[^>]*>(.*?)</source>', item, re.DOTALL)
-            if not title_m:
+        for item in (channel.findall("item") if channel is not None else [])[:12]:
+            raw_title = (item.findtext("title") or "").strip()
+            if not raw_title:
                 continue
-            raw_title = re.sub(r"<[^>]+>", "", title_m.group(1)).strip()
             # Google News appends " - Source Name"; split it off
             parts = raw_title.rsplit(" - ", 1)
-            title = parts[0].strip()
-            source = parts[1].strip() if len(parts) == 2 else (source_m.group(1).strip() if source_m else "Unknown")
+            source = parts[1].strip() if len(parts) == 2 else (item.findtext("source") or "Unknown").strip()
             headlines.append({
-                "title": title,
+                "title": parts[0].strip(),
                 "source": source,
-                "published_at": date_m.group(1).strip() if date_m else "",
+                "published_at": (item.findtext("pubDate") or "").strip(),
             })
+
         def _parse_date(h):
             try:
                 return parsedate_to_datetime(h["published_at"])

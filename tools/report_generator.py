@@ -86,6 +86,9 @@ def fetch_and_analyse(token, log_fn=None):
     """
     say = log_fn or log.info
     token = normalise_token(token)
+    # Every outbound URL below contains the token, so only plain tickers go any further
+    if not report_store.is_valid_token(token):
+        raise ValueError(f"{token!r} is not a valid ticker: use letters and digits only, for example ADA.")
 
     say("Reading market, supply and project data from CoinGecko...")
     coingecko_data = fetch_coingecko_data(token)
