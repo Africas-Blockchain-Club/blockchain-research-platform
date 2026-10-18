@@ -292,6 +292,7 @@ def _wallet_identity():
 
 
 def render():
+    st.html(f'<a class="brp-link" href="{SETTINGS.site_url}/blockchains/" target="_self">All blockchains</a>')
     page_header(
         "Live research",
         "Research a blockchain",

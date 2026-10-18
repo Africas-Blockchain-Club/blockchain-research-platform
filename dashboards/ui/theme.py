@@ -115,6 +115,7 @@ header[data-testid="stHeader"] {
 [data-testid="stMarkdownContainer"] blockquote { border-left:3px solid var(--blue); background:var(--wash); padding:0.75rem 1rem; border-radius:0 12px 12px 0; color:var(--text); }
 
 /* Shared components */
+.brp-kicker { font-size:0.75rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--subtle); }
 .brp-head { display:grid; gap:0.4rem; margin:0.5rem 0 1rem; }
 .brp-head h1 { margin:0; padding:0; color:var(--head); font-weight:800; font-size:clamp(1.75rem,4vw,2.5rem); line-height:1.1; }
 .brp-head p { margin:0; color:var(--muted); font-weight:var(--w-light); font-size:clamp(1.0rem,2vw,1.15rem); }

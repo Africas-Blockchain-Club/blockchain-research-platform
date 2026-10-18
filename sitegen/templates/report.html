@@ -35,7 +35,7 @@
     <span class="aside-rule" aria-hidden="true"></span>
     {% if has_pdf %}<a class="btn btn-ghost" href="/reports/{{ meta.token }}.pdf" download>Download PDF</a>{% endif %}
     <a class="btn btn-ghost" href="/reports/{{ meta.token }}.md" download>Download markdown</a>
-    <a class="btn btn-primary" href="{{ app_url }}/research?token={{ meta.token }}">Refresh with live data</a>
+    <a class="btn btn-primary" href="{{ app_url }}/?token={{ meta.token }}">Refresh with live data</a>
   </aside>
 </section>
 {% endblock %}

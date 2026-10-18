@@ -44,3 +44,10 @@ def test_pages_load_no_inline_scripts(site):
     for page in site.rglob("*.html"):
         html = page.read_text()
         assert "<script>" not in html and "onclick=" not in html, page
+
+
+def test_links_reach_the_research_app_at_its_root(site):
+    # Streamlit serves its default page at the app root and shows "Page not found"
+    # for that page's own path, so /app/research must never be linked
+    for page in site.rglob("*.html"):
+        assert "/app/research" not in page.read_text(), page

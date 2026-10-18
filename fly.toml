@@ -6,6 +6,7 @@ primary_region = "jnb"
 
 [env]
   DATA_DIR = "/data"
+  SITE_DIR = "/data/site"
   SCREENSHOTS_ENABLED = "false"
   AI_ENABLED = "true"
   # Never give away AI write-ups on the operator's key
@@ -35,7 +36,8 @@ primary_region = "jnb"
     grace_period = "20s"
     interval = "30s"
     method = "GET"
-    path = "/_stcore/health"
+    # Through Caddy to Streamlit, so it proves both servers are up
+    path = "/app/_stcore/health"
     timeout = "5s"
 
 [[vm]]

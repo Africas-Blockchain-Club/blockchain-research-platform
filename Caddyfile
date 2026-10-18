@@ -1,0 +1,60 @@
+# The front door: Caddy serves the static site and proxies /app to Streamlit.
+# Fly.io terminates TLS in front of this, so Caddy listens on plain HTTP inside
+# the machine and the security headers below go out on every response.
+{
+	admin off
+	auto_https off
+	persist_config off
+}
+
+:{$PORT:8080} {
+	encode zstd gzip
+
+	# Every response
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), usb=(), payment=()"
+		Cross-Origin-Opener-Policy "same-origin"
+		-Server
+	}
+
+	# Liveness of Caddy itself; Fly checks /app/_stcore/health, which proves both servers
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	# The research app. Streamlit needs inline scripts and its own frames, so its
+	# policy restricts framing, form targets, plugins and the base URL instead.
+	handle /app* {
+		header {
+			X-Frame-Options "SAMEORIGIN"
+			Content-Security-Policy "frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+		}
+		reverse_proxy 127.0.0.1:{$APP_PORT:8501}
+	}
+
+	# The static site: no inline scripts anywhere, so the policy can forbid them
+	handle {
+		root * {$SITE_DIR:/data/site}
+		header {
+			X-Frame-Options "DENY"
+			Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; media-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
+		}
+		header /static/* Cache-Control "public, max-age=3600"
+		try_files {path} {path}/index.html {path}.html
+		file_server
+	}
+
+	handle_errors {
+		root * {$SITE_DIR:/data/site}
+		rewrite * /404.html
+		file_server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}
