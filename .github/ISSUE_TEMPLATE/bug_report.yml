@@ -1,0 +1,21 @@
+name: Bug report
+description: Something on the site, the app or in a report is wrong
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Security problems go to Security > Report a vulnerability, never to a public issue."
+  - type: input
+    id: where
+    attributes: { label: Where, description: "The page address, or the file and line" }
+    validations: { required: true }
+  - type: textarea
+    id: what
+    attributes: { label: What happened, description: "What you saw, and what you expected instead" }
+    validations: { required: true }
+  - type: textarea
+    id: steps
+    attributes: { label: Steps to reproduce }
+  - type: input
+    id: build
+    attributes: { label: Build number, description: "Shown in the footer of every page" }

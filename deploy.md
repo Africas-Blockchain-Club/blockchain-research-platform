@@ -14,6 +14,7 @@ The live copy runs on Fly.io in Johannesburg: https://blockchain-research-platfo
 - one `shared-cpu-1x` machine with 1 GB of memory in `jnb`, always running (`min_machines_running = 1`, like wtc-codequest), so there is no cold start;
 - a 1 GB volume, `brp_data`, mounted at `/data`, holding the reports, the SQLite database and the usage log (`DATA_DIR=/data`);
 - the sample reports in `reports/` are copied onto an empty volume on first boot;
+- Caddy in front of Streamlit (see below);
 - chart screenshots are off, because the image has no browser.
 
 Because the volume belongs to one machine, the app runs on one machine. Move to Postgres (`DATABASE_URL`) and shared report storage before adding more.
@@ -26,15 +27,25 @@ fly volumes create brp_data --region jnb --size 1 --app blockchain-research-plat
 fly deploy --remote-only --ha=false
 ```
 
-### Each release
+### Each release: the pipeline, not a laptop
 
-Bump `BUILD` in `config.py`, push to `main` (CI runs the tests), then:
+Releases go through GitHub, never `fly deploy` from a laptop:
+
+1. A pull request deploys to **staging** (`blockchain-research-platform-staging`, `fly.staging.toml`: no volume, no payments, no AI key, stops when idle) and runs the full end-to-end monitor against it.
+2. Merging to `main` runs CI and the security checks again on the merged commit; only then does `deploy.yml` deploy to production, followed by a smoke test against the live site.
+3. Bump `BUILD` in `config.py` and add a CHANGELOG.md entry in the pull request, so the footer shows which build is live.
+
+The workflows authenticate with deploy tokens scoped to one app each, stored as GitHub secrets (`FLY_API_TOKEN` for production, `FLY_API_TOKEN_STAGING` for staging). To rotate one:
 
 ```bash
-fly deploy --remote-only
+fly tokens create deploy --app blockchain-research-platform --expiry 8760h | gh secret set FLY_API_TOKEN --repo Africas-Blockchain-Club/blockchain-research-platform
 ```
 
-The footer on the live site shows the build number, so you can confirm which build is serving.
+In an emergency, an administrator can still deploy by hand with `fly deploy --remote-only`; record why in the changelog.
+
+### How the machine runs
+
+`scripts/start.sh` starts three processes as the unprivileged `app` user: Caddy on port 8080 (the only public port: the static site, the `/app` proxy and the security headers), Streamlit on localhost, and the network refresher, which updates the seven blockchains' data and rebuilds the site every 15 minutes. Fly's health check goes through Caddy to Streamlit, so it fails, and Fly restarts the machine, if either stops.
 
 ### Paid AI write-ups
 

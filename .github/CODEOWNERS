@@ -1,0 +1,10 @@
+# Every change is reviewed by the maintainer. Payments, secrets handling and the
+# deployment pipeline are listed separately so they are never reviewed in passing.
+*                         @MrPeterManda
+payment_verifier.py       @MrPeterManda
+emailer.py                @MrPeterManda
+data_science/compliance.py @MrPeterManda
+Caddyfile                 @MrPeterManda
+Dockerfile                @MrPeterManda
+fly.toml                  @MrPeterManda
+.github/                  @MrPeterManda

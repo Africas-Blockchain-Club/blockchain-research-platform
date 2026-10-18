@@ -1,0 +1,51 @@
+name: Deploy to staging
+
+# Every pull request from this repository is deployed to the staging app and
+# checked end to end before it can be merged. Pull requests from forks get CI
+# and the security checks, but no deploy, because they cannot see secrets.
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    environment:
+      name: staging
+      url: https://blockchain-research-platform-staging.fly.dev
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: superfly/flyctl-actions/setup-flyctl@fc53c09e1bc3be6f54706524e3b82c4f462f77be # 1.5
+      - name: Deploy
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN_STAGING }}
+        run: flyctl deploy --remote-only --config fly.staging.toml
+
+  end-to-end:
+    needs: deploy
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Full end-to-end check against staging
+        env:
+          MONITOR_URL: https://blockchain-research-platform-staging.fly.dev
+        run: |
+          sudo apt-get update && sudo apt-get install -y libcairo2-dev pkg-config
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+          python scripts/monitor.py --full
