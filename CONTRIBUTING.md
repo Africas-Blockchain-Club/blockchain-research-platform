@@ -11,11 +11,18 @@ Thank you for improving the platform. It is used to teach, so clear code matters
 ## Setting up
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements-dev.txt
+make install        # .venv, dependencies, and the pre-commit hooks
 cp .env.example .env
+make dev            # static site on :8000, research app on :8501
 ```
+
+## How a change reaches production
+
+1. Branch from `main` (`feature/...`, `fix/...`, `docs/...`). `main` is protected: nobody pushes to it directly.
+2. Commit in small steps with messages that say what changed and why. The pre-commit hooks run Ruff, Bandit and Gitleaks before every commit.
+3. Open a pull request using the template. Every pull request runs CI (tests on Python 3.10 and 3.12, lint, a site build), the security checks (pip-audit, Bandit, Gitleaks across the whole history, CodeQL, a production image build), and, from this repository, a deploy to the staging app with a full end-to-end check.
+4. Merge when everything is green and the code owner has reviewed it. The merge deploys to production only after CI and the security checks pass again on `main`, followed by a smoke test.
+5. Update CHANGELOG.md and, for scope changes, docs/WBS.md in the same pull request.
 
 ## Rules for code
 
@@ -33,9 +40,8 @@ British English, no contractions, no long dashes (use a hyphen or a semicolon), 
 ## Before you open a pull request
 
 ```bash
-pytest
-ruff check .
-streamlit run dashboards/app.py   # look at what you changed, in light and dark mode, on a phone width
+make check          # lint, tests, dependency audit, Bandit and the secret scan
+make dev            # look at what you changed, in light and dark mode, at phone width
 ```
 
 Add tests for new behaviour. If you add a risk check, add a test for each of its three results.

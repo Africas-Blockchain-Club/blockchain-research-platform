@@ -126,7 +126,7 @@ def save_report(token, body, *, mode, model, risk_checks, data_summary, screensh
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     md_path, json_path = _paths(token)
     md_path.write_text(frontmatter + markdown, encoding="utf-8")
-    json_path.write_text(json.dumps(meta, indent=2, default=str), encoding="utf-8")
+    json_path.write_text(json.dumps(meta, indent=2, default=str) + "\n", encoding="utf-8")
 
     db.save_report(
         token_symbol=token,

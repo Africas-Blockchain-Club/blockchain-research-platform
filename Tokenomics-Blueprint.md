@@ -127,11 +127,11 @@ Bookmark:
 * audit.tokenomics.com page  
 * 2–3 key wallets (team, burn, treasury) Set monthly reminder or alerts on large wallet movements.
 
-### 
+###
 
-### 
+###
 
-### 
+###
 
 ### **Checklist Format**
 
@@ -151,4 +151,3 @@ Date: \_\_\_\_\_\_\_\_\_\_\_
 9. Governance →  
 10. Red flags →  
 11. My score: \_\_\_ / 10
-

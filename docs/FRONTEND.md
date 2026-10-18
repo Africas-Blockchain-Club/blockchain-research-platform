@@ -25,11 +25,12 @@ The dashboard follows the ABC front-end standard (October 2026), adapted to Stre
 
 ## Deliberate differences
 
-1. **Streamlit, not the shell page.** The standard's default stack is one plain HTML page built from `wtc-shell.css` and `wtc-shell.js`. This platform keeps Streamlit so that a student can fork it and run it with one command, and so the Python data pipeline stays in one language. The shell's tokens and component styles are carried over; its JavaScript behaviours are not.
-2. **Navigation is Streamlit's top bar.** It holds the logo and the page links and is aligned to the content column. It is not the shell's sticky bar with a theme button: the theme follows Streamlit's settings menu and the operating system instead.
-3. **Media from two places.** The logo tile, mascot and still are served by Streamlit's static file server (`dashboards/static`). The video is not: Streamlit sends `.mp4` files as `text/plain`, which browsers refuse to play, so it comes from jsDelivr reading this public repository (`HOME_VIDEO_URL`). If the CDN fails, the still shows instead.
-4. **No access list.** The platform is a public teaching tool with no personal data, so it has no Access tab. If a fork adds accounts or stores personal data, it must add server-side access checks as the standard describes.
-5. **The logo is the ABC tile.** `dashboards/static/abc-logo-tile.png` is the white ABC mark inside the standard's corner-cut tile on ABC black, readable on both themes. A fork without that file gets a tile drawn from its brand settings instead.
+1. **Two front ends.** The reading pages (home, blockchains, reports, method) are plain HTML built from the shell itself: `abc-shell.css` and the standard's own `wtc-shell.js`, unchanged, with the home stage, scroll-built tiles and reveal-once. Only live research and payments use Streamlit (below). See docs/adr/0002.
+2. **Streamlit for the research app, not the shell page.** The standard's default stack is one plain HTML page built from `wtc-shell.css` and `wtc-shell.js`. Streamlit is kept for live research so the Python data pipeline and the payment flow stay in one language. The shell's tokens and component styles are carried over into it; its JavaScript behaviours run only on the static pages.
+3. **Navigation in the app is Streamlit's top bar.** It holds the logo and the page links and is aligned to the content column. It is not the shell's sticky bar with a theme button: the theme follows Streamlit's settings menu and the operating system instead.
+4. **Media.** The logo tile, mascot, still and home video live in `dashboards/static`. The site build copies them, and Caddy serves them with the right content types. (Streamlit's own static server sends `.mp4` as `text/plain`, which browsers refuse to play, which is one reason the home page is not a Streamlit page.)
+5. **No access list.** The platform is a public teaching tool with no personal data, so it has no Access tab. If a fork adds accounts or stores personal data, it must add server-side access checks as the standard describes.
+6. **The logo is the ABC tile.** `dashboards/static/abc-logo-tile.png` is the white ABC mark inside the standard's corner-cut tile on ABC black, readable on both themes. A fork without that file gets a tile drawn from its brand settings instead.
 
 ## Known gaps
 

@@ -1,0 +1,54 @@
+name: Deploy to production
+
+# A merge to main ships only after CI and the security checks pass on that exact
+# commit, then a smoke test proves the live site answers. One deploy at a time.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+  security:
+    uses: ./.github/workflows/security.yml
+
+  deploy:
+    needs: [ci, security]
+    runs-on: ubuntu-24.04
+    environment:
+      name: production
+      url: https://blockchain-research-platform.fly.dev
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: superfly/flyctl-actions/setup-flyctl@fc53c09e1bc3be6f54706524e3b82c4f462f77be # 1.5
+      - name: Deploy
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: flyctl deploy --remote-only --config fly.toml
+
+  smoke-test:
+    needs: deploy
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Check the live site
+        env:
+          MONITOR_URL: https://blockchain-research-platform.fly.dev
+        run: |
+          pip install requests python-dotenv
+          python scripts/monitor.py
