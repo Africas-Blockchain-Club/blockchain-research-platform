@@ -23,3 +23,5 @@ defi_mechanisms.png
 site/
 network/
 pdf-cache/
+.site-builds/
+site.legacy/

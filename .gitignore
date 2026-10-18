@@ -48,3 +48,5 @@ site.building/
 site.previous/
 network/
 pdf-cache/
+.site-builds/
+site.legacy/

@@ -19,6 +19,7 @@ import argparse
 import datetime
 import json
 import logging
+import os
 import re
 import shutil
 from pathlib import Path
@@ -117,8 +118,10 @@ def _chain_cards(reports_by_token):
 def build_site(out_dir=None):
     """Render every page into out_dir (default SITE_DIR), swapping it in whole."""
     out_dir = Path(out_dir or SITE_DIR)
-    staging = out_dir.with_name(out_dir.name + ".building")
-    shutil.rmtree(staging, ignore_errors=True)
+    # Each build gets its own folder; out_dir is a symlink switched to it in one
+    # atomic step, so a visitor never lands in the gap between two versions
+    builds = out_dir.with_name(f".{out_dir.name}-builds")
+    staging = builds / f"{datetime.datetime.now():%Y%m%d%H%M%S%f}-{os.getpid()}"
     (staging / "static").mkdir(parents=True)
     (staging / "blockchains").mkdir()
     (staging / "reports").mkdir()
@@ -165,14 +168,28 @@ def build_site(out_dir=None):
           featured=[PROFILES[s] for s in FEATURED])
     write("404.html", "404.html", page="")
 
-    previous = out_dir.with_name(out_dir.name + ".previous")
-    shutil.rmtree(previous, ignore_errors=True)
-    if out_dir.exists():
-        out_dir.rename(previous)
-    staging.rename(out_dir)
-    shutil.rmtree(previous, ignore_errors=True)
+    _publish(staging, out_dir)
     log.info("Site built: %d blockchains, %d reports, into %s", len(cards), len(reports), out_dir)
     return out_dir
+
+
+def _publish(build_dir, out_dir):
+    """Point out_dir at build_dir atomically, then remove stale builds."""
+    if out_dir.exists() and not out_dir.is_symlink():
+        # A real folder from before builds were versioned: move it aside once
+        shutil.rmtree(out_dir.with_name(out_dir.name + ".legacy"), ignore_errors=True)
+        out_dir.rename(out_dir.with_name(out_dir.name + ".legacy"))
+    link = out_dir.with_name(f".{out_dir.name}.link-{os.getpid()}")
+    link.unlink(missing_ok=True)
+    link.symlink_to(build_dir, target_is_directory=True)
+    os.replace(link, out_dir)  # atomic on POSIX
+    shutil.rmtree(out_dir.with_name(out_dir.name + ".legacy"), ignore_errors=True)
+    # Keep the live build and any build started in the last ten minutes (it may
+    # belong to a concurrent rebuild that has not switched yet)
+    cutoff = datetime.datetime.now().timestamp() - 600
+    for old in build_dir.parent.iterdir():
+        if old != build_dir and old.stat().st_mtime < cutoff:
+            shutil.rmtree(old, ignore_errors=True)
 
 
 def main():

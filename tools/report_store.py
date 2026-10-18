@@ -9,6 +9,7 @@ The markdown always opens with the disclaimer and always closes with the risk
 checks and the sources section. Those three parts are written by code, never
 by a model, so they cannot be dropped or reworded by one.
 """
+import contextlib
 import datetime
 import json
 import logging
@@ -141,10 +142,24 @@ def save_report(token, body, *, mode, model, risk_checks, data_summary, screensh
     return meta
 
 
+_rebuilds_suspended = False
+
+
+@contextlib.contextmanager
+def site_rebuilds_suspended():
+    """Save several reports, then rebuild the site once (the caller does it)."""
+    global _rebuilds_suspended
+    previous, _rebuilds_suspended = _rebuilds_suspended, True
+    try:
+        yield
+    finally:
+        _rebuilds_suspended = previous
+
+
 def _rebuild_site():
     """Publish the new report on the static site. A failed rebuild is logged
     loudly but never loses the saved report; the next rebuild picks it up."""
-    if not SETTINGS.site_build_on_save:
+    if not SETTINGS.site_build_on_save or _rebuilds_suspended:
         return
     try:
         from sitegen.build import build_site

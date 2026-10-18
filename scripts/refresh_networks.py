@@ -84,6 +84,12 @@ def refresh_featured_reports():
     from tools import report_store
     from tools.report_generator import fetch_and_analyse, save_data_report
 
+    with report_store.site_rebuilds_suspended():
+        _refresh_reports(report_store, fetch_and_analyse, save_data_report)
+
+
+def _refresh_reports(report_store, fetch_and_analyse, save_data_report):
+    # The caller rebuilds the site once afterwards, not once per report
     max_age = datetime.timedelta(hours=int(os.getenv("REPORT_REFRESH_HOURS") or "24"))
     now = datetime.datetime.now(datetime.timezone.utc)
     for symbol in FEATURED:

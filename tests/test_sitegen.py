@@ -51,3 +51,24 @@ def test_links_reach_the_research_app_at_its_root(site):
     # for that page's own path, so /app/research must never be linked
     for page in site.rglob("*.html"):
         assert "/app/research" not in page.read_text(), page
+
+
+def test_rebuilds_switch_the_site_atomically(site):
+    # The published folder is a symlink to one complete build; a rebuild points it at another
+    first = site.resolve()
+    second = sitegen.build_site(site)
+    assert site.is_symlink() and second.resolve() != first
+    assert (site / "index.html").exists()
+
+
+def test_report_saves_can_share_one_rebuild(temp_store, data_summary, monkeypatch):
+    calls = []
+    import dataclasses
+
+    monkeypatch.setattr(report_store, "SETTINGS", dataclasses.replace(report_store.SETTINGS, site_build_on_save=True))
+    monkeypatch.setattr(sitegen, "build_site", lambda *a, **k: calls.append(1))
+    with report_store.site_rebuilds_suspended():
+        for token in ("AAA", "BBB"):
+            report_store.save_report(token, "# T\n", mode=report_store.MODE_DATA, model=None,
+                                     risk_checks=compute_risk_checks(data_summary), data_summary=data_summary)
+    assert calls == []
