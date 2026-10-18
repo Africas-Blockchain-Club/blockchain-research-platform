@@ -61,3 +61,8 @@ def test_a_headline_with_advice_words_does_not_block_the_data_report(temp_store,
         {"title": "ETH Price Target Raised as Analysts Say Buy", "source": "Example", "published_at": "today"}
     ]
     assert report_generator.save_data_report(analysis)["token"] == "EXM"
+
+
+def test_a_crafted_ticker_never_reaches_a_url():
+    with pytest.raises(ValueError):
+        report_generator.fetch_and_analyse("../../evil?x=1")

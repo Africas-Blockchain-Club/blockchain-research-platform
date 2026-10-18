@@ -17,6 +17,8 @@ def capture_dexscreener_chart(token_symbol, dex_url):
     to DATA_DIR (so reports stay portable across machines), or None."""
     if not SETTINGS.screenshots_enabled:
         return None
+    # Strip line breaks so a crafted name cannot forge extra log lines
+    token_symbol = token_symbol.replace("\r", "").replace("\n", "")
     if not dex_url:
         log.info("Skipping screenshot for %s: no DexScreener URL.", token_symbol)
         return None
