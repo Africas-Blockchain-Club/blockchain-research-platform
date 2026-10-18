@@ -1,4 +1,4 @@
 # Only for the x402 agent-payment demo in x402/
 -r requirements.txt
-eth-account==0.13.7
+eth-account==0.14.0
 Flask==3.1.3
