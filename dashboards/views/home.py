@@ -9,16 +9,29 @@ from tools import report_store
 
 
 def render():
+    # Images come from Streamlit's static server (dashboards/static, served at app/static);
+    # the video from SETTINGS.home_video_url. The still is the poster and the fallback,
+    # and CSS hides the video for reduced motion.
+    video = (
+        '<video autoplay muted loop playsinline preload="metadata" poster="app/static/abc-home-still.jpg" '
+        f'aria-hidden="true"><source src="{escape(SETTINGS.home_video_url)}" type="video/mp4"></video>'
+        if SETTINGS.home_video_url else ""
+    )
     st.html(
-        '<section class="brp-band">'
+        '<section class="brp-stage">'
+        '<img class="brp-still" src="app/static/abc-home-still.jpg" alt="">'
+        f"{video}"
+        '<div class="brp-stage-inner"><div class="brp-stage-copy">'
         f'<span class="brp-kicker">{escape(SETTINGS.brand_name)}</span>'
-        '<h1 class="brp-display">Learn to read a token</h1>'
-        '<p class="brp-lede">Pull the public data on any crypto token, see which risk checks it '
-        "trips, and learn what each number means. This platform teaches research. It does not "
-        "tell you what to buy or sell.</p>"
+        '<h1 class="brp-display"><span class="line">Learn to</span><span class="line">read a</span>'
+        '<span class="line accent">token</span></h1>'
+        '<p class="brp-lede">Pull the public data on any crypto token, see which risk checks it trips, and learn '
+        "what each number means. This platform teaches research. It does not tell you what to buy or sell.</p>"
         '<div class="brp-actions">'
         '<a class="brp-btn brp-btn-light" href="research" target="_self">Research a token</a>'
         '<a class="brp-btn brp-btn-outline" href="reports" target="_self">Read the reports</a>'
+        "</div></div>"
+        '<img class="brp-mascot" src="app/static/abc-mascot.png" alt="">'
         "</div></section>"
     )
 

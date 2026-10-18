@@ -11,9 +11,9 @@ from dashboards.ui.components import (
     risk_cards,
     stat_tiles,
 )
-from dashboards.ui.pdf import markdown_to_pdf
 from data_analytics.risk_profile import summarise_checks
 from tools import report_store
+from tools.pdf_export import markdown_to_pdf
 
 
 def _for_display(text):

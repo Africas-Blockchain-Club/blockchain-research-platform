@@ -6,7 +6,7 @@ Learn to read a crypto token. Pick a token, pull its public data, see which risk
 
 > **Educational research, not financial advice.** This platform never rates a token, forecasts a price, or tells anyone to buy, sell or hold. See [docs/COMPLIANCE.md](docs/COMPLIANCE.md) for why, and for the rules every fork must keep.
 
-Built in the open by Peter Manda and Africa's Blockchain Club, with AI assistance (Anthropic's Claude). Every commit records the collaboration on purpose: using AI well means directing it, checking it, and saying so.
+Built in the open by Peter Manda and Africa's Blockchain Club.
 
 ---
 

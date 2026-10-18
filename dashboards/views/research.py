@@ -6,6 +6,7 @@ The AI write-up sits behind the testnet payment demo only when
 PAYMENTS_ENABLED is true. Nothing after the payment gate costs anything
 until a transaction verifies on-chain.
 """
+import re
 import uuid
 
 import requests
@@ -29,6 +30,7 @@ STABLECOINS = {"USDT", "USDC", "BUSD", "DAI", "TUSD", "USDD", "FRAX", "USDP", "G
                "LUSD", "SUSD", "CUSD", "FDUSD", "PYUSD", "USDE", "EURC", "USDS"}
 FALLBACK_TOP_TOKENS = ["BTC", "ETH", "SOL", "BNB", "AVAX", "DOT", "LINK", "ADA", "ARB", "OP"]
 AI_ERRORS = (AIUnavailableError, AIRefusalError, AIResponseError, AdviceLanguageError)
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 @st.cache_data(ttl=604800, show_spinner=False)  # the list changes slowly; refresh weekly
@@ -114,7 +116,16 @@ def _email_receipt(email, meta, verified, tx_hash):
         )
         st.success(f"The report and receipt were emailed to {email}.")
     except (emailer.EmailNotConfiguredError, emailer.EmailDeliveryError) as e:
-        st.warning(f"The report is saved, but the email could not be sent: {e}")
+        st.warning(
+            f"Your report is saved and shown below, but the email to {email} could not be sent. "
+            "The operator has been told and will send it."
+        )
+        emailer.alert_owner(
+            f"Write-up email to a payer failed ({meta['token']})",
+            f"A paid write-up was saved but could not be emailed.\n\nPayer email: {email}\n"
+            f"Token: {meta['token']}\nTransaction: {_tx_link(verified, tx_hash)}\nError: {e}\n\n"
+            "Send the report by hand from the Reports page (Download tab).",
+        )
 
 
 def _tx_link(verified, tx_hash):
@@ -235,10 +246,19 @@ def _payment_gate(analysis, model):
             "blockchain cannot be reversed, so check the token before you pay.",
             tone="warn",
         )
-    email = ""
-    if emailer.is_configured():
-        email = st.text_input("Email for the report and receipt (optional, enter it before paying)",
-                              placeholder="you@example.com").strip()
+    # Every paid write-up is emailed to the payer, so a payment is only taken
+    # when email works and the payer has given an address.
+    if not emailer.is_configured():
+        st.error("Email delivery is not set up, so payments are paused. Please try again later.")
+        return
+    email = st.text_input(
+        "Your email address",
+        placeholder="you@example.com",
+        help="The write-up and your receipt are emailed here as soon as the payment confirms.",
+    ).strip()
+    if not EMAIL_PATTERN.match(email):
+        st.info("Enter your email address to continue. Your write-up and receipt are sent there.")
+        return
 
     result = wallet_pay(
         price=str(price),

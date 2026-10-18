@@ -92,11 +92,15 @@ def send_report_receipt(payer_email, token, report_markdown, receipt):
         f"\n"
         f"{SHORT_DISCLAIMER}\n"
         f"\n"
-        f"The full report is attached as markdown. Open it in any text editor\n"
-        f"or markdown viewer.\n"
+        f"The full report is attached as a PDF, and as markdown for any text editor.\n"
         f"\n"
         f"{SETTINGS.brand_name} - {SETTINGS.app_name}\n"
     )
+    from tools.pdf_export import markdown_to_pdf
+
+    pdf, _error = markdown_to_pdf(report_markdown)
+    if pdf:
+        msg.add_attachment(pdf, maintype="application", subtype="pdf", filename=f"{token}_research_report.pdf")
     msg.add_attachment(
         report_markdown.encode("utf-8"),
         maintype="text",

@@ -24,7 +24,7 @@ IMAGES_DIR = DATA_DIR / "data" / "images"
 
 # Bump on every release. The footer shows it so a screenshot always says
 # which build it came from.
-BUILD = "2026.10.18-3"
+BUILD = "2026.10.18-4"
 
 # Current Claude models, cheapest last. Haiku is left out on purpose: a
 # research write-up needs the depth of Sonnet or Opus.
@@ -51,9 +51,14 @@ class Settings:
     brand_name: str = field(default_factory=lambda: os.getenv("BRAND_NAME") or "Africa's Blockchain Club")
     brand_short: str = field(default_factory=lambda: os.getenv("BRAND_SHORT") or "ABC")
     app_name: str = field(default_factory=lambda: os.getenv("APP_NAME") or "Blockchain Research Platform")
-    brand_accent: str = field(default_factory=lambda: os.getenv("BRAND_ACCENT") or "#0b57c9")
+    brand_accent: str = field(default_factory=lambda: os.getenv("BRAND_ACCENT") or "#b75000")
     # The accent on a dark ground must be lighter to keep AA contrast.
-    brand_accent_dark: str = field(default_factory=lambda: os.getenv("BRAND_ACCENT_DARK") or "#5ea3ff")
+    brand_accent_dark: str = field(default_factory=lambda: os.getenv("BRAND_ACCENT_DARK") or "#f99c00")
+    # Streamlit serves .mp4 as text/plain, which browsers refuse to play, so the
+    # home video comes from a CDN that reads the public repository. Empty turns
+    # the video off; the still image shows either way.
+    home_video_url: str = field(default_factory=lambda: os.getenv("HOME_VIDEO_URL", "https://cdn.jsdelivr.net/gh/"
+        "Africas-Blockchain-Club/blockchain-research-platform@main/dashboards/static/01_home_loop.mp4").strip())
     repo_url: str = field(default_factory=lambda: os.getenv("REPO_URL")
         or "https://github.com/Africas-Blockchain-Club/blockchain-research-platform")
 

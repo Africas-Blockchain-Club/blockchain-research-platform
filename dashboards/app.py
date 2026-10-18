@@ -53,13 +53,18 @@ def _write_logo():
 
 st.set_page_config(
     page_title=SETTINGS.app_name,
-    page_icon=":material/school:",
+    page_icon=str(ROOT_DIR / "dashboards" / "static" / "abc-logo-tile-180.png"),
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 apply_theme()
-_write_logo()
-st.logo(str(LOGO_PATH), size="large", link=None)
+# The ABC logo tile when it is present; a fork without it gets a tile drawn from config
+BRAND_LOGO = ROOT_DIR / "dashboards" / "static" / "abc-logo-tile.png"
+if BRAND_LOGO.exists():
+    st.logo(str(BRAND_LOGO), size="large", link=None)
+else:
+    _write_logo()
+    st.logo(str(LOGO_PATH), size="large", link=None)
 db.init_db()
 
 pages = [

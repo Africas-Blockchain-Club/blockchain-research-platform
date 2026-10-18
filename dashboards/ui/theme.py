@@ -1,40 +1,45 @@
 """
 The visual layer: colour tokens, type and layout, applied over Streamlit.
 
-Adapted from the WeThinkCode_ front-end standard's shell stylesheet. The
-palette and the light and dark token sets are the standard's; the accent
-colour comes from config so a fork can rebrand without touching this file.
+Follows the ABC front-end standard (~/.claude/skills/abc-frontend-standard):
+the structure, layout and accessibility rules of the WeThinkCode_ front-end
+standard, with the look of africasblockchainclub.com - dark first, one amber
+accent, Geist, glass cards, the ABC logo tile, the elephant mascot and the
+home video loop. The accents come from config so a fork can rebrand.
 
-Streamlit draws its own page, so three of the standard's rules are met in a
-Streamlit way rather than copied (see docs/FRONTEND.md):
+Streamlit draws its own page, so three rules are met in a Streamlit way
+rather than copied (see docs/FRONTEND.md):
 - the theme follows Streamlit's own light/dark setting (st.context.theme),
-  falling back to the operating system preference;
+  falling back to the operating system preference, dark when there is none;
 - navigation is Streamlit's top navigation bar, not the shell's menu;
-- the home screen uses the brand band, because a fork has no photo library.
+- media are served by Streamlit's static file server (dashboards/static).
 """
 import streamlit as st
 
 from config import SETTINGS
 
+# Every text pairing checked against WCAG AA on 18 October 2026 (abc-brand.md)
 _LIGHT = {
-    "bg": "#ffffff", "surface": "#ffffff", "wash": "#f5f7fa", "line": "#dfe3e8", "line-strong": "#c8cace",
-    "text": "#16181b", "head": "#26272a", "muted": "#4c4f55", "subtle": "#6b707a",
-    "on-blue": "#ffffff", "blue-wash": "#eaf1fc",
-    "band-a": "#0a3a8c", "band-b": "#0b57c9", "band-text": "#eaf1fc",
-    "pass": "#0e7a4f", "pass-wash": "#e8f5ee", "warn": "#9a6700", "warn-wash": "#fdf4e3",
-    "stop": "#b42318", "stop-wash": "#fdecea",
-    "shadow": "0 8px 24px rgba(22,24,27,0.12)",
-    "w-light": "300", "w-display": "800", "track-body": "0", "track-display": "-0.01em", "lh-body": "1.55",
+    "bg": "#fafafa", "surface": "#ffffff", "wash": "#f5f5f4", "line": "#e5e5e5", "line-strong": "#d4d4d4",
+    "text": "#171717", "head": "#0a0a0a", "muted": "#404040", "subtle": "#525252",
+    "on-blue": "#ffffff", "blue-wash": "#fff4e0",
+    "band-a": "#0a0a0a", "band-b": "#7b3306", "band-text": "#fde68a",
+    "pass": "#15803d", "pass-wash": "#e8f5ee", "warn": "#a15c00", "warn-wash": "#fff4e0",
+    "stop": "#b91c1c", "stop-wash": "#fdecea",
+    "glass": "rgba(10,10,10,0.03)", "glass-line": "rgba(10,10,10,0.10)",
+    "glow": "rgba(249,156,0,0.25)", "shadow": "0 10px 25px -8px rgba(10,10,10,0.15)",
+    "w-light": "300", "w-display": "800", "track-body": "0", "track-display": "-0.02em", "lh-body": "1.55",
 }
 _DARK = {
-    "bg": "#0b0f14", "surface": "#141a21", "wash": "#1b222b", "line": "#252d37", "line-strong": "#3a4450",
-    "text": "#e9edf1", "head": "#f3f5f7", "muted": "#b3bcc6", "subtle": "#8b95a1",
-    "on-blue": "#0b0f14", "blue-wash": "#12233d",
-    "band-a": "#0a2a66", "band-b": "#0b4fb8", "band-text": "#dce8fb",
-    "pass": "#4dcb9d", "pass-wash": "#10281f", "warn": "#ecb351", "warn-wash": "#2a2111",
-    "stop": "#f08a85", "stop-wash": "#2d1614",
-    "shadow": "0 8px 24px rgba(0,0,0,0.5)",
-    "w-light": "400", "w-display": "750", "track-body": "0.01em", "track-display": "0", "lh-body": "1.62",
+    "bg": "#0a0a0a", "surface": "#171717", "wash": "#262626", "line": "rgba(255,255,255,0.12)", "line-strong": "#404040",
+    "text": "#f5f5f5", "head": "#ffffff", "muted": "#d4d4d4", "subtle": "#a3a3a3",
+    "on-blue": "#0a0a0a", "blue-wash": "#2a1d05",
+    "band-a": "#0a0a0a", "band-b": "#7b3306", "band-text": "#fde68a",
+    "pass": "#4ade80", "pass-wash": "#0f2a1a", "warn": "#fcbb00", "warn-wash": "#2a1d05",
+    "stop": "#f87171", "stop-wash": "#2d1414",
+    "glass": "rgba(255,255,255,0.06)", "glass-line": "rgba(255,255,255,0.18)",
+    "glow": "rgba(249,156,0,0.35)", "shadow": "0 25px 50px -12px rgba(0,0,0,0.6)",
+    "w-light": "400", "w-display": "800", "track-body": "0.005em", "track-display": "-0.02em", "lh-body": "1.6",
 }
 
 
@@ -51,18 +56,19 @@ def _token_css():
         return f":root{{{dark}color-scheme:dark;}}"
     if theme_type == "light":
         return f":root{{{light}color-scheme:light;}}"
-    # Streamlit has not reported a theme yet: follow the operating system
+    # Streamlit has not reported a theme yet: dark first, as ABC is, unless the system asks for light
     return (
-        f":root{{{light}color-scheme:light;}}"
-        f"@media (prefers-color-scheme:dark){{:root:not([data-theme=\"light\"]){{{dark}color-scheme:dark;}}}}"
-        f":root[data-theme=\"dark\"]{{{dark}color-scheme:dark;}}"
+        f":root{{{dark}color-scheme:dark;}}"
+        f"@media (prefers-color-scheme:light){{:root:not([data-theme=\"dark\"]){{{light}color-scheme:light;}}}}"
+        f":root[data-theme=\"light\"]{{{light}color-scheme:light;}}"
     )
 
 
 _CSS = """
 html { overflow-y:scroll; }
 body { overflow-x:clip; }
-.stApp { background:var(--bg); color:var(--text); }
+.stApp, header[data-testid="stHeader"] { background:var(--bg); color:var(--text); }
+.stApp { font-family:"Geist","Helvetica Neue",Helvetica,Arial,sans-serif; }
 .stApp, .stApp p, .stApp li { letter-spacing:var(--track-body); line-height:var(--lh-body); }
 
 /* One centred 76rem column for every page, matching the top bar */
@@ -88,6 +94,7 @@ header[data-testid="stHeader"] {
 .stButton button[kind="primary"], .stFormSubmitButton button[kind="primary"] {
   background:var(--blue); border-color:var(--blue); color:var(--on-blue);
 }
+.stButton button[kind="primary"]:hover { box-shadow:0 0 25px 4px var(--glow); }
 .stButton button:disabled, .stFormSubmitButton button:disabled {
   background:var(--line-strong) !important; border-color:transparent !important; color:var(--muted) !important; cursor:not-allowed;
 }
@@ -107,19 +114,35 @@ header[data-testid="stHeader"] {
 [data-testid="stMarkdownContainer"] blockquote { border-left:3px solid var(--blue); background:var(--wash); padding:0.75rem 1rem; border-radius:0 12px 12px 0; color:var(--text); }
 
 /* Shared components */
-.brp-band { background:linear-gradient(120deg,var(--band-a) 0%,var(--band-b) 100%); color:#fff;
-  border-radius:16px; padding:clamp(1.75rem,6vw,4rem) clamp(1.25rem,5vw,3.5rem); display:grid; gap:1rem; }
+/* Home stage: the muted video loop behind a dark overlay, the still as poster and
+   fallback, the brand band gradient underneath when no media loads */
+.brp-stage { position:relative; overflow:hidden; border-radius:16px; color:#fff;
+  background:linear-gradient(120deg,var(--band-a) 0%,var(--band-b) 100%);
+  min-height:clamp(420px, calc(100svh - 160px), 640px); display:grid; align-items:end; }
+.brp-stage video, .brp-stage .brp-still { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.brp-stage::after { content:""; position:absolute; inset:0;
+  background:linear-gradient(0deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.55) 45%, rgba(0,0,0,0.35) 100%); }
+.brp-stage-inner { position:relative; z-index:1; display:grid; gap:1.5rem; align-items:end;
+  padding:clamp(1.75rem,6vw,4rem) clamp(1.25rem,5vw,3.5rem); grid-template-columns:1fr; }
+@media (min-width:900px) { .brp-stage-inner { grid-template-columns:1.4fr 0.6fr; } }
+.brp-stage-copy { display:grid; gap:1rem; }
+.brp-mascot { width:100%; max-width:20rem; height:auto; justify-self:end; filter:drop-shadow(0 20px 40px rgba(0,0,0,0.5)); }
+@media (max-width:899px) { .brp-mascot { display:none; } }
+@media (prefers-reduced-motion:reduce) { .brp-stage video { display:none; } }
 .brp-kicker { font-size:0.75rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--subtle); }
-.brp-band .brp-kicker { color:var(--band-text); }
-.brp-display { margin:0; font-weight:var(--w-display); text-transform:uppercase; letter-spacing:var(--track-display);
-  line-height:0.98; font-size:min(clamp(2.25rem,7.5vw,4.5rem),8.5vh); color:#fff; }
-.brp-lede { margin:0; font-weight:var(--w-light); font-size:clamp(1.05rem,2.2vw,1.3rem); line-height:1.5; color:var(--band-text); }
-.brp-actions { display:flex; flex-wrap:wrap; gap:0.75rem; margin-top:0.5rem; }
+.brp-stage .brp-kicker { color:var(--band-text); }
+.brp-display { margin:0; font-weight:var(--w-display); letter-spacing:var(--track-display);
+  line-height:1.0; font-size:min(clamp(2.5rem,7.5vw,5rem),9vh); color:#fff; }
+.brp-display .line { display:block; }
+.brp-display .accent { color:#f99c00; }
+.brp-lede { margin:0; max-width:52ch; font-weight:var(--w-light); font-size:clamp(1.05rem,2.2vw,1.25rem); line-height:1.5; color:rgba(255,255,255,0.85); }
+.brp-actions { display:flex; flex-wrap:wrap; gap:0.75rem; margin-top:0.25rem; }
 .brp-btn { display:inline-flex; align-items:center; justify-content:center; min-height:48px; padding:0.7rem 1.6rem;
   border-radius:999px; font-weight:600; font-size:1rem; text-decoration:none !important; border:1.5px solid transparent; }
-.brp-btn-light { background:#fff; color:#0a3a8c !important; }
-.brp-btn-outline { border-color:rgba(255,255,255,0.7); color:#fff !important; }
-.brp-btn-light:hover, .brp-btn-outline:hover { filter:brightness(0.95); }
+/* On the stage the ground is always dark, so the bright amber holds in both themes */
+.brp-btn-light { background:#f99c00; color:#0a0a0a !important; }
+.brp-btn-outline { background:rgba(255,255,255,0.10); border-color:rgba(255,255,255,0.35); color:#fff !important; backdrop-filter:blur(6px); }
+.brp-btn-light:hover, .brp-btn-outline:hover { box-shadow:0 0 25px 4px var(--glow); }
 
 .brp-head { display:grid; gap:0.4rem; margin:0.5rem 0 1rem; }
 .brp-head h1 { margin:0; padding:0; color:var(--head); font-weight:800; font-size:clamp(1.75rem,4vw,2.5rem); line-height:1.1; }
@@ -128,7 +151,9 @@ header[data-testid="stHeader"] {
 .brp-grid { display:grid; gap:1rem; grid-template-columns:1fr; margin:0.5rem 0 1rem; }
 @media (min-width:720px) { .brp-grid { grid-template-columns:repeat(2,1fr); } }
 @media (min-width:1100px) { .brp-grid.three { grid-template-columns:repeat(3,1fr); } }
-.brp-card { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:clamp(1rem,3vw,1.5rem);
+/* Glass cards, as on the ABC site; solid enough to read without backdrop-filter */
+.brp-card { background:var(--glass); border:1px solid var(--glass-line); border-radius:16px; padding:clamp(1rem,3vw,1.5rem);
+  backdrop-filter:blur(8px);
   display:flex; flex-direction:column; gap:0.6rem; color:var(--text); }
 .brp-card h3 { margin:0; padding:0; font-size:1.125rem; font-weight:700; color:var(--head); }
 .brp-card p { margin:0; color:var(--muted); font-size:0.9375rem; }
@@ -145,7 +170,7 @@ header[data-testid="stHeader"] {
 .brp-pill.ai { background:var(--blue-wash); color:var(--blue); border-color:transparent; }
 
 .brp-stats { display:grid; gap:0.75rem; grid-template-columns:repeat(3,1fr); margin:0.25rem 0 1rem; }
-.brp-stat { background:var(--wash); border-radius:12px; padding:0.9rem 1rem; display:grid; gap:0.15rem; }
+.brp-stat { background:var(--glass); border:1px solid var(--glass-line); border-radius:12px; padding:0.9rem 1rem; display:grid; gap:0.15rem; }
 .brp-stat .v { font-size:1.75rem; font-weight:800; color:var(--head); font-variant-numeric:tabular-nums; }
 .brp-stat .k { font-size:0.8125rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--subtle); }
 
@@ -164,7 +189,7 @@ header[data-testid="stHeader"] {
 
 /* Sections fade and rise once; nothing moves for people who ask for less motion */
 @media (prefers-reduced-motion:no-preference) {
-  .brp-band, .brp-head { animation:brp-rise 0.5s ease-out both; }
+  .brp-stage-copy, .brp-head { animation:brp-rise 0.5s ease-out both; }
   @keyframes brp-rise { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
 }
 """
