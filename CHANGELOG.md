@@ -2,6 +2,13 @@
 
 All notable changes, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions are build numbers (shown in the footer of every page).
 
+## 2026.10.19-3
+
+### Fixed
+- The site was swapped with two renames, leaving a moment with no site; it is now a symlink switched atomically to each complete build.
+- The background refresher rebuilt the site after every featured report; it now rebuilds once per refresh, which kept a freshly started machine busy for minutes.
+- The monitor names the page that fails, and retries a slow page once so a cold-starting machine is not reported as an outage.
+
 ## 2026.10.19-2
 
 ### Fixed

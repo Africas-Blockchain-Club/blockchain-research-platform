@@ -100,7 +100,16 @@ def check_pages():
         page.on("pageerror", lambda e: errors.append(str(e)))
         for path, heading in pages:
             page.goto(SITE + path, timeout=60000)
-            page.get_by_text(heading, exact=False).first.wait_for(timeout=60000)
+            try:
+                page.get_by_text(heading, exact=False).first.wait_for(timeout=60000)
+            except Exception:
+                # One retry: a machine that has just started (staging stops when idle)
+                # can be slow once; a second miss is a real failure
+                page.goto(SITE + path, timeout=60000)
+                try:
+                    page.get_by_text(heading, exact=False).first.wait_for(timeout=60000)
+                except Exception as e:
+                    raise RuntimeError(f"{path} never showed {heading!r}: {type(e).__name__}") from e
             if page.get_by_text("Page not found").count() and path.startswith("/app"):
                 raise RuntimeError(f"{path} shows Streamlit's 'Page not found' dialog")
             crashed = page.locator('[data-testid="stException"]')
