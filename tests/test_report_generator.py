@@ -66,3 +66,31 @@ def test_a_headline_with_advice_words_does_not_block_the_data_report(temp_store,
 def test_a_crafted_ticker_never_reaches_a_url():
     with pytest.raises(ValueError):
         report_generator.fetch_and_analyse("../../evil?x=1")
+
+
+def test_a_rate_limited_source_is_announced_at_the_top(data_summary):
+    from data_analytics.data_report import build_data_report
+
+    data_summary["source_errors"] = {"coingecko": "CoinGecko data endpoint returned 429"}
+    text = build_data_report("EXM", data_summary, "19 October 2026")
+    assert text.index("Some sources could not be read") < text.index("## Phase 0")
+    assert "429" in text
+
+
+def test_coingecko_waits_and_retries_after_a_rate_limit(monkeypatch):
+    from data_engineering import fetchers
+
+    calls = []
+
+    class Resp:
+        def __init__(self, code):
+            self.status_code, self.headers = code, {"Retry-After": "0"}
+
+    def fake_get(url, headers=None, timeout=None):
+        calls.append(url)
+        return Resp(429 if len(calls) == 1 else 200)
+
+    monkeypatch.setattr(fetchers.requests, "get", fake_get)
+    monkeypatch.setattr(fetchers.time, "sleep", lambda s: None)
+    assert fetchers._coingecko_get("https://api.coingecko.com/x", {}).status_code == 200
+    assert len(calls) == 2

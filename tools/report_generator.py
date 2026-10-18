@@ -91,7 +91,7 @@ def fetch_and_analyse(token, log_fn=None):
         raise ValueError(f"{token!r} is not a valid ticker: use letters and digits only, for example ADA.")
 
     say("Reading market, supply and project data from CoinGecko...")
-    coingecko_data = fetch_coingecko_data(token)
+    coingecko_data = fetch_coingecko_data(token, coin_id=(profile(token) or {}).get("coingecko_id"))
     say("Finding the token's main exchange pool on DexScreener...")
     dex_data = fetch_dexscreener_data(
         token,

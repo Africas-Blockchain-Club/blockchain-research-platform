@@ -1,5 +1,6 @@
 """
-Refresh the live snapshot of every featured blockchain, then rebuild the site.
+Refresh the live snapshot of every featured blockchain, keep a current
+data-only report for each, then rebuild the site.
 
 Runs in the background on the production machine (scripts/start.sh), so the
 blockchain pages show current network data without anyone generating a
@@ -67,9 +68,42 @@ def refresh_once():
         status = snapshot["network"].get("error") or "ok"
         log.info("%s network snapshot: %s", symbol, status)
 
+    refresh_featured_reports()
+
     from sitegen.build import build_site
 
     build_site()
+
+
+def refresh_featured_reports():
+    """Keep a current data-only report for every featured chain. A report is
+    regenerated once it is older than REPORT_REFRESH_HOURS (default 24), or
+    sooner if a source failed when it was made (a rate limit, an outage). A paid
+    AI write-up is never overwritten. Reports are spaced out so the free
+    CoinGecko tier does not rate-limit them."""
+    from tools import report_store
+    from tools.report_generator import fetch_and_analyse, save_data_report
+
+    max_age = datetime.timedelta(hours=int(os.getenv("REPORT_REFRESH_HOURS") or "24"))
+    now = datetime.datetime.now(datetime.timezone.utc)
+    for symbol in FEATURED:
+        loaded = report_store.load_report(symbol)
+        if loaded:
+            meta = loaded[0]
+            if meta.get("mode") == "ai":
+                continue
+            generated = datetime.datetime.fromisoformat(meta["generated_at"])
+            # A recent, complete report is left alone; an incomplete one is redone
+            if now - generated < max_age and not meta.get("source_errors"):
+                continue
+        try:
+            analysis = fetch_and_analyse(symbol, log_fn=lambda _msg: None)
+            meta = save_data_report(analysis)
+            log.info("%s report refreshed: %s flagged, %s clear, %s no data",
+                     symbol, meta["flagged"], meta["clear"], meta["no_data"])
+        except Exception:
+            log.exception("%s report refresh failed", symbol)
+        time.sleep(int(os.getenv("REPORT_REFRESH_SPACING_SECONDS") or "20"))
 
 
 def main():

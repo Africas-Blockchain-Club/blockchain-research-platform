@@ -115,6 +115,8 @@ def save_report(token, body, *, mode, model, risk_checks, data_summary, screensh
         "price_usd": info.get("current_price_usd"),
         "market_cap_usd": info.get("market_cap_usd"),
         "fx": data_summary.get("fx"),
+        # Sources that failed for this report, so an incomplete report can be redone
+        "source_errors": data_summary.get("source_errors") or {},
         "cost_usd": cost_usd,
     }
     markdown = compose_markdown(body, mode=mode, model=model, risk_checks=risk_checks, generated_at=generated_at)

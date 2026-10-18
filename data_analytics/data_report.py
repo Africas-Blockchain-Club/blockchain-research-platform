@@ -75,6 +75,18 @@ def build_data_report(token, data_summary, date_str):
         "teaching thresholds. A check that says \"No data\" means the platform could not measure it, not "
         "that the risk is absent.",
         "",
+    ]
+    failed = data_summary.get("source_errors") or {}
+    if failed:
+        # Say so first: a report built on missing data must not look complete
+        parts += [
+            "> **Some sources could not be read for this report:** "
+            + "; ".join(f"{_clean(name)} ({_clean(err, 90)})" for name, err in failed.items())
+            + ". Figures from them show as N/A and the matching risk checks as \"No data\". "
+            "Research it again in a few minutes for a complete report.",
+            "",
+        ]
+    parts += [
         "## Phase 0: The Blockchain",
         "",
     ]
