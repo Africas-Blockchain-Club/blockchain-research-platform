@@ -1,7 +1,7 @@
 # Work Breakdown Structure: Blockchain Research Platform
 
 **Repository:** https://github.com/Africas-Blockchain-Club/blockchain-research-platform
-**Last updated:** 18 October 2026, from README.md, docs/, the code layout, deploy.md and the git history to commit afdb903 (no issues or pull requests existed yet)
+**Last updated:** 18 October 2026, from README.md, docs/, the code layout, deploy.md and the git history to pull request #1 (release 2026.10.19)
 **Method:** deliverable-based WBS following the PMBOK definition and the 100% Rule (see workbreakdownstructure.com)
 
 ## Scope statement
@@ -18,17 +18,18 @@ Status: **Done** (with evidence) · **In progress** · **Planned** · **Planning
 
 - **1 Research content**
   - 1.1 Blockchain Research Protocol - Done
-  - 1.2 Blockchain profiles for the featured chains - Planned
+  - 1.2 Blockchain profiles for the featured chains - Done
   - 1.3 Rule-based risk checks - Done
   - 1.4 Data-only report - Done
   - 1.5 AI write-up and advice check - Done
 - **2 Data integration**
   - 2.1 Market data adapters - Done
-  - 2.2 Network data adapters - Planned
+  - 2.2 Network data adapters - Done
   - 2.3 AI adapter - Done
   - 2.4 Chart screenshot adapter - Done
+  - 2.5 Developer activity adapter - Done
 - **3 User interface**
-  - 3.1 Static public site - Planned
+  - 3.1 Static public site - Done
   - 3.2 Research app - Done
   - 3.3 ABC front-end implementation - Done
   - 3.4 Wallet components - Done
@@ -41,36 +42,36 @@ Status: **Done** (with evidence) · **In progress** · **Planned** · **Planning
 - **5 Platform and operations**
   - 5.1 Container image - Done
   - 5.2 Production environment - Done
-  - 5.3 Staging environment - Planned
+  - 5.3 Staging environment - Done
   - 5.4 Continuous integration - Done
-  - 5.5 Continuous deployment - Planned
-  - 5.6 Branch protection and pull-request workflow - Planned
+  - 5.5 Continuous deployment - Done
+  - 5.6 Branch protection and pull-request workflow - Done
   - 5.7 Live monitoring - Done
 - **6 Security**
-  - 6.1 Security policy - Planned
-  - 6.2 Threat model - Planned
-  - 6.3 Dependency scanning - Planned
-  - 6.4 Secret scanning - Planned
-  - 6.5 Static analysis - Planned
-  - 6.6 Supply-chain pinning - Planned
-  - 6.7 HTTP security headers - Planned
+  - 6.1 Security policy - Done
+  - 6.2 Threat model - Done
+  - 6.3 Dependency scanning - Done
+  - 6.4 Secret scanning - Done
+  - 6.5 Static analysis - Done
+  - 6.6 Supply-chain pinning - Done
+  - 6.7 HTTP security headers - Done
   - 6.8 Runtime hardening - Done
   - 6.9 Money safeguards - Done
   - 6.10 Education-not-advice compliance - Done
 - **7 Quality**
   - 7.1 Automated test suite - Done
   - 7.2 Linting - Done
-  - 7.3 Pre-commit hooks - Planned
+  - 7.3 Pre-commit hooks - Done
 - **8 Documentation**
   - 8.1 README - Done
   - 8.2 Contributing guide - Done
   - 8.3 Compliance and front-end notes - Done
   - 8.4 Operations guide - Done
-  - 8.5 Change log - Planned
-  - 8.6 Architecture decision records - Planned
+  - 8.5 Change log - Done
+  - 8.6 Architecture decision records - Done
 - **9 Project management**
   - 9.1 Work Breakdown Structure - Done
-  - 9.2 Collaboration templates - Planned
+  - 9.2 Collaboration templates - Done
 - **10 Standalone teaching examples**
   - 10.1 Blockchain wallet explorer - Done
   - 10.2 x402 agent payment demo - Done
@@ -97,6 +98,7 @@ flowchart TD
   E2 --> W2_2["2.2 Network data adapters"]
   E2 --> W2_3["2.3 AI adapter"]
   E2 --> W2_4["2.4 Chart screenshot adapter"]
+  E2 --> W2_5["2.5 Developer activity adapter"]
   E3 --> W3_1["3.1 Static public site"]
   E3 --> W3_2["3.2 Research app"]
   E3 --> W3_3["3.3 ABC front-end implementation"]
@@ -150,7 +152,7 @@ flowchart TD
 | Deliverables | Blockchain Research Protocol, Blockchain profiles for the featured chains, Rule-based risk checks, Data-only report, AI write-up and advice check |
 | Acceptance criteria | Every work package below meets its own criteria |
 | Milestones | Release 2026.10 (blockchain research and engineering standards) completes the planned packages |
-| Status | 4 of 5 work packages done |
+| Status | 5 of 5 work packages done |
 
 #### 1.1 Blockchain Research Protocol
 
@@ -175,10 +177,10 @@ flowchart TD
 | Description | Hand-checked profiles of Bitcoin, Ethereum, Solana, XRP Ledger, BNB Chain, Avalanche and Hyperliquid: purpose, how it works, consensus, native asset role, sources. Not live data (2.2). |
 | Deliverables | data_analytics/chains.py and a profile section in every report |
 | Acceptance criteria | Each fact cites an official source; a test checks every featured chain has a complete profile |
-| Milestones | Release 2026.10 (blockchain research and engineering standards) |
+| Milestones | Delivered |
 | Risks | A stated fact goes stale; each profile carries a 'last checked' date and links |
-| Evidence and links | this release |
-| Status | Planned |
+| Evidence and links | Pull request #1 |
+| Status | Done |
 
 #### 1.3 Rule-based risk checks
 
@@ -229,10 +231,10 @@ flowchart TD
 | Type | Control account |
 | Owner | Peter Manda |
 | Description | Every adapter that reads an outside service: market, network, AI and screenshot data. One module per dependency, each with an off state. |
-| Deliverables | Market data adapters, Network data adapters, AI adapter, Chart screenshot adapter |
+| Deliverables | Market data adapters, Network data adapters, AI adapter, Chart screenshot adapter, Developer activity adapter |
 | Acceptance criteria | Every work package below meets its own criteria |
 | Milestones | Release 2026.10 (blockchain research and engineering standards) completes the planned packages |
-| Status | 3 of 4 work packages done |
+| Status | 5 of 5 work packages done |
 
 #### 2.1 Market data adapters
 
@@ -257,10 +259,10 @@ flowchart TD
 | Description | Live network data per featured chain from public sources: block height and time, fees, validators or hash rate, throughput where published. |
 | Deliverables | data_engineering/networks.py |
 | Acceptance criteria | Each adapter returns data or a labelled error; tests run offline against recorded responses |
-| Milestones | Release 2026.10 (blockchain research and engineering standards) |
+| Milestones | Delivered |
 | Risks | Public endpoints change or rate-limit; each has a timeout and an off state |
-| Evidence and links | this release |
-| Status | Planned |
+| Evidence and links | Pull request #1 |
+| Status | Done |
 
 #### 2.3 AI adapter
 
@@ -290,6 +292,20 @@ flowchart TD
 | Evidence and links | a7994ae |
 | Status | Done |
 
+#### 2.5 Developer activity adapter
+
+| Field | Entry |
+|---|---|
+| Type | Work package |
+| Owner | Peter Manda |
+| Description | Commits, stars and last change from each featured chain's main client repository on GitHub, replacing CoinGecko developer data, which its free tier no longer fills. |
+| Deliverables | data_engineering/github_activity.py |
+| Acceptance criteria | Bitcoin Core shows live commit counts; failures show as No data |
+| Milestones | Delivered |
+| Risks | GitHub rate limits; GITHUB_TOKEN raises them |
+| Evidence and links | Pull request #1 |
+| Status | Done |
+
 ### 3 User interface
 
 | Field | Entry |
@@ -300,7 +316,7 @@ flowchart TD
 | Deliverables | Static public site, Research app, ABC front-end implementation, Wallet components, Attack cost teaching page |
 | Acceptance criteria | Every work package below meets its own criteria |
 | Milestones | Release 2026.10 (blockchain research and engineering standards) completes the planned packages |
-| Status | 4 of 5 work packages done |
+| Status | 5 of 5 work packages done |
 
 #### 3.1 Static public site
 
@@ -311,10 +327,10 @@ flowchart TD
 | Description | Plain HTML pages generated from the reports and profiles (home, blockchains, reports, method), served by Caddy for an instant first load. |
 | Deliverables | site/ generator and templates, Caddyfile |
 | Acceptance criteria | Home loads without Streamlit; pages pass the front-end checks at six widths |
-| Milestones | Release 2026.10 (blockchain research and engineering standards) |
+| Milestones | Delivered |
 | Risks | Site and app drift; both built from the same theme tokens |
-| Evidence and links | this release |
-| Status | Planned |
+| Evidence and links | Pull request #1 |
+| Status | Done |
 
 #### 3.2 Research app
 
@@ -450,7 +466,7 @@ flowchart TD
 | Deliverables | Container image, Production environment, Staging environment, Continuous integration, Continuous deployment, Branch protection and pull-request workflow, Live monitoring |
 | Acceptance criteria | Every work package below meets its own criteria |
 | Milestones | Release 2026.10 (blockchain research and engineering standards) completes the planned packages |
-| Status | 4 of 7 work packages done |
+| Status | 7 of 7 work packages done |
 
 #### 5.1 Container image
 
@@ -489,10 +505,10 @@ flowchart TD
 | Description | A second Fly app that receives each release candidate before production; payments and AI off. |
 | Deliverables | fly.staging.toml |
 | Acceptance criteria | Release candidate passes the monitor against staging before merge |
-| Milestones | Release 2026.10 (blockchain research and engineering standards) |
+| Milestones | Delivered |
 | Risks | Cost; staging stops when idle |
-| Evidence and links | this release |
-| Status | Planned |
+| Evidence and links | Pull request #1 |
+| Status | Done |
 
 #### 5.4 Continuous integration
 
@@ -517,10 +533,10 @@ flowchart TD
 | Description | A merge to main that passes CI deploys to production with a scoped deploy token. |
 | Deliverables | .github/workflows/deploy.yml |
 | Acceptance criteria | A merged pull request appears live with its build number |
-| Milestones | Release 2026.10 (blockchain research and engineering standards) |
+| Milestones | Delivered |
 | Risks | A bad merge deploys; protected main and staging reduce it |
-| Evidence and links | this release |
-| Status | Planned |
+| Evidence and links | Pull request #1 |
+| Status | Done |
 
 #### 5.6 Branch protection and pull-request workflow
 
@@ -531,10 +547,10 @@ flowchart TD
 | Description | main accepts changes only by pull request with CI and security checks passing. |
 | Deliverables | GitHub branch rules |
 | Acceptance criteria | A direct push to main is refused |
-| Milestones | Release 2026.10 (blockchain research and engineering standards) |
+| Milestones | Delivered |
 | Risks | Slows urgent fixes; administrators can merge a passing pull request |
-| Evidence and links | this release |
-| Status | Planned |
+| Evidence and links | Pull request #1 |
+| Status | Done |
 
 #### 5.7 Live monitoring
 
@@ -560,7 +576,7 @@ flowchart TD
 | Deliverables | Security policy, Threat model, Dependency scanning, Secret scanning, Static analysis, Supply-chain pinning, HTTP security headers, Runtime hardening, Money safeguards, Education-not-advice compliance |
 | Acceptance criteria | Every work package below meets its own criteria |
 | Milestones | Release 2026.10 (blockchain research and engineering standards) completes the planned packages |
-| Status | 3 of 10 work packages done |
+| Status | 10 of 10 work packages done |
 
 #### 6.1 Security policy
 
@@ -571,10 +587,10 @@ flowchart TD
 | Description | How to report a vulnerability, what is in scope, and response times. |
 | Deliverables | SECURITY.md |
 | Acceptance criteria | Present and linked from the README |
-| Milestones | Release 2026.10 (blockchain research and engineering standards) |
+| Milestones | Delivered |
 | Risks | None |
-| Evidence and links | this release |
-| Status | Planned |
+| Evidence and links | Pull request #1 |
+| Status | Done |
 
 #### 6.2 Threat model
 
@@ -585,10 +601,10 @@ flowchart TD
 | Description | Assets, trust boundaries, threats and the control for each. |
 | Deliverables | docs/THREAT_MODEL.md |
 | Acceptance criteria | Every threat names a control and where it is tested |
-| Milestones | Release 2026.10 (blockchain research and engineering standards) |
+| Milestones | Delivered |
 | Risks | Model goes stale; reviewed each release |
-| Evidence and links | this release |
-| Status | Planned |
+| Evidence and links | Pull request #1 |
+| Status | Done |
 
 #### 6.3 Dependency scanning
 
@@ -599,10 +615,10 @@ flowchart TD
 | Description | Dependabot updates and pip-audit on every pull request; container image scan. |
 | Deliverables | .github/dependabot.yml, .github/workflows/security.yml |
 | Acceptance criteria | Scan runs green or reports a finding |
-| Milestones | Release 2026.10 (blockchain research and engineering standards) |
+| Milestones | Delivered |
 | Risks | Noise; triage rules in SECURITY.md |
-| Evidence and links | this release |
-| Status | Planned |
+| Evidence and links | Pull request #1 |
+| Status | Done |
 
 #### 6.4 Secret scanning
 
@@ -613,10 +629,10 @@ flowchart TD
 | Description | Gitleaks across the full history on every pull request. |
 | Deliverables | .github/workflows/security.yml |
 | Acceptance criteria | History scan clean |
-| Milestones | Release 2026.10 (blockchain research and engineering standards) |
+| Milestones | Delivered |
 | Risks | A leaked key; rotate and re-scan |
-| Evidence and links | this release |
-| Status | Planned |
+| Evidence and links | Pull request #1 |
+| Status | Done |
 
 #### 6.5 Static analysis
 
@@ -627,10 +643,10 @@ flowchart TD
 | Description | CodeQL and Bandit on every pull request. |
 | Deliverables | .github/workflows/codeql.yml, security.yml |
 | Acceptance criteria | No unresolved high findings |
-| Milestones | Release 2026.10 (blockchain research and engineering standards) |
+| Milestones | Delivered |
 | Risks | False positives; documented suppressions only |
-| Evidence and links | this release |
-| Status | Planned |
+| Evidence and links | Pull request #1 |
+| Status | Done |
 
 #### 6.6 Supply-chain pinning
 
@@ -641,10 +657,10 @@ flowchart TD
 | Description | Every GitHub Action pinned to a commit hash; Python dependencies pinned. |
 | Deliverables | .github/workflows/*.yml, requirements*.txt |
 | Acceptance criteria | No action referenced by a moving tag |
-| Milestones | Release 2026.10 (blockchain research and engineering standards) |
+| Milestones | Delivered |
 | Risks | Pins age; Dependabot updates them |
-| Evidence and links | this release |
-| Status | Planned |
+| Evidence and links | Pull request #1 |
+| Status | Done |
 
 #### 6.7 HTTP security headers
 
@@ -655,10 +671,10 @@ flowchart TD
 | Description | HSTS, content security policy, framing, referrer and permissions headers from Caddy. |
 | Deliverables | Caddyfile |
 | Acceptance criteria | Headers present on the live site |
-| Milestones | Release 2026.10 (blockchain research and engineering standards) |
+| Milestones | Delivered |
 | Risks | A strict policy breaks Streamlit; policy split by path |
-| Evidence and links | this release |
-| Status | Planned |
+| Evidence and links | Pull request #1 |
+| Status | Done |
 
 #### 6.8 Runtime hardening
 
@@ -712,7 +728,7 @@ flowchart TD
 | Deliverables | Automated test suite, Linting, Pre-commit hooks |
 | Acceptance criteria | Every work package below meets its own criteria |
 | Milestones | Release 2026.10 (blockchain research and engineering standards) completes the planned packages |
-| Status | 2 of 3 work packages done |
+| Status | 3 of 3 work packages done |
 
 #### 7.1 Automated test suite
 
@@ -751,10 +767,10 @@ flowchart TD
 | Description | The same lint and secret checks before every local commit. |
 | Deliverables | .pre-commit-config.yaml |
 | Acceptance criteria | pre-commit run --all-files clean |
-| Milestones | Release 2026.10 (blockchain research and engineering standards) |
+| Milestones | Delivered |
 | Risks | None |
-| Evidence and links | this release |
-| Status | Planned |
+| Evidence and links | Pull request #1 |
+| Status | Done |
 
 ### 8 Documentation
 
@@ -766,7 +782,7 @@ flowchart TD
 | Deliverables | README, Contributing guide, Compliance and front-end notes, Operations guide, Change log, Architecture decision records |
 | Acceptance criteria | Every work package below meets its own criteria |
 | Milestones | Release 2026.10 (blockchain research and engineering standards) completes the planned packages |
-| Status | 4 of 6 work packages done |
+| Status | 6 of 6 work packages done |
 
 #### 8.1 README
 
@@ -833,10 +849,10 @@ flowchart TD
 | Description | Every release with its changes, in Keep a Changelog form. |
 | Deliverables | CHANGELOG.md |
 | Acceptance criteria | Updated in each release pull request |
-| Milestones | Release 2026.10 (blockchain research and engineering standards) |
+| Milestones | Delivered |
 | Risks | None |
-| Evidence and links | this release |
-| Status | Planned |
+| Evidence and links | Pull request #1 |
+| Status | Done |
 
 #### 8.6 Architecture decision records
 
@@ -847,10 +863,10 @@ flowchart TD
 | Description | The significant decisions and why: education not advice, Streamlit plus static site, multichain stablecoins, Fly with one volume. |
 | Deliverables | docs/adr/ |
 | Acceptance criteria | One record per decision |
-| Milestones | Release 2026.10 (blockchain research and engineering standards) |
+| Milestones | Delivered |
 | Risks | None |
-| Evidence and links | this release |
-| Status | Planned |
+| Evidence and links | Pull request #1 |
+| Status | Done |
 
 ### 9 Project management
 
@@ -862,7 +878,7 @@ flowchart TD
 | Deliverables | Work Breakdown Structure, Collaboration templates |
 | Acceptance criteria | Every work package below meets its own criteria |
 | Milestones | Release 2026.10 (blockchain research and engineering standards) completes the planned packages |
-| Status | 1 of 2 work packages done |
+| Status | 2 of 2 work packages done |
 
 #### 9.1 Work Breakdown Structure
 
@@ -875,7 +891,7 @@ flowchart TD
 | Acceptance criteria | Passes the WBS checklist |
 | Milestones | Delivered |
 | Risks | Goes stale; updated each release |
-| Evidence and links | this release |
+| Evidence and links | Pull request #1 |
 | Status | Done |
 
 #### 9.2 Collaboration templates
@@ -887,10 +903,10 @@ flowchart TD
 | Description | Pull request template, issue templates and code owners. |
 | Deliverables | .github/ |
 | Acceptance criteria | Templates appear on new pull requests and issues |
-| Milestones | Release 2026.10 (blockchain research and engineering standards) |
+| Milestones | Delivered |
 | Risks | None |
-| Evidence and links | this release |
-| Status | Planned |
+| Evidence and links | Pull request #1 |
+| Status | Done |
 
 ### 10 Standalone teaching examples
 
@@ -951,3 +967,4 @@ flowchart TD
 | Date | Change | Why |
 |---|---|---|
 | 18 October 2026 | WBS created, covering the platform to date and the release that adds blockchain research and the engineering standards | Planning the release, and recording the whole scope in one place |
+| 19 October 2026 | 17 work packages moved from Planned to Done with pull request #1 as evidence; 2.5 Developer activity adapter added (next free code under 2) | The release was built, checked on staging and reviewed |
