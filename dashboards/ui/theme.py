@@ -19,13 +19,14 @@ import streamlit as st
 
 from config import SETTINGS
 
-# Every text pairing checked against WCAG AA on 18 October 2026 (abc-brand.md)
+# Every text pairing checked against WCAG AA on 18 October 2026 (abc-brand.md).
+# "pass" is the colour for a passing status; Bandit reads the key as a password.
 _LIGHT = {
     "bg": "#fafafa", "surface": "#ffffff", "wash": "#f5f5f4", "line": "#e5e5e5", "line-strong": "#d4d4d4",
     "text": "#171717", "head": "#0a0a0a", "muted": "#404040", "subtle": "#525252",
     "on-blue": "#ffffff", "blue-wash": "#fff4e0",
     "band-a": "#0a0a0a", "band-b": "#7b3306", "band-text": "#fde68a",
-    "pass": "#15803d", "pass-wash": "#e8f5ee", "warn": "#a15c00", "warn-wash": "#fff4e0",
+    "pass": "#15803d",  # nosec B105 "pass-wash": "#e8f5ee", "warn": "#a15c00", "warn-wash": "#fff4e0",
     "stop": "#b91c1c", "stop-wash": "#fdecea",
     "glass": "rgba(10,10,10,0.03)", "glass-line": "rgba(10,10,10,0.10)",
     "glow": "rgba(249,156,0,0.25)", "shadow": "0 10px 25px -8px rgba(10,10,10,0.15)",
@@ -36,7 +37,7 @@ _DARK = {
     "text": "#f5f5f5", "head": "#ffffff", "muted": "#d4d4d4", "subtle": "#a3a3a3",
     "on-blue": "#0a0a0a", "blue-wash": "#2a1d05",
     "band-a": "#0a0a0a", "band-b": "#7b3306", "band-text": "#fde68a",
-    "pass": "#4ade80", "pass-wash": "#0f2a1a", "warn": "#fcbb00", "warn-wash": "#2a1d05",
+    "pass": "#4ade80",  # nosec B105 "pass-wash": "#0f2a1a", "warn": "#fcbb00", "warn-wash": "#2a1d05",
     "stop": "#f87171", "stop-wash": "#2d1414",
     "glass": "rgba(255,255,255,0.06)", "glass-line": "rgba(255,255,255,0.18)",
     "glow": "rgba(249,156,0,0.35)", "shadow": "0 25px 50px -12px rgba(0,0,0,0.6)",

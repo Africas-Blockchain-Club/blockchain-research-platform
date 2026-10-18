@@ -4,12 +4,16 @@ Attack cost (Session 4): price an attack on Ethereum with live data.
 The lesson: a proof-of-stake chain is not secure because an attack is
 impossible. It is secure because the attack costs more than it can win.
 """
+import logging
+
 import requests
 import streamlit as st
 
 import payment_verifier
 from config import SETTINGS
 from dashboards.ui.components import notice, page_header
+
+log = logging.getLogger(__name__)
 
 
 @st.cache_data(ttl=300, show_spinner=False)
@@ -25,8 +29,8 @@ def _live_inputs():
         eth = resp.json().get("ethereum", {})
         if eth.get("usd") and eth.get("zar"):
             return eth["usd"], eth["zar"] / eth["usd"], "CoinGecko (live ETH price in USD and ZAR)"
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning("Live ETH price unavailable, using the manual fallback: %s", e)
     return None, None, None
 
 

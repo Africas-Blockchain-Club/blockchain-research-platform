@@ -151,7 +151,8 @@ if __name__ == "__main__":
         raise SystemExit("Set TEST_EMAIL_RECIPIENT in .env to run the smoke test.")
     send_report_receipt(
         payer_email=recipient,
-        token="TEST",
+        # Bandit reads a keyword named token as a password; this is a placeholder ticker
+        token="TEST",  # nosec B106
         report_markdown="# Test report\n\nThis is a delivery smoke test, not a real report.\n",
         receipt={
             "amount_decimal": "0.10",

@@ -1,7 +1,6 @@
 import os
 import re
 import urllib.parse
-import urllib.request
 from email.utils import parsedate_to_datetime
 
 import requests
@@ -214,14 +213,16 @@ def fetch_cryptopanic_news(token):
         "ADA": "Cardano", "ENA": "Ethena", "OP": "Optimism", "ARB": "Arbitrum",
         "LINK": "Chainlink", "DOT": "Polkadot", "AVAX": "Avalanche",
         "UNI": "Uniswap", "AAVE": "Aave", "MKR": "Maker",
+        "XRP": "XRP Ledger", "HYPE": "Hyperliquid",
     }
     full_name = KNOWN_NAMES.get(token.upper(), token)
     query = urllib.parse.quote(f"{full_name} {token.upper()} crypto")
     url = f"https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
 
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        xml = urllib.request.urlopen(req, timeout=10).read().decode("utf-8")
+        resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+        resp.raise_for_status()
+        xml = resp.text
 
         # Extract individual <item> blocks
         items = re.findall(r"<item>(.*?)</item>", xml, re.DOTALL)

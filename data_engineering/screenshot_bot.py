@@ -41,7 +41,8 @@ def capture_dexscreener_chart(token_symbol, dex_url):
             try:
                 page.wait_for_selector("canvas", state="attached", timeout=15000)
             except Exception:
-                pass  # some pairs render no canvas; capture the page anyway
+                # Some pairs render no canvas; capture the page anyway
+                log.debug("No chart canvas for %s; capturing the page as it is", token_symbol)
             # The candles arrive over the websocket after the canvas exists
             page.wait_for_timeout(12000)
             page.screenshot(path=str(file_path), full_page=False)

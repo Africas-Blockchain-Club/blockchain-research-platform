@@ -1,0 +1,15 @@
+# Secret scanning: Gitleaks' default rules, plus an allowlist of public values
+# that look like secrets but are not. Every entry says why it is safe; never
+# add a value here without one.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Public values that only look like secrets"
+regexes = [
+  # Anvil's first default account key: published in the Foundry documentation and
+  # used by every local test chain. The x402 demo uses it on a local chain only.
+  '''0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80''',
+  # USDC's contract address on Ethereum mainnet: a public contract, not a key.
+  '''(?i)0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48''',
+]
