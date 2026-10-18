@@ -1,4 +1,5 @@
 import os
+import time
 import urllib.parse
 from email.utils import parsedate_to_datetime
 
@@ -10,10 +11,26 @@ MAX_FEED_BYTES = 2_000_000
 
 # ====================== COINGECKO ======================
 
-def fetch_coingecko_data(token):
+def _coingecko_get(url, headers, timeout=12, attempts=3):
+    """GET from CoinGecko, waiting and retrying when it rate-limits (HTTP 429).
+    The free tier allows only a few requests a minute; a short wait recovers
+    most limits, and a final 429 is returned to the caller to report."""
+    resp = None
+    for attempt in range(attempts):
+        resp = requests.get(url, headers=headers, timeout=timeout)
+        if resp.status_code != 429:
+            return resp
+        wait = min(int(resp.headers.get("Retry-After") or 0) or 15 * (attempt + 1), 60)
+        if attempt < attempts - 1:
+            time.sleep(wait)
+    return resp
+
+
+def fetch_coingecko_data(token, coin_id=None):
     """
     Fetch full market data, community stats, and description from CoinGecko.
-    Replaces the old listing-check with a real data pull.
+    coin_id: CoinGecko's id when it is already known (the featured chains),
+    which saves the search request and halves the load on the rate limit.
     """
     try:
         headers = {}
@@ -21,29 +38,24 @@ def fetch_coingecko_data(token):
         if api_key:
             headers["x-cg-demo-api-key"] = api_key
 
-        # Step 1: resolve token symbol → CoinGecko ID
-        search_resp = requests.get(
-            f"https://api.coingecko.com/api/v3/search?query={token.lower()}",
-            headers=headers,
-            timeout=10,
-        )
-        if search_resp.status_code != 200:
-            return {"error": f"CoinGecko search returned {search_resp.status_code}"}
-
-        coins = search_resp.json().get("coins", [])
-        # Prefer an exact symbol match; fall back to the first result
-        exact = [c for c in coins if c.get("symbol", "").upper() == token.upper()]
-        if not exact:
-            return {"error": f"Token '{token}' not found on CoinGecko"}
-        coin_id = exact[0]["id"]
+        if not coin_id:
+            # Resolve the ticker to a CoinGecko id
+            search_resp = _coingecko_get(f"https://api.coingecko.com/api/v3/search?query={token.lower()}", headers)
+            if search_resp.status_code != 200:
+                return {"error": f"CoinGecko search returned {search_resp.status_code}"}
+            coins = search_resp.json().get("coins", [])
+            # Prefer an exact symbol match
+            exact = [c for c in coins if c.get("symbol", "").upper() == token.upper()]
+            if not exact:
+                return {"error": f"Token '{token}' not found on CoinGecko"}
+            coin_id = exact[0]["id"]
 
         # Step 2: fetch full data
-        data_resp = requests.get(
+        data_resp = _coingecko_get(
             f"https://api.coingecko.com/api/v3/coins/{coin_id}"
             "?localization=false&tickers=false&market_data=true"
             "&community_data=true&developer_data=false&sparkline=false",
-            headers=headers,
-            timeout=12,
+            headers,
         )
         if data_resp.status_code != 200:
             return {"error": f"CoinGecko data endpoint returned {data_resp.status_code}"}

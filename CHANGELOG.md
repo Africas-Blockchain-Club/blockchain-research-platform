@@ -2,6 +2,16 @@
 
 All notable changes, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions are build numbers (shown in the footer of every page).
 
+## 2026.10.19-2
+
+### Fixed
+- CoinGecko rate limits left four featured reports without market data: featured chains now use their known CoinGecko ids (one request instead of two), and the adapter waits and retries after HTTP 429.
+- Browsers asking for /favicon.ico got a 404; it now serves the logo.
+
+### Added
+- A report built while a source was down says so at the top, and records which source failed.
+- The background refresher keeps a current data-only report for each featured chain (daily, or sooner when the last one was incomplete), never overwriting a paid AI write-up.
+
 ## 2026.10.19-1
 
 ### Added
