@@ -61,3 +61,17 @@ def test_a_payment_counts_as_delivered_once_its_report_exists(temp_store, data_s
         risk_checks=compute_risk_checks(data_summary), data_summary=data_summary, payment_id=payment_id,
     )
     assert db.report_exists_for_payment(payment_id)
+
+
+def test_payments_report_runs_on_an_empty_and_a_used_database(temp_store, data_summary, capsys):
+    import db
+    from scripts import payments_report
+
+    payments_report.main()
+    assert "No payments recorded yet" in capsys.readouterr().out
+    db.record_payment_attempt(
+        request_id="r", token_symbol="EXM", payer_address="0xp", recipient_address="0xr", chain_id=8453,
+        asset_contract="0xu", asset_symbol="USDT", amount_atomic=2_000_000, amount_decimal=2, tx_hash="0xdef",
+    )
+    payments_report.main()
+    assert "NO REPORT" in capsys.readouterr().out

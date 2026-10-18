@@ -1,142 +1,256 @@
 <!DOCTYPE html>
 <!--
-  Streamlit custom component: one-click USDC payment through a browser wallet.
+  Streamlit custom component: pay for an AI write-up with whatever stablecoin
+  the payer already holds.
 
   Speaks the Streamlit component postMessage protocol directly (componentReady,
-  render, setComponentValue, setFrameHeight) so no build step or npm package is
-  needed. Talks to the injected EIP-1193 provider (window.ethereum - MetaMask,
-  Coinbase Wallet, Rabby, and similar): connects, switches or adds the target
-  chain, then sends an ERC-20 transfer(recipient, amount) and returns the
-  transaction hash to Python. The off state is explicit: with no wallet
-  extension present, the button reports it and the manual hash entry in the
-  dashboard remains the fallback path.
+  render, setComponentValue, setFrameHeight), so no build step or npm package
+  is needed. Flow:
+    1. Connect the injected EIP-1193 wallet (MetaMask, Rabby, Coinbase Wallet).
+    2. Read the payer's balance of every accepted token on every accepted
+       network through public RPCs, and preselect one they can afford, on the
+       network the wallet is already using when possible.
+    3. Switch (or add) that network in the wallet and send an ERC-20
+       transfer(recipient, amount).
+    4. Return {tx_hash, chain_id, payer_wallet} to Python, which verifies it
+       on-chain before anything is unlocked.
+  Off state: with no wallet extension, the button says so and the manual
+  transaction-hash path in the dashboard remains available.
 -->
 <html>
 <head>
 <meta charset="utf-8">
 <style>
-  /* Matches dashboards/ui/theme.py: 48px pill, the brand accent, AA error colours */
+  /* Matches dashboards/ui/theme.py: 48px pills, the brand accent, AA colours */
   body { margin: 0; font-family: "Figtree", "Helvetica Neue", Helvetica, Arial, sans-serif; color: #16181b; }
-  #pay {
+  button {
     width: 100%; min-height: 48px; padding: 0.7rem 1.4rem; border-radius: 999px;
     border: 1.5px solid #0b57c9; background: #0b57c9; color: #ffffff;
     font: inherit; font-size: 1rem; font-weight: 600; cursor: pointer;
   }
-  #pay:hover { background: #0a3a8c; }
-  #pay:focus-visible { outline: 3px solid #0b57c9; outline-offset: 2px; }
-  #pay:disabled { background: #c8cace; border-color: transparent; color: #4c4f55; cursor: not-allowed; }
+  button:hover { background: #0a3a8c; }
+  button:focus-visible, label:focus-within { outline: 3px solid #0b57c9; outline-offset: 2px; }
+  button:disabled { background: #c8cace; border-color: transparent; color: #4c4f55; cursor: not-allowed; }
+  #options { display: none; margin: 0.75rem 0; gap: 0.5rem; }
+  #options.show { display: grid; }
+  label {
+    display: flex; align-items: center; gap: 0.6rem; min-height: 48px; padding: 0.5rem 0.9rem;
+    border: 1.5px solid #c8cace; border-radius: 12px; cursor: pointer; font-size: 0.9375rem;
+  }
+  label.muted { color: #4c4f55; }
+  label .bal { margin-left: auto; font-variant-numeric: tabular-nums; color: #4c4f55; }
+  input[type=radio] { width: 18px; height: 18px; accent-color: #0b57c9; }
   #status { margin-top: 0.5rem; font-size: 0.9375rem; line-height: 1.5; }
   #status.err { color: #b42318; }
   @media (prefers-color-scheme: dark) {
     body { color: #e9edf1; }
-    #pay { background: #5ea3ff; border-color: #5ea3ff; color: #0b0f14; }
-    #pay:hover { background: #8bbcff; }
-    #pay:disabled { background: #3a4450; color: #b3bcc6; }
+    button { background: #5ea3ff; border-color: #5ea3ff; color: #0b0f14; }
+    button:hover { background: #8bbcff; }
+    button:disabled { background: #3a4450; color: #b3bcc6; }
+    label { border-color: #3a4450; }
+    label.muted, label .bal { color: #b3bcc6; }
     #status.err { color: #f08a85; }
   }
 </style>
 </head>
 <body>
-<button id="pay" disabled>Loading...</button>
-<div id="status"></div>
+<button id="connect" disabled>Loading...</button>
+<div id="options" role="radiogroup" aria-label="Choose how to pay"></div>
+<button id="pay" style="display:none" disabled>Pay</button>
+<div id="status" role="status" aria-live="polite"></div>
 <script>
 "use strict";
 
 let cfg = null;
-let paying = false;
-const btn = document.getElementById("pay");
+let account = null;
+let busy = false;
+const connectBtn = document.getElementById("connect");
+const payBtn = document.getElementById("pay");
+const optionsEl = document.getElementById("options");
 const statusEl = document.getElementById("status");
 
-function send(msg) {
-  window.parent.postMessage(Object.assign({ isStreamlitMessage: true }, msg), "*");
-}
-function setComponentValue(value) {
-  send({ type: "streamlit:setComponentValue", dataType: "json", value: value });
-}
-function setHeight() {
-  send({ type: "streamlit:setFrameHeight", height: document.body.scrollHeight + 12 });
-}
+function send(msg) { window.parent.postMessage(Object.assign({ isStreamlitMessage: true }, msg), "*"); }
+function setHeight() { send({ type: "streamlit:setFrameHeight", height: document.body.scrollHeight + 12 }); }
 function setStatus(text, isError) {
   statusEl.textContent = text;
-  statusEl.className = isError ? "err" : "ok";
+  statusEl.className = isError ? "err" : "";
   setHeight();
+}
+function hex(n) { return "0x" + BigInt(n).toString(16); }
+function pad(addrOrHex) { return addrOrHex.replace(/^0x/, "").toLowerCase().padStart(64, "0"); }
+function units(atomic, decimals) {
+  const value = Number(BigInt(atomic)) / Math.pow(10, decimals);
+  return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+async function rpc(url, method, params) {
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: method, params: params }),
+  });
+  const body = await resp.json();
+  if (body.error) throw new Error(body.error.message || "RPC error");
+  return body.result;
 }
 
 window.addEventListener("message", function (event) {
   const data = event.data;
   if (!data || data.type !== "streamlit:render") return;
   cfg = data.args;
-  btn.textContent = "Pay " + cfg.price + " " + (cfg.asset_label || "USDC") + " with your wallet";
-  if (!paying) btn.disabled = false;
+  if (!account && !busy) {
+    connectBtn.textContent = "Connect your wallet to pay " + cfg.price + " " + cfg.asset_label;
+    connectBtn.disabled = false;
+  }
   setHeight();
 });
 
-async function pay() {
+async function connect() {
   if (!cfg) return;
   if (!window.ethereum) {
-    setStatus(
-      "No browser wallet detected. Install MetaMask (or another wallet extension), " +
-      "or use the manual option below to paste a transaction hash.",
-      true
-    );
+    setStatus("No browser wallet found. Install MetaMask or another wallet extension, or use the manual option below.", true);
     return;
   }
-  paying = true;
-  btn.disabled = true;
+  busy = true;
+  connectBtn.disabled = true;
   try {
     setStatus("Connecting to your wallet...");
     const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-    const from = accounts[0];
-
-    const chainIdHex = "0x" + Number(cfg.chain_id).toString(16);
-    setStatus("Switching to " + cfg.chain_name + "...");
-    try {
-      await window.ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: chainIdHex }],
-      });
-    } catch (switchErr) {
-      if (switchErr && switchErr.code === 4902) {
-        await window.ethereum.request({
-          method: "wallet_addEthereumChain",
-          params: [{
-            chainId: chainIdHex,
-            chainName: cfg.chain_name,
-            nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-            rpcUrls: [cfg.rpc_url],
-            blockExplorerUrls: [cfg.explorer_url],
-          }],
-        });
-      } else {
-        throw switchErr;
-      }
-    }
-
-    // ERC-20 transfer(address,uint256): selector a9059cbb + two 32-byte args
-    const recipient = cfg.recipient.toLowerCase().replace(/^0x/, "").padStart(64, "0");
-    const amount = BigInt(cfg.amount_atomic).toString(16).padStart(64, "0");
-    const dataHex = "0xa9059cbb" + recipient + amount;
-
-    setStatus("Confirm the payment of " + cfg.price + " " + (cfg.asset_label || "USDC") + " in your wallet...");
-    const txHash = await window.ethereum.request({
-      method: "eth_sendTransaction",
-      params: [{ from: from, to: cfg.usdc_contract, data: dataHex }],
-    });
-
-    setStatus(
-      "Payment sent (" + txHash.slice(0, 12) + "...). " +
-      "Checking the payment on-chain and writing your report. This can take a few minutes."
-    );
-    setComponentValue({ tx_hash: txHash, payer_wallet: from });
+    account = accounts[0];
+    setStatus("Checking which coins you can pay with...");
+    await showOptions();
+    connectBtn.style.display = "none";
   } catch (err) {
-    const message = err && err.message ? err.message : String(err);
-    setStatus("Payment did not complete: " + message, true);
-    paying = false;
-    btn.disabled = false;
+    setStatus("Could not connect: " + (err && err.message ? err.message : String(err)), true);
+    connectBtn.disabled = false;
+  } finally {
+    busy = false;
   }
 }
 
-btn.addEventListener("click", pay);
+async function showOptions() {
+  let currentChain = null;
+  try { currentChain = parseInt(await window.ethereum.request({ method: "eth_chainId" }), 16); } catch (e) { /* keep null */ }
+
+  const gasByChain = {};
+  const checked = await Promise.all(cfg.options.map(async function (opt) {
+    const result = Object.assign({}, opt, { balance: null, gas: null });
+    try {
+      const raw = await rpc(opt.rpc_url, "eth_call", [{ to: opt.token_contract, data: "0x70a08231" + pad(account) }, "latest"]);
+      result.balance = BigInt(raw || "0x0");
+      if (!(opt.chain_id in gasByChain)) {
+        gasByChain[opt.chain_id] = rpc(opt.rpc_url, "eth_getBalance", [account, "latest"]).then(BigInt).catch(function () { return null; });
+      }
+      result.gas = await gasByChain[opt.chain_id];
+    } catch (e) { /* balance unknown: still offered, listed last */ }
+    return result;
+  }));
+
+  const enough = function (o) { return o.balance !== null && o.balance >= BigInt(o.amount_atomic); };
+  const rank = function (o) {
+    if (enough(o) && o.gas && o.gas > 0n) return o.chain_id === currentChain ? 0 : 1;
+    if (enough(o)) return 2;
+    if (o.balance === null) return 3;
+    return 4;
+  };
+  checked.sort(function (a, b) { return rank(a) - rank(b); });
+
+  optionsEl.innerHTML = "";
+  checked.forEach(function (o, i) {
+    const label = document.createElement("label");
+    const radio = document.createElement("input");
+    radio.type = "radio";
+    radio.name = "opt";
+    radio.value = String(i);
+    radio.checked = i === 0;
+    radio.addEventListener("change", updatePayButton);
+    const text = document.createElement("span");
+    text.textContent = o.token_symbol + " on " + o.chain_name;
+    const bal = document.createElement("span");
+    bal.className = "bal";
+    if (o.balance === null) bal.textContent = "balance not checked";
+    else if (!enough(o)) { bal.textContent = "you have " + units(o.balance, o.decimals); label.className = "muted"; }
+    else if (!o.gas || o.gas === 0n) bal.textContent = "you have " + units(o.balance, o.decimals) + ", but no " + o.native_symbol + " for the fee";
+    else bal.textContent = "you have " + units(o.balance, o.decimals);
+    label.append(radio, text, bal);
+    optionsEl.appendChild(label);
+  });
+  optionsEl.checked = checked;
+  optionsEl.classList.add("show");
+  payBtn.style.display = "block";
+  updatePayButton();
+
+  if (!checked.some(enough)) {
+    setStatus("This wallet does not seem to hold " + cfg.price + " USDC or USDT on a supported network. You can still try, or top up first.", true);
+  } else {
+    setStatus("You also need a little of the network's own coin (shown above) to pay the network fee.");
+  }
+}
+
+function selected() {
+  const radio = optionsEl.querySelector("input:checked");
+  return radio ? optionsEl.checked[Number(radio.value)] : null;
+}
+
+function updatePayButton() {
+  const o = selected();
+  payBtn.disabled = !o;
+  if (o) payBtn.textContent = "Pay " + cfg.price + " " + o.token_symbol + " on " + o.chain_name;
+  setHeight();
+}
+
+async function switchChain(o) {
+  const chainIdHex = hex(o.chain_id);
+  try {
+    await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: chainIdHex }] });
+  } catch (err) {
+    if (err && err.code === 4902) {
+      await window.ethereum.request({
+        method: "wallet_addEthereumChain",
+        params: [{
+          chainId: chainIdHex,
+          chainName: o.chain_name,
+          nativeCurrency: { name: o.native_symbol, symbol: o.native_symbol, decimals: 18 },
+          rpcUrls: [o.rpc_url],
+          blockExplorerUrls: [o.explorer_url],
+        }],
+      });
+    } else {
+      throw err;
+    }
+  }
+}
+
+async function pay() {
+  const o = selected();
+  if (!o || busy) return;
+  busy = true;
+  payBtn.disabled = true;
+  try {
+    setStatus("Switching your wallet to " + o.chain_name + "...");
+    await switchChain(o);
+    setStatus("Confirm the payment of " + cfg.price + " " + o.token_symbol + " in your wallet...");
+    const data = "0xa9059cbb" + pad(cfg.recipient) + pad(hex(o.amount_atomic));
+    const txHash = await window.ethereum.request({
+      method: "eth_sendTransaction",
+      params: [{ from: account, to: o.token_contract, data: data }],
+    });
+    setStatus("Payment sent. Checking it on-chain and writing your report; this can take a few minutes.");
+    send({
+      type: "streamlit:setComponentValue",
+      dataType: "json",
+      value: { tx_hash: txHash, chain_id: o.chain_id, payer_wallet: account },
+    });
+  } catch (err) {
+    setStatus("Payment did not complete: " + (err && err.message ? err.message : String(err)), true);
+    payBtn.disabled = false;
+  } finally {
+    busy = false;
+  }
+}
+
+connectBtn.addEventListener("click", connect);
+payBtn.addEventListener("click", pay);
 send({ type: "streamlit:componentReady", apiVersion: 1 });
 setHeight();
 </script>

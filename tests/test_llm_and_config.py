@@ -43,3 +43,10 @@ def test_public_deployments_can_require_payment_for_ai(monkeypatch):
     monkeypatch.delenv("PAYMENTS_ENABLED", raising=False)
     settings = Settings()
     assert settings.ai_requires_payment and not settings.payments_enabled
+
+
+def test_owner_alert_is_skipped_quietly_without_settings(monkeypatch):
+    import emailer
+
+    monkeypatch.delenv("OWNER_ALERT_EMAIL", raising=False)
+    assert emailer.alert_owner("subject", "body") is False

@@ -73,7 +73,7 @@ dashboards/app.py                    Streamlit app: Home, Research, Reports, Att
 |---|---|---|---|
 | Anthropic (AI write-ups) | `data_science/llm.py` | `AI_ENABLED=false` or no key | Data-only reports |
 | Playwright (screenshots) | `data_engineering/screenshot_bot.py` | `SCREENSHOTS_ENABLED=false` | No chart in the report |
-| Base Sepolia (payment demo) | `payment_verifier.py` | `PAYMENTS_ENABLED=false` (default) | Reports are free |
+| Stablecoin payments (USDC or USDT on six networks, or the Base Sepolia demo) | `payment_verifier.py` | `PAYMENTS_ENABLED=false` (default) | Reports are free |
 | SMTP (email) | `emailer.py` | Leave `SMTP_*` empty | No email; the report stays in the app |
 | Postgres | `db.py` | Leave `DATABASE_URL` empty | Local SQLite file |
 
@@ -144,7 +144,7 @@ pytest            # runs offline; AI and payments are forced off in tests
 ruff check .
 ```
 
-Continuous integration runs both on every push and pull request (`.github/workflows/ci.yml`).
+Continuous integration runs both on every push and pull request (`.github/workflows/ci.yml`). A separate scheduled workflow checks the live site every 30 minutes and emails the operator when something fails (`.github/workflows/monitor.yml`, `scripts/monitor.py`).
 
 Deployment notes are in [deploy.md](deploy.md).
 

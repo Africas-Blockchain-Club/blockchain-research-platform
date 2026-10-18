@@ -44,7 +44,7 @@ A prompt is a request, not a control. The model is asked not to give advice, and
 
 Payments are switched off by default (`PAYMENTS_ENABLED=false`). Data-only reports are always free.
 
-When payments are on, an AI write-up is unlocked by a USDC payment on Base. `CHAIN_ID=84532` runs the testnet demo with test USDC, which has no real-world value. `CHAIN_ID=8453` takes real USDC on Base mainnet, paid to the wallet in `REPORT_RECIPIENT_ADDRESS`.
+When payments are on, an AI write-up is unlocked by a stablecoin payment. `PAYMENT_CHAINS=84532` runs the testnet demo with test USDC, which has no real-world value. On mainnet, the payer may use USDC or USDT on any network in `PAYMENT_CHAINS` (Base, Arbitrum, Optimism, Polygon, BNB Chain, Ethereum), paid to the wallet in `REPORT_RECIPIENT_ADDRESS`. Both coins are counted as one US Dollar each.
 
 What a payer buys is the computing cost of an AI-written explanation. The screen and the receipt say so, and say that the write-up is not advice. The same advice-language check applies whether or not anyone paid.
 
@@ -52,7 +52,7 @@ Charging real money moves the platform closer to running a paid research service
 
 - A payment must be recent (`PAYMENT_MAX_AGE_MINUTES`, default 60) so nobody can claim an old transfer to the business wallet.
 - A transaction hash unlocks one write-up. If the write-up fails after payment, the same hash can be used again until a write-up is delivered.
-- Every payment is recorded with its transaction hash, payer address, amount and verification method (`db.py`).
+- Every payment is recorded with its network, coin, transaction hash, payer address, amount and verification method (`db.py`), and the operator is emailed about it.
 - Blockchain payments cannot be reversed. The payment screen says so before the payer pays.
 
 ## Rules for contributors

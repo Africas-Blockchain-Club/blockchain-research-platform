@@ -62,18 +62,19 @@ def render():
         return
     import payment_verifier
 
-    price, asset, chain = payment_verifier.REPORT_PRICE_USDC, payment_verifier.ASSET_LABEL, payment_verifier.CHAIN_NAME
+    price = payment_verifier.REPORT_PRICE_USDC
+    networks = ", ".join(payment_verifier.NETWORKS[c]["name"] for c in payment_verifier.PAYMENT_CHAINS)
     if payment_verifier.IS_TESTNET:
         st.markdown(
             f"This copy runs the testnet payment demo: an AI write-up is unlocked by a payment of {price} "
-            f"{asset} on the {chain} test network. Test USDC has no real-world value. The demo teaches how "
-            "on-chain payments work."
+            f"test USDC on {networks}. Test USDC has no real-world value. The demo teaches how on-chain "
+            "payments work."
         )
     else:
         st.markdown(
-            f"Data-only reports are free. An AI write-up costs {price} {asset}, paid on the {chain} network. "
-            "The payment covers the computing cost of the write-up. It does not buy advice, and the write-up "
-            "will never say whether to buy, sell or hold. Blockchain payments cannot be reversed; if a write-up "
-            "fails after your payment confirms, you can retry with the same transaction hash within the hour "
-            "at no extra cost."
+            f"Data-only reports are free. An AI write-up costs {price} US Dollars, paid in USDC or USDT on "
+            f"any of: {networks}. The payment covers the computing cost of the write-up. It does not buy "
+            "advice, and the write-up will never say whether to buy, sell or hold. Blockchain payments cannot "
+            "be reversed; if a write-up fails after your payment confirms, you can retry with the same "
+            "transaction hash within the hour at no extra cost."
         )

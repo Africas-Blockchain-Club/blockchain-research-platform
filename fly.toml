@@ -10,8 +10,10 @@ primary_region = "jnb"
   AI_ENABLED = "true"
   # Never give away AI write-ups on the operator's key
   AI_REQUIRES_PAYMENT = "true"
-  # Payments stay off until PAYMENTS_ENABLED=true is set as a Fly secret (see deploy.md)
-  CHAIN_ID = "8453"
+  # Payments stay off until PAYMENTS_ENABLED=true is set as a Fly secret (see deploy.md).
+  # Accepted: USDC or USDT on Base, Arbitrum, Optimism, Polygon, BNB Chain and Ethereum,
+  # listed cheapest network fees first.
+  PAYMENT_CHAINS = "8453,42161,10,137,56,1"
   REPORT_PRICE_USDC = "2.00"
   PAYMENT_MAX_AGE_MINUTES = "60"
 
@@ -24,9 +26,10 @@ primary_region = "jnb"
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "stop"
+  # Always on, like wtc-codequest: one machine keeps running, so there is no cold start
+  auto_stop_machines = "off"
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
 
   [[http_service.checks]]
     grace_period = "20s"

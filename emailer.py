@@ -9,6 +9,7 @@ EmailNotConfiguredError rather than failing quietly. Swapping providers
 (Gmail SMTP to SES, Postmark, or anything else that speaks SMTP) is a
 config change only.
 """
+import logging
 import os
 import smtplib
 from email.message import EmailMessage
@@ -17,6 +18,8 @@ from dotenv import load_dotenv
 
 from config import SETTINGS
 from data_science.compliance import SHORT_DISCLAIMER
+
+log = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -108,6 +111,33 @@ def send_report_receipt(payer_email, token, report_markdown, receipt):
             server.send_message(msg)
     except (smtplib.SMTPException, OSError, ValueError) as e:
         raise EmailDeliveryError(f"Report email failed to send: {e}") from e
+
+
+
+def alert_owner(subject, body):
+    """Email the operator (OWNER_ALERT_EMAIL) about something that needs
+    attention: a payment, or a paid write-up that failed. Never raises: an
+    alert that cannot be sent must not break the payer's flow, so the failure
+    is logged instead. Returns True when the email was sent."""
+    owner = os.getenv("OWNER_ALERT_EMAIL", "").strip()
+    cfg = _config()
+    if not owner or not all(cfg.values()):
+        log.warning("Owner alert not sent (OWNER_ALERT_EMAIL or SMTP not set): %s", subject)
+        return False
+    msg = EmailMessage()
+    msg["Subject"] = f"[{SETTINGS.app_name}] {subject}"
+    msg["From"] = cfg["SMTP_USER"]
+    msg["To"] = owner
+    msg.set_content(body)
+    try:
+        with smtplib.SMTP(cfg["SMTP_HOST"], int(cfg["SMTP_PORT"]), timeout=30) as server:
+            server.starttls()
+            server.login(cfg["SMTP_USER"], cfg["SMTP_PASSWORD"])
+            server.send_message(msg)
+        return True
+    except (smtplib.SMTPException, OSError, ValueError) as e:
+        log.error("Owner alert failed to send (%s): %s", subject, e)
+        return False
 
 
 if __name__ == "__main__":

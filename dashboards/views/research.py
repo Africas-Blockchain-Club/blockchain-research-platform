@@ -102,10 +102,10 @@ def _email_receipt(email, meta, verified, tx_hash):
             report_markdown=saved["markdown"],
             receipt={
                 "amount_decimal": verified["amount_decimal"],
-                "chain_id": payment_verifier.CHAIN_ID,
+                "asset": verified["asset_symbol"],
+                "chain_id": verified["chain_id"],
+                "chain_name": verified["chain_name"],
                 "tx_hash": tx_hash,
-                "chain_name": payment_verifier.CHAIN_NAME,
-                "asset": payment_verifier.ASSET_LABEL,
                 "testnet": payment_verifier.IS_TESTNET,
                 "flagged": meta["flagged"],
                 "clear": meta["clear"],
@@ -117,19 +117,24 @@ def _email_receipt(email, meta, verified, tx_hash):
         st.warning(f"The report is saved, but the email could not be sent: {e}")
 
 
-def _verify_payment(analysis, tx_hash, email):
-    """Verify on-chain and record the payment. Returns (payment_id, verified) or (None, None)."""
+def _tx_link(verified, tx_hash):
+    return f"{payment_verifier.NETWORKS[verified['chain_id']]['explorer']}/tx/{tx_hash}"
+
+
+def _verify_payment(analysis, tx_hash, chain_id, email):
+    """Verify on-chain and record the payment. Returns the verified payment
+    dict with its database id under "payment_id", or None."""
     try:
         with st.spinner("Checking the payment on-chain..."):
-            verified = payment_verifier.wait_for_payment(tx_hash)
+            verified = payment_verifier.wait_for_payment(tx_hash, chain_id)
         payment_id = db.record_payment_attempt(
             request_id=st.session_state["analysis_id"],
             token_symbol=analysis["token"],
             payer_address=verified["payer_address"],
             recipient_address=payment_verifier.RECIPIENT_ADDRESS,
-            chain_id=payment_verifier.CHAIN_ID,
-            asset_contract=payment_verifier.USDC_CONTRACT,
-            asset_symbol="USDC",
+            chain_id=verified["chain_id"],
+            asset_contract=verified["asset_contract"],
+            asset_symbol=verified["asset_symbol"],
             amount_atomic=verified["amount_atomic"],
             amount_decimal=verified["amount_decimal"],
             tx_hash=tx_hash,
@@ -137,7 +142,17 @@ def _verify_payment(analysis, tx_hash, email):
             verification_method=verified["verification_method"],
         )
         db.mark_payment_confirmed(payment_id, verified["confirmations"])
-        return payment_id, verified
+        emailer.alert_owner(
+            f"Payment received: {verified['amount_decimal']} {verified['asset_symbol']} for {analysis['token']}",
+            f"A payment unlocked an AI write-up.\n\n"
+            f"Token researched: {analysis['token']}\n"
+            f"Amount: {verified['amount_decimal']} {verified['asset_symbol']} on {verified['chain_name']}\n"
+            f"Payer: {verified['payer_address']}\n"
+            f"Transaction: {_tx_link(verified, tx_hash)}\n\n"
+            "Check your Anthropic credit balance and top it up if it is running low:\n"
+            "https://console.anthropic.com/settings/billing\n",
+        )
+        return dict(verified, payment_id=payment_id)
     except PaymentVerificationError as e:
         st.error(f"The payment could not be verified: {e}")
     except IntegrityError:
@@ -147,44 +162,69 @@ def _verify_payment(analysis, tx_hash, email):
         if (existing and existing["status"] == "confirmed" and existing["token_symbol"] == analysis["token"]
                 and not db.report_exists_for_payment(existing["id"])):
             st.info("This payment was already confirmed, and its write-up was never delivered. Writing it now.")
-            return existing["id"], {"amount_decimal": existing["amount_decimal"]}
+            return {
+                "payment_id": existing["id"],
+                "amount_decimal": existing["amount_decimal"],
+                "asset_symbol": existing["asset_symbol"],
+                "chain_id": existing["chain_id"],
+                "chain_name": payment_verifier.NETWORKS[existing["chain_id"]]["name"],
+                "payer_address": existing["payer_address"],
+            }
         st.error(
             "This transaction has already been used to unlock a report. If it was for a different token, "
             "research that token to use it."
         )
-    return None, None
+    return None
+
+
+def _write_paid(analysis, model, payment, tx_hash, email):
+    """Write the AI report for a confirmed payment, telling the owner if it fails."""
+    meta = _write_ai(analysis, model, payment_id=payment["payment_id"])
+    if meta is None:
+        emailer.alert_owner(
+            f"Paid write-up failed for {analysis['token']}",
+            f"A payer was charged but the AI write-up failed. They can retry with the same transaction "
+            f"within {payment_verifier.MAX_PAYMENT_AGE_MINUTES} minutes; check the logs if it keeps failing.\n\n"
+            f"Token: {analysis['token']}\nModel: {model}\n"
+            f"Payment: {payment['amount_decimal']} {payment['asset_symbol']} on {payment['chain_name']}\n"
+            f"Transaction: {_tx_link(payment, tx_hash)}\n"
+            "Logs: fly logs --app blockchain-research-platform\n",
+        )
+        return
+    if email:
+        _email_receipt(email, meta, payment, tx_hash)
+    st.session_state.setdefault("paid", {}).pop(analysis["token"], None)
+    _saved(meta)
 
 
 def _payment_gate(analysis, model):
-    """Testnet payment demo. Returns nothing; writes the report once paid."""
+    """Take a payment in any accepted stablecoin, then write the report."""
     token = analysis["token"]
     if not payment_verifier.RECIPIENT_ADDRESS:
-        st.error("The payment demo is switched on but REPORT_RECIPIENT_ADDRESS is not set in .env.")
+        st.error("Payments are switched on but REPORT_RECIPIENT_ADDRESS is not set.")
         return
 
     paid = st.session_state.setdefault("paid", {})
     if token in paid:
         # Paid already: a failed write-up can be retried without paying twice
         st.info("Your payment for this token is confirmed.")
-        if st.button("Write the AI report", type="primary"):
-            meta = _write_ai(analysis, model, payment_id=paid[token]["payment_id"])
-            if meta:
-                if paid[token]["email"]:
-                    _email_receipt(paid[token]["email"], meta, paid[token]["verified"], paid[token]["tx_hash"])
-                paid.pop(token)
-                _saved(meta)
+        if st.button("Try the AI write-up again", type="primary"):
+            entry = paid[token]
+            _write_paid(analysis, model, entry["payment"], entry["tx_hash"], entry["email"])
         return
 
-    price, asset, chain = payment_verifier.REPORT_PRICE_USDC, payment_verifier.ASSET_LABEL, payment_verifier.CHAIN_NAME
+    price = payment_verifier.REPORT_PRICE_USDC
+    networks = ", ".join(payment_verifier.NETWORKS[c]["name"] for c in payment_verifier.PAYMENT_CHAINS)
     if payment_verifier.IS_TESTNET:
         st.markdown(
-            f"Pay **{price} {asset}** on the {chain} test network to unlock the AI write-up. Test USDC has "
-            "no real-world value: this is a demonstration of on-chain payments, and the payment covers the "
-            "computing cost of the write-up, not advice."
+            f"Pay **{price} test USDC** on {networks} to unlock the AI write-up. Test USDC has no real-world "
+            "value: this is a demonstration of on-chain payments, and the payment covers the computing cost "
+            "of the write-up, not advice."
         )
     else:
         st.markdown(
-            f"Pay **{price} {asset}** on the {chain} network to unlock the AI write-up for {token}."
+            f"Pay **{price} US Dollars in USDC or USDT** to unlock the AI write-up for {token}. Use whichever "
+            f"you already hold, on any of: {networks}. Your wallet shows what you can pay with."
         )
         notice(
             "What you are paying for",
@@ -200,48 +240,38 @@ def _payment_gate(analysis, model):
         email = st.text_input("Email for the report and receipt (optional, enter it before paying)",
                               placeholder="you@example.com").strip()
 
-    amount_atomic = int(payment_verifier.REPORT_PRICE_USDC * (10 ** payment_verifier.USDC_DECIMALS))
     result = wallet_pay(
-        token=token,
-        price=str(payment_verifier.REPORT_PRICE_USDC),
+        price=str(price),
         recipient=payment_verifier.RECIPIENT_ADDRESS,
-        usdc_contract=payment_verifier.USDC_CONTRACT,
-        chain_id=payment_verifier.CHAIN_ID,
-        chain_name=payment_verifier.CHAIN_NAME,
-        rpc_url=payment_verifier.RPC_URL,
-        explorer_url=payment_verifier.EXPLORER_URL,
         asset_label=payment_verifier.ASSET_LABEL,
-        amount_atomic=str(amount_atomic),
+        options=payment_verifier.payment_options(),
         key=f"wallet_pay_{token}",
         default=None,
     )
 
-    tx_hash = None
+    tx_hash, chain_id = None, None
     # The component re-sends its last value on every rerun; handle each hash once
     handled = st.session_state.setdefault("handled_tx", set())
     if result and result.get("tx_hash") and result["tx_hash"] not in handled:
-        tx_hash = result["tx_hash"].strip()
+        tx_hash, chain_id = result["tx_hash"].strip(), int(result["chain_id"])
         handled.add(tx_hash)
 
     with st.expander("No wallet extension, or retrying a paid write-up? Paste the transaction hash"):
+        chain_names = {payment_verifier.NETWORKS[c]["name"]: c for c in payment_verifier.PAYMENT_CHAINS}
+        typed_chain = st.selectbox("Network you paid on", list(chain_names))
         st.caption(
-            f"Send {price} {asset} on {chain} to {payment_verifier.RECIPIENT_ADDRESS}, then paste the "
-            f"transaction hash within {payment_verifier.MAX_PAYMENT_AGE_MINUTES} minutes."
+            f"Send {price} USDC or USDT on {typed_chain} to {payment_verifier.RECIPIENT_ADDRESS}, then paste "
+            f"the transaction hash within {payment_verifier.MAX_PAYMENT_AGE_MINUTES} minutes."
         )
         typed_hash = st.text_input("Transaction hash", placeholder="0x...")
         if st.button("Check the payment"):
-            tx_hash = typed_hash.strip()
+            tx_hash, chain_id = typed_hash.strip(), chain_names[typed_chain]
 
     if tx_hash:
-        payment_id, verified = _verify_payment(analysis, tx_hash, email)
-        if payment_id:
-            paid[token] = {"payment_id": payment_id, "verified": verified, "tx_hash": tx_hash, "email": email}
-            meta = _write_ai(analysis, model, payment_id=payment_id)
-            if meta:
-                if email:
-                    _email_receipt(email, meta, verified, tx_hash)
-                paid.pop(token)
-                _saved(meta)
+        payment = _verify_payment(analysis, tx_hash, chain_id, email)
+        if payment:
+            paid[token] = {"payment": payment, "tx_hash": tx_hash, "email": email}
+            _write_paid(analysis, model, payment, tx_hash, email)
 
 
 def _wallet_identity():

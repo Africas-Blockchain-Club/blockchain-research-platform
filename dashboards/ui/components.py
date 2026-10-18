@@ -85,7 +85,7 @@ def footer():
     else:
         import payment_verifier
 
-        pay_state = "testnet payment demo on" if payment_verifier.IS_TESTNET else f"payments on {payment_verifier.CHAIN_NAME}"
+        pay_state = "testnet payment demo on" if payment_verifier.IS_TESTNET else "paid AI write-ups on"
     st.html(
         '<footer class="brp-footer">'
         f"<p><strong>{escape(SETTINGS.app_name)}</strong> by {escape(SETTINGS.brand_name)}. "

@@ -11,7 +11,7 @@ The live copy runs on Fly.io in Johannesburg: https://blockchain-research-platfo
 
 `fly.toml`, `Dockerfile` and `scripts/start.sh` hold the whole setup:
 
-- one `shared-cpu-1x` machine with 1 GB of memory in `jnb`, stopped when idle and started on the next visit;
+- one `shared-cpu-1x` machine with 1 GB of memory in `jnb`, always running (`min_machines_running = 1`, like wtc-codequest), so there is no cold start;
 - a 1 GB volume, `brp_data`, mounted at `/data`, holding the reports, the SQLite database and the usage log (`DATA_DIR=/data`);
 - the sample reports in `reports/` are copied onto an empty volume on first boot;
 - chart screenshots are off, because the image has no browser.
@@ -36,20 +36,42 @@ fly deploy --remote-only
 
 The footer on the live site shows the build number, so you can confirm which build is serving.
 
-### Switching on paid AI write-ups
+### Paid AI write-ups
 
-AI write-ups cost 2 USDC on Base mainnet, paid to the business wallet. Secrets never go in `fly.toml` or in git:
+An AI write-up costs 2 US Dollars, paid in USDC or USDT on Base, Arbitrum, Optimism, Polygon, BNB Chain or Ethereum (`PAYMENT_CHAINS` in `fly.toml`). The payer connects a wallet; the page checks which of those coins they hold, preselects one they can afford, switches the wallet to that network and sends the transfer. Payments go to the business wallet in the `REPORT_RECIPIENT_ADDRESS` secret.
+
+Secrets never go in `fly.toml` or in git:
 
 ```bash
 fly secrets set --app blockchain-research-platform \
   ANTHROPIC_API_KEY=sk-ant-... \
-  REPORT_RECIPIENT_ADDRESS=0xYourBusinessWallet \
+  REPORT_RECIPIENT_ADDRESS=0x... \
   PAYMENTS_ENABLED=true
 ```
 
-Setting secrets restarts the machine. Then make one real 2 USDC payment yourself, and check that the write-up arrives and that the payment row is recorded, before you announce the feature. Set a monthly spending limit in the Anthropic console as a backstop.
-
 To switch paid write-ups off again: `fly secrets set PAYMENTS_ENABLED=false --app blockchain-research-platform`.
+
+### Alerts: payments and failures
+
+The app emails `OWNER_ALERT_EMAIL` when a payment is confirmed (so the Anthropic credit can be topped up) and when a paid write-up fails. It needs the SMTP settings as secrets too. From the folder that holds your `.env`:
+
+```bash
+grep -E '^(SMTP_HOST|SMTP_PORT|SMTP_USER|SMTP_PASSWORD)=' .env | xargs fly secrets set --app blockchain-research-platform
+fly secrets set OWNER_ALERT_EMAIL=you@example.com --app blockchain-research-platform
+```
+
+### The monitor
+
+`.github/workflows/monitor.yml` runs `scripts/monitor.py` on GitHub's machines: a quick check every 30 minutes, a full check (every page in a browser, and the data pipeline) every day at 06:00 South African time, and a full report by email every Monday at 07:00. A failure emails `OWNER_ALERT_EMAIL` and fails the run, which GitHub also emails to the repository owner. The workflow needs the same mail settings as repository secrets:
+
+```bash
+grep -E '^(SMTP_HOST|SMTP_PORT|SMTP_USER|SMTP_PASSWORD)=' .env | while IFS='=' read -r key value; do
+  gh secret set "$key" --body "$value" --repo Africas-Blockchain-Club/blockchain-research-platform
+done
+gh secret set OWNER_ALERT_EMAIL --body you@example.com --repo Africas-Blockchain-Club/blockchain-research-platform
+```
+
+GitHub pauses scheduled workflows in a repository with no activity for 60 days; `gh workflow enable monitor.yml` turns it back on. Run `scripts/monitor.py --full` locally at any time, and `scripts/payments_report.py` on the machine to list payments and whether each received its write-up.
 
 ### Useful commands
 
