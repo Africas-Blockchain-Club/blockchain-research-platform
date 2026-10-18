@@ -1,0 +1,21 @@
+[project]
+name = "blockchain-research-platform"
+version = "2026.10.18"
+description = "Educational token research: public data, rule-based risk checks, and reports that teach how to read them. Not financial advice."
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+extend-exclude = ["teaching", "x402", ".venv", "venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["config", "db", "emailer", "payment_verifier", "dashboards", "data_analytics", "data_engineering", "data_science", "tools"]

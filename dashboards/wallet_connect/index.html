@@ -13,16 +13,24 @@
 <head>
 <meta charset="utf-8">
 <style>
-  body { margin: 0; font-family: "Source Sans Pro", sans-serif; }
+  /* Matches dashboards/ui/theme.py: 48px pill, secondary style, AA error colours */
+  body { margin: 0; font-family: "Figtree", "Helvetica Neue", Helvetica, Arial, sans-serif; color: #16181b; }
   #connect {
-    width: 100%; padding: 0.4rem 0.6rem; border-radius: 0.5rem;
-    border: 1px solid rgba(49, 51, 63, 0.3); background: transparent;
-    font-size: 0.85rem; font-weight: 600; cursor: pointer; color: inherit;
+    width: 100%; min-height: 48px; padding: 0.6rem 1.2rem; border-radius: 999px;
+    border: 1.5px solid #c8cace; background: transparent; color: inherit;
+    font: inherit; font-size: 0.9375rem; font-weight: 600; cursor: pointer;
   }
-  #connect:disabled { opacity: 0.6; cursor: default; }
-  #status { margin-top: 0.35rem; font-size: 0.75rem; line-height: 1.35; }
-  #status.err { color: #d33; }
-  @media (prefers-color-scheme: dark) { body { color: #fafafa; } }
+  #connect:hover { border-color: #26272a; }
+  #connect:focus-visible { outline: 3px solid #0b57c9; outline-offset: 2px; }
+  #connect:disabled { opacity: 0.6; cursor: not-allowed; }
+  #status { margin-top: 0.4rem; font-size: 0.9375rem; line-height: 1.5; }
+  #status.err { color: #b42318; }
+  @media (prefers-color-scheme: dark) {
+    body { color: #e9edf1; }
+    #connect { border-color: #3a4450; }
+    #connect:hover { border-color: #f3f5f7; }
+    #status.err { color: #f08a85; }
+  }
 </style>
 </head>
 <body>
@@ -54,7 +62,7 @@ window.addEventListener("message", function (event) {
 
 btn.addEventListener("click", async function () {
   if (!window.ethereum) {
-    setStatus("No browser wallet detected. Install MetaMask to sign in - the dashboard still works without it.", true);
+    setStatus("No browser wallet detected. Install MetaMask to sign in. The platform works without it.", true);
     return;
   }
   btn.disabled = true;

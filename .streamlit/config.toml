@@ -1,0 +1,33 @@
+# Streamlit's own theme, matched to the tokens in dashboards/ui/theme.py.
+# Both modes are defined, so the app follows the viewer's system setting
+# and the viewer can still switch in the settings menu.
+
+[client]
+toolbarMode = "minimal"
+showSidebarNavigation = false
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+font = "Figtree:https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;600;700;800&display=swap"
+headingFontWeights = [800, 700, 700, 700, 700, 700]
+baseRadius = "12px"
+buttonRadius = "full"
+showWidgetBorder = true
+
+[theme.light]
+primaryColor = "#0b57c9"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f5f7fa"
+textColor = "#16181b"
+borderColor = "#c8cace"
+linkColor = "#0b57c9"
+
+[theme.dark]
+primaryColor = "#5ea3ff"
+backgroundColor = "#0b0f14"
+secondaryBackgroundColor = "#1b222b"
+textColor = "#e9edf1"
+borderColor = "#3a4450"
+linkColor = "#5ea3ff"

@@ -15,18 +15,24 @@
 <head>
 <meta charset="utf-8">
 <style>
-  body { margin: 0; font-family: "Source Sans Pro", sans-serif; }
+  /* Matches dashboards/ui/theme.py: 48px pill, the brand accent, AA error colours */
+  body { margin: 0; font-family: "Figtree", "Helvetica Neue", Helvetica, Arial, sans-serif; color: #16181b; }
   #pay {
-    width: 100%; padding: 0.55rem 0.75rem; border-radius: 0.5rem;
-    border: 1px solid rgba(49, 51, 63, 0.2); background: #ff4b4b; color: white;
-    font-size: 1rem; font-weight: 600; cursor: pointer;
+    width: 100%; min-height: 48px; padding: 0.7rem 1.4rem; border-radius: 999px;
+    border: 1.5px solid #0b57c9; background: #0b57c9; color: #ffffff;
+    font: inherit; font-size: 1rem; font-weight: 600; cursor: pointer;
   }
-  #pay:disabled { opacity: 0.6; cursor: default; }
-  #status { margin-top: 0.5rem; font-size: 0.85rem; line-height: 1.4; }
-  #status.ok { color: #31333f; }
-  #status.err { color: #d33; }
+  #pay:hover { background: #0a3a8c; }
+  #pay:focus-visible { outline: 3px solid #0b57c9; outline-offset: 2px; }
+  #pay:disabled { background: #c8cace; border-color: transparent; color: #4c4f55; cursor: not-allowed; }
+  #status { margin-top: 0.5rem; font-size: 0.9375rem; line-height: 1.5; }
+  #status.err { color: #b42318; }
   @media (prefers-color-scheme: dark) {
-    #status.ok { color: #fafafa; }
+    body { color: #e9edf1; }
+    #pay { background: #5ea3ff; border-color: #5ea3ff; color: #0b0f14; }
+    #pay:hover { background: #8bbcff; }
+    #pay:disabled { background: #3a4450; color: #b3bcc6; }
+    #status.err { color: #f08a85; }
   }
 </style>
 </head>
@@ -60,7 +66,7 @@ window.addEventListener("message", function (event) {
   const data = event.data;
   if (!data || data.type !== "streamlit:render") return;
   cfg = data.args;
-  btn.textContent = "Pay " + cfg.price + " USDC with your wallet";
+  btn.textContent = "Pay " + cfg.price + " test USDC with your wallet";
   if (!paying) btn.disabled = false;
   setHeight();
 });
@@ -119,7 +125,7 @@ async function pay() {
 
     setStatus(
       "Payment sent (" + txHash.slice(0, 12) + "...). " +
-      "Verifying on-chain and generating your report - this can take a minute."
+      "Checking the payment on-chain and writing your report. This can take a few minutes."
     );
     setComponentValue({ tx_hash: txHash, payer_wallet: from });
   } catch (err) {

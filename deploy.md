@@ -1,60 +1,35 @@
-Render is an excellent choice for deploying Streamlit apps, as it natively supports Python web services with automatic scaling and free tiers. [peerdh](https://peerdh.com/blogs/programming-insights/deploying-your-streamlit-app-on-render)
+# Deploying
 
-## Prerequisites
-- A GitHub repository containing your Streamlit app (e.g., `research-team/dashboards` with `app.py` and `requirements.txt`).
-- A free Render account at [render.com](https://render.com).
-- Ensure `requirements.txt` lists all dependencies, including `streamlit` (generate via `pip freeze > requirements.txt` locally if needed). [pythonandvba](https://pythonandvba.com/blog/deploy-your-streamlit-app-to-render-free-heroku-alternative/)
+Any host that runs a Python web service can run the platform. The steps below use Render as the example; check Render's own documentation for current plans and limits, because they change.
 
-## Step 1: Prepare Your Repository
-Push your code to GitHub if not already done.
+## Before you deploy
 
-```bash
-cd research-team/dashboards
-git init  # If new repo
-git add .
-git commit -m "Initial Streamlit app for Render"
-git remote add origin https://github.com/yourusername/your-repo.git
-git push -u origin main
-```
+- `pytest` and `ruff check .` pass.
+- You have decided which features to switch on. A public copy with no API key runs data-only reports, which cost nothing.
+- **Storage.** Many hosts, including free tiers, wipe the local disk on every deploy or restart. Reports are saved to `reports/` and to the database, so on such a host set `DATABASE_URL` to a hosted Postgres database and expect the files in `reports/` to be lost on redeploy.
+- **Screenshots.** Playwright needs a browser, which is heavy for a small host. Set `SCREENSHOTS_ENABLED=false` unless you install one in the build.
 
-Verify `app.py` runs locally: `streamlit run app.py`. [youtube](https://www.youtube.com/watch?v=bXRVgg2iWyc)
+## Render
 
-## Step 2: Create Render Service
-1. Log in to [render.com](https://render.com) and click **New > Web Service**.
-2. Select your GitHub repository (authorise if prompted).
-3. Configure as follows:
-   | Setting          | Value                                      |
-   |------------------|--------------------------------------------|
-   | Name             | e.g., `research-dashboards`                |
-   | Environment      | `Python 3`                                 |
-   | Region           | Closest to Johannesburg (e.g., Oregon)     |
-   | Branch           | `main`                                     |
-   | Root Directory   | `.` (or `research-team/dashboards` if nested) |
-   | Build Command    | `pip install -r requirements.txt`          |
-   | Start Command    | `streamlit run app.py --server.port $PORT --server.address 0.0.0.0` |
+1. Push the repository to GitHub.
+2. In Render, create a **Web Service** from the repository.
+3. Use these settings:
 
-4. Select **Free** instance type and click **Create Web Service**. [youtube](https://www.youtube.com/watch?v=4SO3CUWPYf0)
+   | Setting | Value |
+   |---|---|
+   | Environment | Python 3 |
+   | Build command | `pip install -r requirements.txt` |
+   | Start command | `streamlit run dashboards/app.py --server.port $PORT --server.address 0.0.0.0` |
 
-## Step 3: Monitor Deployment
-- Watch the **Logs** tab for build progress (installs pip packages, then starts Streamlit).
-- Deployment takes 2–5 minutes; your live URL (e.g., `https://research-dashboards.onrender.com`) appears once ready.
-- Free tier spins down after 15 minutes of inactivity (cold start ~30s). [pythonandvba](https://pythonandvba.com/blog/deploy-your-streamlit-app-to-render-free-heroku-alternative/)
+4. Add environment variables from `.env.example` in the **Environment** tab. Never commit `.env`.
+5. Deploy, then open the URL and check the footer: it shows the build number and whether AI and payments are on.
 
-## Step 4: Environment Variables (If Needed)
-Add secrets (e.g., API keys) via **Environment** tab:
-- Key: e.g., `STREAMLIT_SERVER_PORT`, Value: `$PORT`
-- Key: e.g., `API_KEY`, Value: `your-secret` [community.render](https://community.render.com/t/streamlit-python-project-error/7532)
+## Updating
 
-## Auto-Deploy Updates
-Edit code locally, commit, and push to `main`:
-```bash
-git add .
-git commit -m "Update dashboard"
-git push
-```
-Render auto-detects and redeploys in ~1–2 minutes. [youtube](https://www.youtube.com/watch?v=bXRVgg2iWyc)
+Push to `main`. CI runs the tests and the linter; Render redeploys when the push lands. Bump `BUILD` in `config.py` with each release so the footer shows which build is live.
 
-## Troubleshooting
-- **Build fails**: Check `requirements.txt` for compatible versions; pin Python packages if needed (e.g., `streamlit==1.38.0`).
-- **Port error**: Always use `$PORT` and `0.0.0.0` in start command.
-- **Cold starts**: Upgrade to paid tier ($7/mo) for always-on. View logs for details. [4geeks](https://4geeks.com/lesson/deploy-model-using-streamlit-and-render)
+## If something goes wrong
+
+- **The app does not start**: read the service logs. The usual cause is a missing system library for the PDF export; see the Quick start in the README.
+- **AI write-ups are off**: the footer says so. Check `ANTHROPIC_API_KEY` and `AI_ENABLED`.
+- **The payment demo shows a configuration error**: `REPORT_RECIPIENT_ADDRESS` is not set.

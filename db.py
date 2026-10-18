@@ -10,6 +10,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from sqlalchemy import (
+    TIMESTAMP,
     BigInteger,
     Column,
     ForeignKey,
@@ -18,7 +19,6 @@ from sqlalchemy import (
     MetaData,
     Numeric,
     String,
-    TIMESTAMP,
     Table,
     Text,
     create_engine,
@@ -70,6 +70,8 @@ reports = Table(
     Column("token_symbol", String, nullable=False),
     Column("payment_id", BigInteger, ForeignKey("payments.id"), nullable=True),
     Column("model", String, nullable=False),
+    # Legacy columns from the scored format. Nothing writes them now: the
+    # platform no longer rates tokens. Kept so existing databases still load.
     Column("score", Integer),
     Column("verdict", String),
     Column("screenshot_path", String),
@@ -88,6 +90,9 @@ def get_engine():
     if _engine is None:
         database_url = os.getenv("DATABASE_URL") or _DEFAULT_SQLITE_URL
         _engine = create_engine(database_url)
+        # Create missing tables on first use, so the command line and the
+        # dashboard both work on a fresh clone with no setup step.
+        metadata.create_all(_engine)
     return _engine
 
 
@@ -158,7 +163,7 @@ def get_payment_by_tx_hash(tx_hash):
         return dict(row) if row else None
 
 
-def save_report(token_symbol, payment_id, model, score, verdict, screenshot_path, markdown):
+def save_report(token_symbol, payment_id, model, screenshot_path, markdown):
     """Inserts a row into reports. Returns the new report id."""
     with get_engine().begin() as conn:
         result = conn.execute(
@@ -166,8 +171,6 @@ def save_report(token_symbol, payment_id, model, score, verdict, screenshot_path
                 token_symbol=token_symbol,
                 payment_id=payment_id,
                 model=model,
-                score=score,
-                verdict=verdict,
                 screenshot_path=screenshot_path,
                 markdown=markdown,
             )

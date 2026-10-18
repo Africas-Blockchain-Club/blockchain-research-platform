@@ -107,7 +107,7 @@ Voting power?
 
 Proposal process (Snapshot or on-chain)?
 
-**Step 10: Red Flags & Final Verdict**
+**Step 10: Red Flags and Summary**
 
 Common red flags:
 
@@ -116,7 +116,7 @@ Common red flags:
 * Anonymous team \+ weak on-chain community  
 * All supply “circulating” but top wallets hold 60–80 %
 
-Your verdict: 1–10 score \+ 1-sentence summary.
+Your summary: list each red flag you found with the evidence for it. Do not score the token or say whether to buy it; the point is to see the risks clearly, not to rate the investment.
 
 **Step 11: Monitoring Setup**
 

@@ -1,20 +1,10 @@
-streamlit
-pandas
-plotly
-requests
-fpdf2
-markdown
-xhtml2pdf
-pycoingecko
-openai
-matplotlib
-beautifulsoup4
-python-dotenv
-google-genai
-anthropic
-sqlalchemy
-psycopg2-binary
-
-# x402 payment demo
-eth-account>=0.13.0
-flask>=3.0.0
+# Runtime dependencies, pinned so every fork installs the same versions.
+anthropic==0.105.2
+Markdown==3.10.2
+playwright==1.58.0
+psycopg2-binary==2.9.12
+python-dotenv==1.2.1
+requests==2.32.5
+SQLAlchemy==2.0.51
+streamlit==1.54.0
+xhtml2pdf==0.2.17

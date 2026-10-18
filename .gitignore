@@ -1,0 +1,43 @@
+# Secrets: never commit. Copy .env.example to .env and fill it in.
+.env
+.env.*
+!.env.example
+
+# Local-only working and AI-collaboration files
+CLAUDE.md
+*.local.md
+TASK.md
+IMPLEMENTATION_PLAN.md
+TEAM_MEMORY.md
+
+# Runtime output
+local_dev.db
+usage_log.txt
+logs/
+*.log
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Node (teaching/ examples)
+node_modules/
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+*.Identifier

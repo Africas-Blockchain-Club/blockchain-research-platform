@@ -15,6 +15,9 @@ from email.message import EmailMessage
 
 from dotenv import load_dotenv
 
+from config import SETTINGS
+from data_science.compliance import SHORT_DISCLAIMER
+
 load_dotenv()
 
 
@@ -40,12 +43,12 @@ def is_configured():
 
 
 def send_report_receipt(payer_email, token, report_markdown, receipt):
-    """Sends the finished audit report to the payer with a payment receipt.
+    """Sends the finished research report to the payer with a payment receipt.
 
     payer_email:      destination address.
     token:            token symbol, e.g. "SOL".
     report_markdown:  the full saved report, attached as a .md file.
-    receipt:          dict with tx_hash, amount_decimal, chain_id, score, verdict.
+    receipt:          dict with tx_hash, amount_decimal, chain_id, flagged, clear, no_data.
 
     Raises EmailNotConfiguredError when SMTP is not set up (the off state)
     and EmailDeliveryError on any send failure. Never fails silently; the
@@ -60,34 +63,38 @@ def send_report_receipt(payer_email, token, report_markdown, receipt):
 
     token = token.upper()
     msg = EmailMessage()
-    msg["Subject"] = f"{token} forensic audit report and payment receipt"
+    msg["Subject"] = f"{token} research report and testnet payment receipt"
     msg["From"] = cfg["SMTP_USER"]
     msg["To"] = payer_email
     msg.set_content(
-        f"Thank you for your payment. Your {token} forensic audit report is attached.\n"
+        f"Your {token} research report is attached.\n"
         f"\n"
-        f"Payment receipt\n"
-        f"---------------\n"
-        f"Token analysed:   {token}\n"
-        f"Amount paid:      {receipt.get('amount_decimal')} USDC\n"
-        f"Chain:            Base Sepolia (chain id {receipt.get('chain_id')})\n"
+        f"Payment receipt (testnet)\n"
+        f"-------------------------\n"
+        f"Token researched: {token}\n"
+        f"Amount paid:      {receipt.get('amount_decimal')} test USDC\n"
+        f"Chain:            Base Sepolia testnet (chain id {receipt.get('chain_id')})\n"
         f"Transaction hash: {receipt.get('tx_hash')}\n"
         f"\n"
-        f"Report summary\n"
-        f"--------------\n"
-        f"Blueprint Score:  {receipt.get('score')}/100\n"
-        f"Final Verdict:    {receipt.get('verdict')}\n"
+        f"Test USDC has no real-world value. The payment demonstrates on-chain\n"
+        f"payments for learning purposes and pays for the computing cost of the\n"
+        f"report, not for advice.\n"
+        f"\n"
+        f"Risk checks: {receipt.get('flagged')} flagged, {receipt.get('clear')} clear, "
+        f"{receipt.get('no_data')} with no data.\n"
+        f"\n"
+        f"{SHORT_DISCLAIMER}\n"
         f"\n"
         f"The full report is attached as markdown. Open it in any text editor\n"
         f"or markdown viewer.\n"
         f"\n"
-        f"Africa's Blockchain Club - Research Team\n"
+        f"{SETTINGS.brand_name} - {SETTINGS.app_name}\n"
     )
     msg.add_attachment(
         report_markdown.encode("utf-8"),
         maintype="text",
         subtype="markdown",
-        filename=f"{token}_audit_report.md",
+        filename=f"{token}_research_report.md",
     )
 
     try:
@@ -107,13 +114,14 @@ if __name__ == "__main__":
     send_report_receipt(
         payer_email=recipient,
         token="TEST",
-        report_markdown="# Test report\n\nThis is a delivery smoke test, not a real audit.\n",
+        report_markdown="# Test report\n\nThis is a delivery smoke test, not a real report.\n",
         receipt={
             "amount_decimal": "0.10",
             "chain_id": 84532,
             "tx_hash": "0xtest",
-            "score": 0,
-            "verdict": "Smoke test",
+            "flagged": 0,
+            "clear": 0,
+            "no_data": 0,
         },
     )
     print(f"Smoke test email sent to {recipient}.")
