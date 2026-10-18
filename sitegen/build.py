@@ -48,7 +48,9 @@ def safe_markdown(text):
     html = _SAFE_HREF.sub('href="#"', html)
     # Long reports scroll tables inside themselves on phones
     html = html.replace("<table>", '<div class="table-scroll"><table>').replace("</table>", "</table></div>")
-    return Markup(html)
+    # Safe to mark as markup: raw HTML was escaped and unsafe links removed above, which
+    # tests/test_sitegen.py proves with a planted <script> and a javascript: link
+    return Markup(html)  # nosec B704
 
 
 def _snapshot(symbol):

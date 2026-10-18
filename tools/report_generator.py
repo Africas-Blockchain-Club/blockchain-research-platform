@@ -109,7 +109,8 @@ def fetch_and_analyse(token, log_fn=None):
     liquidation_data = fetch_liquidation_data(token)
     say("Reading protocol data from DefiLlama...")
     defillama_data = fetch_defillama_data(token, name=coingecko_data.get("name"))
-    ultrasound_data = fetch_ultrasound_data(token) if token == "ETH" else {}
+    # Bandit reads "ETH" as a password literal; it is a ticker
+    ultrasound_data = fetch_ultrasound_data(token) if token == "ETH" else {}  # nosec B105
 
     say("Reading the blockchain's live network data...")
     network = fetch_network(token)

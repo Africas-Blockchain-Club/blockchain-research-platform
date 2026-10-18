@@ -105,4 +105,5 @@ if __name__ == "__main__":
     print(f"[x402] Payment required : {REQUIRED_AMOUNT} wei (native ETH)")
     print(f"[x402] Recipient        : {PAYWALL_ADDRESS}")
     print(f"[x402] Network          : {NETWORK}\n")
-    app.run(host="0.0.0.0", port=5402)
+    # Localhost only: this demo has no authentication and must not be reachable from a network
+    app.run(host="127.0.0.1", port=5402)
