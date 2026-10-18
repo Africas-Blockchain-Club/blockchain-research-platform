@@ -70,3 +70,11 @@ def test_prompt_never_asks_for_a_rating():
 def test_disclaimer_names_the_regulator():
     assert "FSCA" in long_disclaimer()
     assert "not financial advice" in long_disclaimer()
+
+
+def test_quoted_headlines_are_not_the_platforms_voice():
+    headline = "Ethereum Price Target: Analysts Say Buy Before ETF"
+    text = f"| {headline} | Source | Today |\nThe platform describes the news."
+    assert_educational(text, quoted=[headline])
+    with pytest.raises(AdviceLanguageError):
+        assert_educational(text + "\nOur price target is $5.", quoted=[headline])

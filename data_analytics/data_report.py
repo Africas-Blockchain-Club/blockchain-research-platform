@@ -39,6 +39,18 @@ def _clean(text, limit=None):
     return text or "N/A"
 
 
+def headline_text(headline):
+    """A headline exactly as the report prints it; also used to tell the advice
+    check which words are quoted from other people."""
+    return _clean(headline.get("title"), 140)
+
+
+def quoted_passages(data_summary):
+    """Every third-party passage a report may reproduce word for word."""
+    headlines = [h for h in data_summary.get("recent_news_headlines") or [] if h.get("title")]
+    return [headline_text(h) for h in headlines] + [str(h["title"]) for h in headlines]
+
+
 def build_data_report(token, data_summary, date_str):
     info = data_summary.get("token_info") or {}
     social = data_summary.get("community_and_social") or {}
@@ -109,7 +121,7 @@ def build_data_report(token, data_summary, date_str):
     if headlines:
         parts.append(_table(
             ["Headline", "Source", "Published"],
-            [[_clean(h["title"], 140), _clean(h.get("source")), _clean(h.get("published_at"))] for h in headlines[:8]],
+            [[headline_text(h), _clean(h.get("source")), _clean(h.get("published_at"))] for h in headlines[:8]],
         ))
         parts += ["", "> **Reading this table:** headlines show what people are talking about, not "
                   "what is true. Open the source and check who is making each claim.", ""]

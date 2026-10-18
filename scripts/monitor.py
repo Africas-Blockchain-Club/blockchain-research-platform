@@ -82,7 +82,7 @@ def check_pages():
     from playwright.sync_api import sync_playwright
 
     pages = [
-        ("/", "Learn to read a token"),
+        ("/", "Learn to"),
         ("/research", "Research a token"),
         ("/reports", "Research reports"),
         ("/attack-cost", "What does it cost to attack Ethereum?"),
@@ -116,7 +116,7 @@ def check_pages():
 
 
 def check_pipeline():
-    from data_analytics.data_report import build_data_report
+    from data_analytics.data_report import build_data_report, quoted_passages
     from data_science.compliance import assert_educational
     from tools.report_generator import fetch_and_analyse
 
@@ -128,7 +128,8 @@ def check_pipeline():
         raise RuntimeError("CoinGecko returned no market cap for ETH")
     if len(analysis["risk_checks"]) != 10:
         raise RuntimeError(f"expected 10 risk checks, got {len(analysis['risk_checks'])}")
-    assert_educational(build_data_report("ETH", analysis["data_summary"], "monitor run"))
+    assert_educational(build_data_report("ETH", analysis["data_summary"], "monitor run"),
+                       quoted=quoted_passages(analysis["data_summary"]))
     return f"ETH data fetched (main pool {info.get('dex')} on {info.get('chain')}); report passes the advice check"
 
 

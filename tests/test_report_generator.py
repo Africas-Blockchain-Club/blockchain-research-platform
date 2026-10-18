@@ -54,3 +54,10 @@ def test_ai_report_missing_sections_is_rejected(temp_store, analysis, monkeypatc
     with pytest.raises(AIResponseError):
         report_generator.save_ai_report(analysis)
     assert report_store.list_reports() == []
+
+
+def test_a_headline_with_advice_words_does_not_block_the_data_report(temp_store, analysis):
+    analysis["data_summary"]["recent_news_headlines"] = [
+        {"title": "ETH Price Target Raised as Analysts Say Buy", "source": "Example", "published_at": "today"}
+    ]
+    assert report_generator.save_data_report(analysis)["token"] == "EXM"

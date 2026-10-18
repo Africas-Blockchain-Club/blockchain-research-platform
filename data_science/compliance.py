@@ -78,8 +78,16 @@ def find_advice_language(text):
     return findings
 
 
-def assert_educational(text):
-    """Raise AdviceLanguageError when text contains advice-like phrases."""
+def assert_educational(text, quoted=()):
+    """Raise AdviceLanguageError when text contains advice-like phrases.
+
+    quoted: third-party text the report reproduces word for word, such as news
+    headlines. It is removed before the scan: a headline that says "price
+    target" is someone else's claim, quoted so the reader can judge it, not the
+    platform's own voice. Everything the platform or the model writes is still
+    checked."""
+    for passage in sorted({q for q in quoted if q}, key=len, reverse=True):
+        text = re.sub(re.escape(passage), " ", text, flags=re.IGNORECASE)
     findings = find_advice_language(text)
     if findings:
         raise AdviceLanguageError(findings)

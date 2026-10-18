@@ -16,7 +16,7 @@ import datetime
 import logging
 
 from config import SETTINGS
-from data_analytics.data_report import build_data_report
+from data_analytics.data_report import build_data_report, quoted_passages
 from data_analytics.metrics import compute_derived_metrics
 from data_analytics.risk_profile import compute_risk_checks
 from data_engineering.fetchers import (
@@ -192,7 +192,7 @@ def save_data_report(analysis, payment_id=None):
     token = analysis["token"]
     body = build_data_report(token, analysis["data_summary"], _today())
     # The template is code we control, but checking it too keeps the rule universal
-    assert_educational(body)
+    assert_educational(body, quoted=quoted_passages(analysis["data_summary"]))
     return report_store.save_report(
         token,
         body,
@@ -223,7 +223,7 @@ def save_ai_report(analysis, model=None, payment_id=None, log_fn=None):
             f"The AI write-up is missing required sections ({', '.join(missing)}), so it was not saved. Try again."
         )
     say("Checking the write-up for advice language...")
-    assert_educational(result["text"])
+    assert_educational(result["text"], quoted=quoted_passages(analysis["data_summary"]))
 
     return report_store.save_report(
         token,
