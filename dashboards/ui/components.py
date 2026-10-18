@@ -80,7 +80,12 @@ def report_card_html(meta, href):
 
 def footer():
     ai_state = "AI write-ups on" if SETTINGS.ai_enabled else "AI write-ups off"
-    pay_state = "testnet payment demo on" if SETTINGS.payments_enabled else "payments off"
+    if not SETTINGS.payments_enabled:
+        pay_state = "payments off"
+    else:
+        import payment_verifier
+
+        pay_state = "testnet payment demo on" if payment_verifier.IS_TESTNET else f"payments on {payment_verifier.CHAIN_NAME}"
     st.html(
         '<footer class="brp-footer">'
         f"<p><strong>{escape(SETTINGS.app_name)}</strong> by {escape(SETTINGS.brand_name)}. "

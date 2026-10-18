@@ -7,14 +7,14 @@ captured. A missing chart never stops a report.
 """
 import logging
 
-from config import IMAGES_DIR, ROOT_DIR, SETTINGS
+from config import DATA_DIR, IMAGES_DIR, SETTINGS
 
 log = logging.getLogger(__name__)
 
 
 def capture_dexscreener_chart(token_symbol, dex_url):
     """Capture the DexScreener page for a pair. Returns the image path relative
-    to the project root (so reports stay portable across machines), or None."""
+    to DATA_DIR (so reports stay portable across machines), or None."""
     if not SETTINGS.screenshots_enabled:
         return None
     if not dex_url:
@@ -46,7 +46,7 @@ def capture_dexscreener_chart(token_symbol, dex_url):
             page.wait_for_timeout(12000)
             page.screenshot(path=str(file_path), full_page=False)
             browser.close()
-        return str(file_path.relative_to(ROOT_DIR))
+        return str(file_path.relative_to(DATA_DIR))
     except Exception as e:
         log.warning("Chart screenshot failed for %s: %s", token_symbol, e)
         return None

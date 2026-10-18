@@ -10,12 +10,17 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # Pinned rather than ubuntu-latest, so a runner image change is a decision, not a surprise
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        # 3.10 is the minimum supported version; 3.12 is what the Docker image runs
+        python-version: ["3.10", "3.12"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
-          python-version: "3.10"
+          python-version: ${{ matrix.python-version }}
           cache: pip
           cache-dependency-path: requirements*.txt
       - name: Install system libraries for the PDF export

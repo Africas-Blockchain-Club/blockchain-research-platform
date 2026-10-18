@@ -57,12 +57,23 @@ def render():
         st.info(f"AI write-ups are switched off on this copy of the platform. {SETTINGS.ai_off_reason}")
 
     st.subheader("Payments")
-    if SETTINGS.payments_enabled:
+    if not SETTINGS.payments_enabled:
+        st.markdown("Payments are switched off on this copy of the platform. Every report is free.")
+        return
+    import payment_verifier
+
+    price, asset, chain = payment_verifier.REPORT_PRICE_USDC, payment_verifier.ASSET_LABEL, payment_verifier.CHAIN_NAME
+    if payment_verifier.IS_TESTNET:
         st.markdown(
-            "This copy runs the testnet payment demo: an AI write-up is unlocked by a payment in "
-            "test USDC on the Base Sepolia test network. Test USDC has no real-world value. The "
-            "demo exists to teach how on-chain payments work, and the payment covers the "
-            "computing cost of the write-up, not advice."
+            f"This copy runs the testnet payment demo: an AI write-up is unlocked by a payment of {price} "
+            f"{asset} on the {chain} test network. Test USDC has no real-world value. The demo teaches how "
+            "on-chain payments work."
         )
     else:
-        st.markdown("Payments are switched off on this copy of the platform. Every report is free.")
+        st.markdown(
+            f"Data-only reports are free. An AI write-up costs {price} {asset}, paid on the {chain} network. "
+            "The payment covers the computing cost of the write-up. It does not buy advice, and the write-up "
+            "will never say whether to buy, sell or hold. Blockchain payments cannot be reversed; if a write-up "
+            "fails after your payment confirms, you can retry with the same transaction hash within the hour "
+            "at no extra cost."
+        )

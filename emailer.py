@@ -63,22 +63,26 @@ def send_report_receipt(payer_email, token, report_markdown, receipt):
 
     token = token.upper()
     msg = EmailMessage()
-    msg["Subject"] = f"{token} research report and testnet payment receipt"
+    msg["Subject"] = f"{token} research report and payment receipt"
     msg["From"] = cfg["SMTP_USER"]
     msg["To"] = payer_email
     msg.set_content(
         f"Your {token} research report is attached.\n"
         f"\n"
-        f"Payment receipt (testnet)\n"
+        f"Payment receipt{' (testnet)' if receipt.get('testnet') else ''}\n"
         f"-------------------------\n"
         f"Token researched: {token}\n"
-        f"Amount paid:      {receipt.get('amount_decimal')} test USDC\n"
-        f"Chain:            Base Sepolia testnet (chain id {receipt.get('chain_id')})\n"
+        f"Amount paid:      {receipt.get('amount_decimal')} {receipt.get('asset', 'USDC')}\n"
+        f"Network:          {receipt.get('chain_name')} (chain id {receipt.get('chain_id')})\n"
         f"Transaction hash: {receipt.get('tx_hash')}\n"
         f"\n"
-        f"Test USDC has no real-world value. The payment demonstrates on-chain\n"
-        f"payments for learning purposes and pays for the computing cost of the\n"
-        f"report, not for advice.\n"
+        + (
+            "Test USDC has no real-world value. The payment demonstrates on-chain\n"
+            "payments for learning purposes.\n"
+            if receipt.get("testnet") else
+            "Blockchain payments cannot be reversed. Keep this receipt.\n"
+        )
+        + f"You paid for the computing cost of an AI-written explanation, not for advice.\n"
         f"\n"
         f"Risk checks: {receipt.get('flagged')} flagged, {receipt.get('clear')} clear, "
         f"{receipt.get('no_data')} with no data.\n"

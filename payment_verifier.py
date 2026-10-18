@@ -2,7 +2,8 @@
 On-chain payment verification for paid report generation.
 
 Confirms a user-submitted transaction hash pays REPORT_PRICE_USDC in USDC to
-REPORT_RECIPIENT_ADDRESS on Base Sepolia. Tries a direct RPC read first; if the
+REPORT_RECIPIENT_ADDRESS on Base (Sepolia testnet or mainnet, chosen by CHAIN_ID).
+Tries a direct RPC read first; if the
 RPC is unreachable, falls back to the same lookup via Etherscan's unified
 multichain API, then Blockscout. All three read the same on-chain receipt, so
 a definitive rejection (wrong amount, wrong recipient, reverted tx) from any
@@ -18,13 +19,49 @@ from decimal import Decimal
 
 import requests
 
-CHAIN_ID = int(os.getenv("CHAIN_ID", "84532"))
-RPC_URL = os.getenv("BASE_SEPOLIA_RPC_URL", "https://sepolia.base.org")
-USDC_CONTRACT = os.getenv("USDC_CONTRACT_ADDRESS", "0x036CbD53842c5426634e7929541eC2318f3dCF7e").lower()
-RECIPIENT_ADDRESS = os.getenv("REPORT_RECIPIENT_ADDRESS", "").lower()
-REPORT_PRICE_USDC = Decimal(os.getenv("REPORT_PRICE_USDC", "1.10"))
+# Known networks. CHAIN_ID picks one; any value can still be overridden in .env.
+NETWORKS = {
+    84532: {
+        "name": "Base Sepolia",
+        "testnet": True,
+        "rpc": "https://sepolia.base.org",
+        "usdc": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "explorer": "https://sepolia.basescan.org",
+        "blockscout_api": "https://base-sepolia.blockscout.com/api",
+    },
+    # USDC contract checked on-chain on 18 October 2026: symbol USDC, 6 decimals
+    8453: {
+        "name": "Base",
+        "testnet": False,
+        "rpc": "https://mainnet.base.org",
+        "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "explorer": "https://basescan.org",
+        "blockscout_api": "https://base.blockscout.com/api",
+    },
+}
+
+CHAIN_ID = int(os.getenv("CHAIN_ID") or "84532")
+if CHAIN_ID not in NETWORKS:
+    raise ValueError(f"CHAIN_ID {CHAIN_ID} is not a supported network; use one of {sorted(NETWORKS)}")
+NETWORK = NETWORKS[CHAIN_ID]
+IS_TESTNET = NETWORK["testnet"]
+CHAIN_NAME = NETWORK["name"]
+EXPLORER_URL = NETWORK["explorer"]
+# PAYMENT_RPC_URL is the current name; BASE_SEPOLIA_RPC_URL is read for older .env files
+RPC_URL = (
+    os.getenv("PAYMENT_RPC_URL")
+    or (os.getenv("BASE_SEPOLIA_RPC_URL") if IS_TESTNET else None)
+    or NETWORK["rpc"]
+)
+USDC_CONTRACT = (os.getenv("USDC_CONTRACT_ADDRESS") or NETWORK["usdc"]).lower()
+ASSET_LABEL = "test USDC" if IS_TESTNET else "USDC"
+RECIPIENT_ADDRESS = (os.getenv("REPORT_RECIPIENT_ADDRESS") or "").strip().lower()
+REPORT_PRICE_USDC = Decimal(os.getenv("REPORT_PRICE_USDC") or "2.00")
 USDC_DECIMALS = 6
-MIN_CONFIRMATIONS = int(os.getenv("PAYMENT_MIN_CONFIRMATIONS", "1"))
+MIN_CONFIRMATIONS = int(os.getenv("PAYMENT_MIN_CONFIRMATIONS") or ("1" if IS_TESTNET else "3"))
+# A payment older than this cannot unlock a report. Without the limit, anyone
+# could claim an old transfer to the business wallet that was never theirs.
+MAX_PAYMENT_AGE_MINUTES = int(os.getenv("PAYMENT_MAX_AGE_MINUTES") or "60")
 REQUEST_TIMEOUT = 10
 
 # keccak256("Transfer(address,address,uint256)") - the ERC-20 transfer event topic
@@ -33,7 +70,7 @@ TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523
 # (verification_method, base_url, api_key_env, needs_chainid_param)
 _EXPLORER_FALLBACKS = [
     ("etherscan_fallback", "https://api.etherscan.io/v2/api", "ETHERSCAN_API_KEY", True),
-    ("blockscout_fallback", "https://base-sepolia.blockscout.com/api", "BLOCKSCOUT_API_KEY", False),
+    ("blockscout_fallback", NETWORK["blockscout_api"], "BLOCKSCOUT_API_KEY", False),
 ]
 
 
@@ -60,6 +97,9 @@ def _explorer_call(base_url, api_key_env, needs_chainid, method, params):
         query["chainid"] = CHAIN_ID
     if method == "eth_getTransactionReceipt":
         query["txhash"] = params[0]
+    elif method == "eth_getBlockByNumber":
+        query["tag"] = params[0]
+        query["boolean"] = "false"
     api_key = os.getenv(api_key_env)
     if api_key:
         query["apikey"] = api_key
@@ -68,7 +108,7 @@ def _explorer_call(base_url, api_key_env, needs_chainid, method, params):
     return resp.json().get("result")
 
 
-def _validate_receipt(receipt, latest_block, verification_method):
+def _validate_receipt(receipt, latest_block, verification_method, block_timestamp):
     if receipt.get("status") != "0x1":
         raise PaymentVerificationError("transaction reverted on-chain")
 
@@ -77,6 +117,13 @@ def _validate_receipt(receipt, latest_block, verification_method):
     confirmations = max(0, latest_block - block_number + 1)
 
     required_atomic = int(REPORT_PRICE_USDC * (10 ** USDC_DECIMALS))
+
+    age_minutes = (time.time() - block_timestamp) / 60
+    if age_minutes > MAX_PAYMENT_AGE_MINUTES:
+        raise PaymentVerificationError(
+            f"this payment is {age_minutes:,.0f} minutes old; only payments made in the last "
+            f"{MAX_PAYMENT_AGE_MINUTES} minutes can unlock a report"
+        )
 
     for log in receipt.get("logs") or []:
         if (log.get("address") or "").lower() != USDC_CONTRACT:
@@ -123,7 +170,7 @@ def verify_payment(tx_hash: str) -> dict:
     if not RECIPIENT_ADDRESS:
         raise PaymentVerificationError("REPORT_RECIPIENT_ADDRESS is not configured - cannot verify payments")
     if not tx_hash or not tx_hash.startswith("0x"):
-        raise PaymentVerificationError("that doesn't look like a transaction hash (expected 0x...)")
+        raise PaymentVerificationError("that does not look like a transaction hash (expected 0x...)")
 
     sources = [("rpc", lambda method, params: _rpc_call(method, params))] + [
         (
@@ -143,11 +190,16 @@ def verify_payment(tx_hash: str) -> dict:
                 transport_errors.append(f"{verification_method}: transaction not found (yet)")
                 continue
             latest_block = int(call("eth_blockNumber", []), 16)
+            block = call("eth_getBlockByNumber", [receipt.get("blockNumber"), False]) or {}
+            if not block.get("timestamp"):
+                # Fail closed: without the block time the age limit cannot be checked
+                raise ConnectionError("block timestamp unavailable")
+            block_timestamp = int(block["timestamp"], 16)
         except Exception as exc:
             transport_errors.append(f"{verification_method}: {exc}")
             continue
 
-        return _validate_receipt(receipt, latest_block, verification_method)
+        return _validate_receipt(receipt, latest_block, verification_method, block_timestamp)
 
     raise PaymentVerificationError(
         "could not verify this transaction - every lookup source failed: " + "; ".join(transport_errors)

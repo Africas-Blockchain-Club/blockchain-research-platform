@@ -31,7 +31,8 @@ from sqlalchemy import (
 load_dotenv()
 
 _ROOT = Path(__file__).resolve().parent
-_DEFAULT_SQLITE_URL = f"sqlite:///{_ROOT / 'local_dev.db'}"
+_DATA_DIR = Path(os.getenv("DATA_DIR") or _ROOT)
+_DEFAULT_SQLITE_URL = f"sqlite:///{_DATA_DIR / 'local_dev.db'}"
 
 metadata = MetaData()
 
@@ -217,3 +218,11 @@ def list_recent_reports(limit=10):
     with get_engine().connect() as conn:
         rows = conn.execute(select(reports).order_by(reports.c.created_at.desc()).limit(limit)).mappings().all()
         return [dict(r) for r in rows]
+
+
+def report_exists_for_payment(payment_id):
+    """True when a report has already been delivered for this payment. A paid
+    write-up that failed can be retried with the same transaction until one is."""
+    with get_engine().connect() as conn:
+        row = conn.execute(select(reports.c.id).where(reports.c.payment_id == payment_id).limit(1)).first()
+        return row is not None

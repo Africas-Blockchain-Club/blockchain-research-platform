@@ -1,0 +1,40 @@
+# Fly.io deployment. See deploy.md for the first-time setup.
+app = "blockchain-research-platform"
+primary_region = "jnb"
+
+[build]
+
+[env]
+  DATA_DIR = "/data"
+  SCREENSHOTS_ENABLED = "false"
+  AI_ENABLED = "true"
+  # Never give away AI write-ups on the operator's key
+  AI_REQUIRES_PAYMENT = "true"
+  # Payments stay off until PAYMENTS_ENABLED=true is set as a Fly secret (see deploy.md)
+  CHAIN_ID = "8453"
+  REPORT_PRICE_USDC = "2.00"
+  PAYMENT_MAX_AGE_MINUTES = "60"
+
+# One small volume holds the reports and the SQLite database, so the app runs
+# on a single machine. Move to Postgres (DATABASE_URL) before adding machines.
+[mounts]
+  source = "brp_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    grace_period = "20s"
+    interval = "30s"
+    method = "GET"
+    path = "/_stcore/health"
+    timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"

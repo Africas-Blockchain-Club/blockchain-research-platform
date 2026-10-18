@@ -36,3 +36,10 @@ def test_complete_fails_loudly_when_ai_is_off(monkeypatch):
 def test_cost_estimate_is_none_for_unknown_models():
     assert llm.estimate_cost("unknown-model", 1000, 1000) is None
     assert llm.estimate_cost("claude-opus-5-5", 1_000_000, 0) == pytest.approx(4.0)
+
+
+def test_public_deployments_can_require_payment_for_ai(monkeypatch):
+    monkeypatch.setenv("AI_REQUIRES_PAYMENT", "true")
+    monkeypatch.delenv("PAYMENTS_ENABLED", raising=False)
+    settings = Settings()
+    assert settings.ai_requires_payment and not settings.payments_enabled

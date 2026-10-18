@@ -46,3 +46,18 @@ def test_old_format_reports_are_ignored(temp_store):
     temp_store.mkdir(parents=True, exist_ok=True)
     (temp_store / "OLD_research_report.json").write_text('{"format": 2, "token": "OLD"}')
     assert report_store.list_reports() == []
+
+
+def test_a_payment_counts_as_delivered_once_its_report_exists(temp_store, data_summary):
+    import db
+
+    payment_id = db.record_payment_attempt(
+        request_id="r", token_symbol="EXM", payer_address="0xp", recipient_address="0xr", chain_id=8453,
+        asset_contract="0xu", asset_symbol="USDC", amount_atomic=2_000_000, amount_decimal=2, tx_hash="0xabc",
+    )
+    assert not db.report_exists_for_payment(payment_id)
+    report_store.save_report(
+        "EXM", "# EXM\n", mode=report_store.MODE_AI, model="m",
+        risk_checks=compute_risk_checks(data_summary), data_summary=data_summary, payment_id=payment_id,
+    )
+    assert db.report_exists_for_payment(payment_id)

@@ -104,6 +104,9 @@ def _email_receipt(email, meta, verified, tx_hash):
                 "amount_decimal": verified["amount_decimal"],
                 "chain_id": payment_verifier.CHAIN_ID,
                 "tx_hash": tx_hash,
+                "chain_name": payment_verifier.CHAIN_NAME,
+                "asset": payment_verifier.ASSET_LABEL,
+                "testnet": payment_verifier.IS_TESTNET,
                 "flagged": meta["flagged"],
                 "clear": meta["clear"],
                 "no_data": meta["no_data"],
@@ -138,7 +141,17 @@ def _verify_payment(analysis, tx_hash, email):
     except PaymentVerificationError as e:
         st.error(f"The payment could not be verified: {e}")
     except IntegrityError:
-        st.error("This transaction has already been used to unlock a report.")
+        # Already recorded. If its write-up never arrived (a failure, or the page
+        # was closed), the payer may use the same transaction again for that token.
+        existing = db.get_payment_by_tx_hash(tx_hash)
+        if (existing and existing["status"] == "confirmed" and existing["token_symbol"] == analysis["token"]
+                and not db.report_exists_for_payment(existing["id"])):
+            st.info("This payment was already confirmed, and its write-up was never delivered. Writing it now.")
+            return existing["id"], {"amount_decimal": existing["amount_decimal"]}
+        st.error(
+            "This transaction has already been used to unlock a report. If it was for a different token, "
+            "research that token to use it."
+        )
     return None, None
 
 
@@ -162,11 +175,26 @@ def _payment_gate(analysis, model):
                 _saved(meta)
         return
 
-    st.markdown(
-        f"Pay **{payment_verifier.REPORT_PRICE_USDC} test USDC** on the Base Sepolia test network "
-        "to unlock the AI write-up. Test USDC has no real-world value: this is a demonstration of "
-        "on-chain payments, and the payment covers the computing cost of the write-up, not advice."
-    )
+    price, asset, chain = payment_verifier.REPORT_PRICE_USDC, payment_verifier.ASSET_LABEL, payment_verifier.CHAIN_NAME
+    if payment_verifier.IS_TESTNET:
+        st.markdown(
+            f"Pay **{price} {asset}** on the {chain} test network to unlock the AI write-up. Test USDC has "
+            "no real-world value: this is a demonstration of on-chain payments, and the payment covers the "
+            "computing cost of the write-up, not advice."
+        )
+    else:
+        st.markdown(
+            f"Pay **{price} {asset}** on the {chain} network to unlock the AI write-up for {token}."
+        )
+        notice(
+            "What you are paying for",
+            "An AI-written explanation of the public data shown above, checked for advice language before it "
+            "is saved. You are paying for the computing cost of that write-up, not for advice: it will not "
+            "say whether to buy, sell or hold. If the write-up fails after your payment confirms, paste the "
+            "same transaction hash below within the hour to try again at no extra cost. Payments on a "
+            "blockchain cannot be reversed, so check the token before you pay.",
+            tone="warn",
+        )
     email = ""
     if emailer.is_configured():
         email = st.text_input("Email for the report and receipt (optional, enter it before paying)",
@@ -179,9 +207,10 @@ def _payment_gate(analysis, model):
         recipient=payment_verifier.RECIPIENT_ADDRESS,
         usdc_contract=payment_verifier.USDC_CONTRACT,
         chain_id=payment_verifier.CHAIN_ID,
-        chain_name="Base Sepolia",
+        chain_name=payment_verifier.CHAIN_NAME,
         rpc_url=payment_verifier.RPC_URL,
-        explorer_url="https://sepolia.basescan.org",
+        explorer_url=payment_verifier.EXPLORER_URL,
+        asset_label=payment_verifier.ASSET_LABEL,
         amount_atomic=str(amount_atomic),
         key=f"wallet_pay_{token}",
         default=None,
@@ -194,10 +223,10 @@ def _payment_gate(analysis, model):
         tx_hash = result["tx_hash"].strip()
         handled.add(tx_hash)
 
-    with st.expander("No wallet extension? Pay from any wallet and paste the transaction hash"):
+    with st.expander("No wallet extension, or retrying a paid write-up? Paste the transaction hash"):
         st.caption(
-            f"Send {payment_verifier.REPORT_PRICE_USDC} test USDC on Base Sepolia to "
-            f"{payment_verifier.RECIPIENT_ADDRESS}, then paste the transaction hash."
+            f"Send {price} {asset} on {chain} to {payment_verifier.RECIPIENT_ADDRESS}, then paste the "
+            f"transaction hash within {payment_verifier.MAX_PAYMENT_AGE_MINUTES} minutes."
         )
         typed_hash = st.text_input("Transaction hash", placeholder="0x...")
         if st.button("Check the payment"):
@@ -265,6 +294,9 @@ def render():
         st.caption("Adds plain-English explanation written by an AI model, checked for advice language before it is saved.")
         if not SETTINGS.ai_enabled:
             notice("AI is off", SETTINGS.ai_off_reason, tone="warn")
+            return
+        if SETTINGS.ai_requires_payment and not SETTINGS.payments_enabled:
+            notice("Not available yet", "AI write-ups on this site need a payment, and payments are not switched on yet.", tone="warn")
             return
         model = st.selectbox("AI model", SETTINGS.ai_models, help="The first model in AI_MODELS is the default.")
         if SETTINGS.payments_enabled:

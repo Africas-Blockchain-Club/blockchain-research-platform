@@ -66,7 +66,7 @@ window.addEventListener("message", function (event) {
   const data = event.data;
   if (!data || data.type !== "streamlit:render") return;
   cfg = data.args;
-  btn.textContent = "Pay " + cfg.price + " test USDC with your wallet";
+  btn.textContent = "Pay " + cfg.price + " " + (cfg.asset_label || "USDC") + " with your wallet";
   if (!paying) btn.disabled = false;
   setHeight();
 });
@@ -117,7 +117,7 @@ async function pay() {
     const amount = BigInt(cfg.amount_atomic).toString(16).padStart(64, "0");
     const dataHex = "0xa9059cbb" + recipient + amount;
 
-    setStatus("Confirm the payment of " + cfg.price + " USDC in your wallet...");
+    setStatus("Confirm the payment of " + cfg.price + " " + (cfg.asset_label || "USDC") + " in your wallet...");
     const txHash = await window.ethereum.request({
       method: "eth_sendTransaction",
       params: [{ from: from, to: cfg.usdc_contract, data: dataHex }],

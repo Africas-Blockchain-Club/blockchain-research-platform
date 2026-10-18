@@ -1,35 +1,76 @@
 # Deploying
 
-Any host that runs a Python web service can run the platform. The steps below use Render as the example; check Render's own documentation for current plans and limits, because they change.
+The live copy runs on Fly.io in Johannesburg: https://blockchain-research-platform.fly.dev
 
 ## Before you deploy
 
 - `pytest` and `ruff check .` pass.
-- You have decided which features to switch on. A public copy with no API key runs data-only reports, which cost nothing.
-- **Storage.** Many hosts, including free tiers, wipe the local disk on every deploy or restart. Reports are saved to `reports/` and to the database, so on such a host set `DATABASE_URL` to a hosted Postgres database and expect the files in `reports/` to be lost on redeploy.
-- **Screenshots.** Playwright needs a browser, which is heavy for a small host. Set `SCREENSHOTS_ENABLED=false` unless you install one in the build.
+- You know which features are on. The live copy sets `AI_REQUIRES_PAYMENT=true` in `fly.toml`, so AI write-ups only ever run behind a payment, even if an API key is added first.
 
-## Render
+## Fly.io (the live copy)
 
-1. Push the repository to GitHub.
-2. In Render, create a **Web Service** from the repository.
-3. Use these settings:
+`fly.toml`, `Dockerfile` and `scripts/start.sh` hold the whole setup:
 
-   | Setting | Value |
-   |---|---|
-   | Environment | Python 3 |
-   | Build command | `pip install -r requirements.txt` |
-   | Start command | `streamlit run dashboards/app.py --server.port $PORT --server.address 0.0.0.0` |
+- one `shared-cpu-1x` machine with 1 GB of memory in `jnb`, stopped when idle and started on the next visit;
+- a 1 GB volume, `brp_data`, mounted at `/data`, holding the reports, the SQLite database and the usage log (`DATA_DIR=/data`);
+- the sample reports in `reports/` are copied onto an empty volume on first boot;
+- chart screenshots are off, because the image has no browser.
 
-4. Add environment variables from `.env.example` in the **Environment** tab. Never commit `.env`.
-5. Deploy, then open the URL and check the footer: it shows the build number and whether AI and payments are on.
+Because the volume belongs to one machine, the app runs on one machine. Move to Postgres (`DATABASE_URL`) and shared report storage before adding more.
 
-## Updating
+### First-time setup (already done for the live copy)
 
-Push to `main`. CI runs the tests and the linter; Render redeploys when the push lands. Bump `BUILD` in `config.py` with each release so the footer shows which build is live.
+```bash
+fly apps create blockchain-research-platform --org personal
+fly volumes create brp_data --region jnb --size 1 --app blockchain-research-platform
+fly deploy --remote-only --ha=false
+```
+
+### Each release
+
+Bump `BUILD` in `config.py`, push to `main` (CI runs the tests), then:
+
+```bash
+fly deploy --remote-only
+```
+
+The footer on the live site shows the build number, so you can confirm which build is serving.
+
+### Switching on paid AI write-ups
+
+AI write-ups cost 2 USDC on Base mainnet, paid to the business wallet. Secrets never go in `fly.toml` or in git:
+
+```bash
+fly secrets set --app blockchain-research-platform \
+  ANTHROPIC_API_KEY=sk-ant-... \
+  REPORT_RECIPIENT_ADDRESS=0xYourBusinessWallet \
+  PAYMENTS_ENABLED=true
+```
+
+Setting secrets restarts the machine. Then make one real 2 USDC payment yourself, and check that the write-up arrives and that the payment row is recorded, before you announce the feature. Set a monthly spending limit in the Anthropic console as a backstop.
+
+To switch paid write-ups off again: `fly secrets set PAYMENTS_ENABLED=false --app blockchain-research-platform`.
+
+### Useful commands
+
+```bash
+fly logs --app blockchain-research-platform
+fly ssh console --app blockchain-research-platform -C "ls /data/reports"
+fly volumes snapshots list brp_data --app blockchain-research-platform
+```
+
+Fly takes daily snapshots of the volume and keeps 5 days of them.
+
+## Other hosts
+
+Any host that runs a Docker image or a Python web service can run the platform:
+
+- Start command: `streamlit run dashboards/app.py --server.port $PORT --server.address 0.0.0.0`.
+- Point `DATA_DIR` at persistent storage, or use `DATABASE_URL` with Postgres. Many free tiers wipe the disk on every deploy, which deletes saved reports.
+- Set `SCREENSHOTS_ENABLED=false` unless the host has a browser for Playwright.
 
 ## If something goes wrong
 
-- **The app does not start**: read the service logs. The usual cause is a missing system library for the PDF export; see the Quick start in the README.
-- **AI write-ups are off**: the footer says so. Check `ANTHROPIC_API_KEY` and `AI_ENABLED`.
-- **The payment demo shows a configuration error**: `REPORT_RECIPIENT_ADDRESS` is not set.
+- **The app does not start**: run `fly logs`. A failed health check in the first seconds after boot is normal while Streamlit starts.
+- **AI write-ups say "Not available yet"**: payments are off on a deployment that requires them. That is the safety switch working.
+- **The payment screen shows a configuration error**: `REPORT_RECIPIENT_ADDRESS` is not set.

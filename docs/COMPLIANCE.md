@@ -40,11 +40,20 @@ A prompt is a request, not a control. The model is asked not to give advice, and
 4. **The data-only report** (`data_analytics/data_report.py`). It contains no model-written text and passes the same guard.
 5. **Tests** (`tests/test_compliance.py`, `tests/test_report_generator.py`). The guard is tested against advice phrases and against teaching sentences that must still pass.
 
-## The payment demo
+## Payments
 
-The payment feature is switched off by default (`PAYMENTS_ENABLED=false`). When it is on, it takes test USDC on the Base Sepolia test network, which has no real-world value. It exists to teach how on-chain payments work. The screen and the receipt say that the payment covers the computing cost of the write-up, not advice.
+Payments are switched off by default (`PAYMENTS_ENABLED=false`). Data-only reports are always free.
 
-A fork that charges real money for reports moves closer to running a paid research service. Do not do that without qualified advice.
+When payments are on, an AI write-up is unlocked by a USDC payment on Base. `CHAIN_ID=84532` runs the testnet demo with test USDC, which has no real-world value. `CHAIN_ID=8453` takes real USDC on Base mainnet, paid to the wallet in `REPORT_RECIPIENT_ADDRESS`.
+
+What a payer buys is the computing cost of an AI-written explanation. The screen and the receipt say so, and say that the write-up is not advice. The same advice-language check applies whether or not anyone paid.
+
+Charging real money moves the platform closer to running a paid research service, which brings obligations beyond the advice question: consumer protection, tax on income, and record keeping. The operator of the live deployment should take qualified advice on these. The code does what it can:
+
+- A payment must be recent (`PAYMENT_MAX_AGE_MINUTES`, default 60) so nobody can claim an old transfer to the business wallet.
+- A transaction hash unlocks one write-up. If the write-up fails after payment, the same hash can be used again until a write-up is delivered.
+- Every payment is recorded with its transaction hash, payer address, amount and verification method (`db.py`).
+- Blockchain payments cannot be reversed. The payment screen says so before the payer pays.
 
 ## Rules for contributors
 

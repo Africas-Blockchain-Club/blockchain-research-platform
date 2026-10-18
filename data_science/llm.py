@@ -12,11 +12,11 @@ AIUnavailableError and the caller falls back to the data-only report.
 import datetime
 import logging
 
-from config import ROOT_DIR, SETTINGS
+from config import DATA_DIR, SETTINGS
 
 log = logging.getLogger(__name__)
 
-USAGE_LOG = ROOT_DIR / "usage_log.txt"
+USAGE_LOG = DATA_DIR / "usage_log.txt"
 
 # USD per million tokens (input, output), Anthropic list prices as of October
 # 2026. Used for an on-screen estimate only; check the live price list before

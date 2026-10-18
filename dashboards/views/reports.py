@@ -1,7 +1,7 @@
 """Reports: the library, and one report at a time when ?token= is set."""
 import streamlit as st
 
-from config import ROOT_DIR
+from config import DATA_DIR
 from dashboards.ui.components import (
     disclaimer_notice,
     generated_label,
@@ -68,8 +68,8 @@ def _report(token):
     for tab, (title, text) in zip(tabs[1:-1], sections, strict=True):
         with tab:
             st.markdown(_for_display(text))
-            if title.startswith("Phase 2:") and screenshot and (ROOT_DIR / screenshot).exists():
-                st.image(str(ROOT_DIR / screenshot), caption=f"DexScreener chart for {token}, captured with the data")
+            if title.startswith("Phase 2:") and screenshot and (DATA_DIR / screenshot).exists():
+                st.image(str(DATA_DIR / screenshot), caption=f"DexScreener chart for {token}, captured with the data")
 
     with tabs[-1]:
         st.markdown("Download the full report, including the disclaimer, the risk checks and the sources.")
