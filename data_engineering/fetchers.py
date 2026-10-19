@@ -26,9 +26,23 @@ def _coingecko_get(url, headers, timeout=12, attempts=3):
     return resp
 
 
+def _best_search_match(coins, query):
+    """The coin whose full name, CoinGecko id or ticker is exactly what was
+    typed, so "Celestia" and "TIA" both find Celestia. Several matches go to
+    the highest market cap rank: an impostor copying a name or ticker ranks
+    far below the real coin."""
+    wanted = " ".join(query.split()).casefold()
+    matches = [c for c in coins
+               if wanted in {(c.get(k) or "").casefold() for k in ("name", "id", "symbol")}]
+    if not matches:
+        return None
+    return min(matches, key=lambda c: c.get("market_cap_rank") or float("inf"))
+
+
 def fetch_coingecko_data(token, coin_id=None):
     """
     Fetch full market data, community stats, and description from CoinGecko.
+    token: a ticker or a full name, for example TIA or Celestia.
     coin_id: CoinGecko's id when it is already known (the featured chains),
     which saves the search request and halves the load on the rate limit.
     """
@@ -39,16 +53,15 @@ def fetch_coingecko_data(token, coin_id=None):
             headers["x-cg-demo-api-key"] = api_key
 
         if not coin_id:
-            # Resolve the ticker to a CoinGecko id
-            search_resp = _coingecko_get(f"https://api.coingecko.com/api/v3/search?query={token.lower()}", headers)
+            # Resolve the name or ticker to a CoinGecko id
+            query = urllib.parse.quote(token.lower())
+            search_resp = _coingecko_get(f"https://api.coingecko.com/api/v3/search?query={query}", headers)
             if search_resp.status_code != 200:
                 return {"error": f"CoinGecko search returned {search_resp.status_code}"}
-            coins = search_resp.json().get("coins", [])
-            # Prefer an exact symbol match
-            exact = [c for c in coins if c.get("symbol", "").upper() == token.upper()]
-            if not exact:
-                return {"error": f"Token '{token}' not found on CoinGecko"}
-            coin_id = exact[0]["id"]
+            match = _best_search_match(search_resp.json().get("coins", []), token)
+            if not match:
+                return {"error": f"'{token}' not found on CoinGecko"}
+            coin_id = match["id"]
 
         # Step 2: fetch full data
         data_resp = _coingecko_get(

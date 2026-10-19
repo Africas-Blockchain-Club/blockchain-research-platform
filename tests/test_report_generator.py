@@ -94,3 +94,9 @@ def test_coingecko_waits_and_retries_after_a_rate_limit(monkeypatch):
     monkeypatch.setattr(fetchers.time, "sleep", lambda s: None)
     assert fetchers._coingecko_get("https://api.coingecko.com/x", {}).status_code == 200
     assert len(calls) == 2
+
+
+@pytest.mark.parametrize("query, ok", [("NEAR Protocol", True), ("Shiba-Inu", True), ("TIA", True),
+                                       ("../../evil", False), ("SOL?x=1", False), ("", False)])
+def test_full_names_pass_and_crafted_input_does_not(query, ok):
+    assert report_generator.is_valid_query(query) is ok

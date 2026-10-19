@@ -124,3 +124,15 @@ def test_a_venue_that_drops_once_is_retried(monkeypatch):
     result = derivatives.fetch_open_interest("BTC")
     assert result["venues"] == {"A": 5.0}
     assert result["failed"] == {}
+
+
+def test_a_full_name_finds_its_coin_and_an_impostor_loses_on_rank():
+    from data_engineering.fetchers import _best_search_match
+
+    coins = [
+        {"id": "celestia-fake", "name": "Celestia", "symbol": "CEL2", "market_cap_rank": None},
+        {"id": "celestia", "name": "Celestia", "symbol": "TIA", "market_cap_rank": 102},
+    ]
+    assert _best_search_match(coins, "CELESTIA")["symbol"] == "TIA"
+    assert _best_search_match(coins, "tia")["id"] == "celestia"
+    assert _best_search_match(coins, "Celest") is None
