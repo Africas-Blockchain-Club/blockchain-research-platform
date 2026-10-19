@@ -12,9 +12,12 @@ Only "failed" counts as a source error, so a coin with no futures market is
 not reported as a broken source. Every endpoint was checked live on
 19 October 2026.
 """
+import time
+
 import requests
 
 TIMEOUT = 10
+RETRY_SECONDS = 2
 HEADERS = {"User-Agent": "blockchain-research-platform"}
 
 
@@ -75,12 +78,19 @@ def fetch_open_interest(symbol):
     symbol = (symbol or "").upper()
     venues, not_listed, failed = {}, [], {}
     for name, read in VENUES:
-        try:
-            venues[name] = read(symbol)
-        except NotListed:
-            not_listed.append(name)
-        except Exception as e:
-            failed[name] = f"{type(e).__name__}: {e}"[:120]
+        for attempt in (1, 2):
+            try:
+                venues[name] = read(symbol)
+                failed.pop(name, None)
+                break
+            except NotListed:
+                not_listed.append(name)
+                break
+            except Exception as e:
+                # One retry: a single dropped connection is not a venue failing
+                failed[name] = f"{type(e).__name__}: {e}"[:120]
+                if attempt == 1:
+                    time.sleep(RETRY_SECONDS)
     result = {"venues": venues, "not_listed": not_listed, "failed": failed,
               "source": "OKX, Bitget, Gate and Hyperliquid public futures APIs (USDT-margined perpetuals)"}
     if not venues:

@@ -77,6 +77,7 @@ def test_open_interest_separates_not_listed_from_failed(monkeypatch):
     def down(_symbol):
         raise ConnectionError("timeout")
 
+    monkeypatch.setattr(derivatives, "RETRY_SECONDS", 0)
     monkeypatch.setattr(derivatives, "VENUES", (("A", listed), ("B", not_listed), ("C", down)))
     result = derivatives.fetch_open_interest("ETH")
     assert result["open_interest"] == 1_000_000.0
@@ -105,3 +106,21 @@ def test_market_depth_counts_only_large_exchanges(monkeypatch):
     depth = fetchers.fetch_market_depth("ethereum")
     assert depth["depth_down_2pct_usd"] == 10_000_000
     assert depth["markets_counted"] == 1
+
+
+def test_a_venue_that_drops_once_is_retried(monkeypatch):
+    from data_engineering import derivatives
+
+    calls = []
+
+    def flaky(_symbol):
+        calls.append(1)
+        if len(calls) == 1:
+            raise ConnectionError("dropped")
+        return 5.0
+
+    monkeypatch.setattr(derivatives, "RETRY_SECONDS", 0)
+    monkeypatch.setattr(derivatives, "VENUES", (("A", flaky),))
+    result = derivatives.fetch_open_interest("BTC")
+    assert result["venues"] == {"A": 5.0}
+    assert result["failed"] == {}
