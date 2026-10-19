@@ -25,6 +25,11 @@ NO_DATA = "no_data"
 
 STATUS_LABELS = {FLAGGED: "Flagged", CLEAR: "Clear", NO_DATA: "No data"}
 
+# Raise when the checks change, so the featured reports are rebuilt with the new
+# checks straight away instead of when they next turn 24 hours old.
+# 2: exchange depth, futures open interest from public venues, unmeasurable topics moved out
+CHECKS_VERSION = 2
+
 
 def _check(key, name, status, value, threshold, measures, meaning, source):
     return {
@@ -64,7 +69,28 @@ def _artificial_volume(info):
     )
 
 
-def _thin_liquidity(info):
+DEPTH_THRESHOLD_USD = 1_000_000
+
+
+def _thin_liquidity(summary, info):
+    depth = summary.get("market_depth") or {}
+    if "depth_down_2pct_usd" in depth:
+        # Order-book depth across large exchanges: the right measure for coins that
+        # trade mostly on centralised exchanges, which is nearly every chain's coin
+        amount = depth["depth_down_2pct_usd"]
+        return _check(
+            "thin_liquidity",
+            "Thin market depth",
+            FLAGGED if amount < DEPTH_THRESHOLD_USD else CLEAR,
+            f"{usd(amount)} of selling moves the price 2% across {depth.get('markets_counted', 0)} large-exchange markets",
+            f"Less than {usd(DEPTH_THRESHOLD_USD)} of selling moves the price 2%",
+            "Depth: how many US Dollars of selling it takes to push the price down 2% on each order book, "
+            "added up across large, established exchanges. Smaller exchanges are not counted.",
+            "Thin depth means a single large sale moves the price sharply (slippage). Deep books absorb "
+            "large trades with little price change.",
+            "CoinGecko exchange tickers",
+        )
+    # No exchange depth (a token that trades only on DEXs): fall back to the main pool
     ratio = _ratio(info.get("liquidity_usd"), info.get("market_cap_usd"))
     status = NO_DATA if ratio is None else (FLAGGED if ratio < 0.01 else CLEAR)
     return _check(
@@ -73,10 +99,9 @@ def _thin_liquidity(info):
         status,
         "N/A" if ratio is None else f"{ratio * 100:,.2f}% of market cap in the main DEX pool",
         "Less than 1% of market cap in the main DEX pool",
-        "Depth: money in the main decentralised exchange (DEX) pool, divided by market cap.",
-        "A thin pool means a single large sale moves the price sharply (slippage). Large, established "
-        "tokens trade mostly on centralised exchanges, so this check says most about tokens that "
-        "trade mainly on DEXs.",
+        "Depth: money in the main decentralised exchange (DEX) pool, divided by market cap. Used only "
+        "when no large exchange reports order-book depth for this token.",
+        "A thin pool means a single large sale moves the price sharply (slippage).",
         "DexScreener",
     )
 
@@ -116,33 +141,23 @@ def _low_float(info):
     )
 
 
-def _unlock_schedule(_info):
-    return _check(
-        "unlock_schedule",
-        "Large token unlock in the next 30 days",
-        NO_DATA,
-        "N/A",
-        "More than 15% of supply unlocking within 30 days",
-        "Unlock schedule: dates on which locked tokens become free to trade.",
-        "Large unlocks often add selling pressure around the unlock date. This platform does not "
-        "yet read an unlock schedule source, so check the project's own vesting documents.",
-        "Not connected (a token-unlock data source is needed)",
-    )
-
-
-def _concentration(_info):
-    return _check(
-        "holder_concentration",
-        "Supply held by a few wallets",
-        NO_DATA,
-        "N/A",
-        "Top 10 wallets holding more than 80% of supply",
-        "Concentration: the share of supply held by the largest wallets.",
-        "When a few wallets hold most of the supply, one decision by one holder can move the price. "
-        "Check a block explorer's holder list, and remember exchange and contract wallets hold "
-        "tokens for many people.",
-        "Not connected (an on-chain holder data source is needed)",
-    )
+# Topics the checks cannot measure from a free, reliable source. They are listed
+# in every report under "Not covered" instead of being counted as "No data", which
+# would read as a source failing when no source was ever connected.
+NOT_COVERED = (
+    {
+        "name": "Token unlocks in the next 30 days",
+        "why": "Dates on which locked tokens become free to trade. Large unlocks often add selling "
+               "pressure around the unlock date.",
+        "where": "The project's own vesting documents, or a token-unlock tracker such as Tokenomist.",
+    },
+    {
+        "name": "Supply held by a few wallets",
+        "why": "When a few wallets hold most of the supply, one decision by one holder can move the price.",
+        "where": "A block explorer's top-holders list. Remember that exchange and contract wallets hold "
+                 "coins for many people.",
+    },
+)
 
 
 def _listing(summary):
@@ -202,17 +217,22 @@ def _volatility(info):
 def _leverage(summary, info):
     derivatives = summary.get("derivatives_data") or {}
     ratio = _ratio(derivatives.get("open_interest"), info.get("market_cap_usd"))
-    status = NO_DATA if ratio is None or "error" in derivatives else (FLAGGED if ratio > 0.10 else CLEAR)
+    value = "N/A" if ratio is None else f"Open interest is {ratio * 100:,.1f}% of market cap"
+    if derivatives.get("venues") == {} and not derivatives.get("failed"):
+        # Every venue answered and none lists a contract: there is no leveraged market to measure
+        ratio, value = 0.0, "No perpetual futures market at the venues checked"
+    status = NO_DATA if ratio is None else (FLAGGED if ratio > 0.10 else CLEAR)
     return _check(
         "leverage",
         "Heavy leveraged trading",
         status,
-        "N/A" if status == NO_DATA else f"Open interest is {ratio * 100:,.1f}% of market cap",
+        value,
         "Open interest above 10% of market cap",
-        "Open interest: the value of futures contracts not yet closed.",
+        "Open interest: the value of futures contracts not yet closed, added up across the venues "
+        "named in the source. Venues not named are not counted, so the true total is higher.",
         "Heavy leverage can turn a small price move into a large one, because forced closures "
         "(liquidations) trigger more buying or selling.",
-        "Coinglass (needs COINGLASS_API_KEY)",
+        derivatives.get("source") or "Coinglass",
     )
 
 
@@ -222,11 +242,9 @@ def compute_risk_checks(data_summary):
     info = data_summary.get("token_info") or {}
     return [
         _artificial_volume(info),
-        _thin_liquidity(info),
+        _thin_liquidity(data_summary, info),
         _dilution(info),
         _low_float(info),
-        _unlock_schedule(info),
-        _concentration(info),
         _listing(data_summary),
         _drawdown(info),
         _volatility(info),
@@ -264,5 +282,13 @@ def risk_checks_markdown(checks):
             f"| {check['name']} | {STATUS_LABELS[check['status']]} | {check['value']} | "
             f"{check['threshold']} | {check['meaning']} |"
         )
+    lines += [
+        "",
+        "### Not covered by these checks",
+        "",
+        "No free, reliable source answers these, so the platform does not measure them. Check them yourself:",
+        "",
+    ]
+    lines += [f"- **{item['name']}.** {item['why']} Where to look: {item['where']}" for item in NOT_COVERED]
     lines.append("")
     return "\n".join(lines)

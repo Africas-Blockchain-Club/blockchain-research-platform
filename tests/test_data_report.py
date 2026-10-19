@@ -26,4 +26,13 @@ def test_data_report_shows_rand_alongside_dollars(data_summary):
 def test_data_report_survives_an_empty_summary():
     text = build_data_report("EXM", {}, "18 October 2026")
     assert "N/A" in text
-    assert "not connected" in text.lower()
+    assert "could not be read" in text.lower()
+
+
+def test_order_book_market_is_explained_not_shown_as_empty(data_summary):
+    info = data_summary["token_info"]
+    info.update(liquidity_usd=None, liquidity_base_tokens=None, liquidity_quote_tokens=None,
+                liquidity_reported=False)
+    report = build_data_report("HYPE", data_summary, "19 October 2026")
+    assert "order book" in report
+    assert "No data (not reported)" in report

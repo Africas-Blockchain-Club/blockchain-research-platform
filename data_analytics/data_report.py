@@ -71,7 +71,7 @@ def build_data_report(token, data_summary, date_str):
         "listed at the end, and no AI wrote any of it. Phase 0 explains the blockchain itself: what it is "
         "for, how it reaches agreement, and how its network is running right now. Phase 1 turns to its "
         "native asset: price, market size and supply. Phase 1.5 and Phase 2 show how its main exchange "
-        "pool sets the price. Phase 3 covers leveraged trading. The risk checks then compare the data with "
+        "pool and the large exchanges' order books set the price. Phase 3 covers leveraged trading. The risk checks then compare the data with "
         "teaching thresholds. A check that says \"No data\" means the platform could not measure it, not "
         "that the risk is absent.",
         "",
@@ -251,6 +251,14 @@ def build_data_report(token, data_summary, date_str):
             ),
             "",
         ]
+    elif info.get("liquidity_reported") is False:
+        parts += [
+            "This market reported no pool at all. It is most likely an order book, where buyers and "
+            "sellers post orders at chosen prices, rather than a pool priced by a formula. Hyperliquid's "
+            "own spot exchange works this way. An order book has no x and y to show, so the pool maths "
+            "does not apply, and its liquidity is shown as No data rather than zero.",
+            "",
+        ]
     else:
         parts += ["The pool's token balances were not available, so the pool maths cannot be shown.", ""]
 
@@ -262,12 +270,34 @@ def build_data_report(token, data_summary, date_str):
         _table(
             ["Metric", "Value", "What This Measures"],
             [
-                ["Main DEX pool liquidity", money(info.get("liquidity_usd")), "Money in the main pool backing the price"],
+                ["Main DEX pool liquidity",
+                 money(info.get("liquidity_usd")) if info.get("liquidity_usd") is not None else "No data (not reported)",
+                 "Money in the main pool backing the price"],
                 ["24h volume, main DEX pool", money(info.get("24h_volume_dex_pair_usd")), "Trading in that one pool"],
                 ["24h volume, all exchanges", money(info.get("24h_volume_total_all_exchanges_usd")), "Trading everywhere CoinGecko tracks"],
             ],
         ),
         "",
+    ]
+    depth = data_summary.get("market_depth") or {}
+    if "depth_down_2pct_usd" in depth:
+        parts += [
+            "### 2.1b Order-Book Depth on Large Exchanges",
+            "",
+            _table(
+                ["Exchange", "Pair", "Selling Needed to Move the Price Down 2%"],
+                [[_clean(m.get("exchange")), _clean(m.get("pair")), money(m.get("depth_down_2pct_usd"))]
+                 for m in depth.get("deepest_markets") or []]
+                + [["All counted markets", f"{depth.get('markets_counted', 0)} markets", money(depth["depth_down_2pct_usd"])]],
+            ),
+            "",
+            "> **Reading this table:** most trading in a blockchain's coin happens on centralised "
+            "exchanges' order books, not in DEX pools. Depth is how many US Dollars of selling it "
+            "takes to push the price down 2% on each book. Only large, established exchanges are "
+            "counted, because smaller ones report depth that cannot be checked.",
+            "",
+        ]
+    parts += [
         "### 2.2 What a Large Sale Would Do",
         "",
     ]
@@ -308,7 +338,22 @@ def build_data_report(token, data_summary, date_str):
 
     derivatives = data_summary.get("derivatives_data") or {}
     parts += ["## Phase 3: Derivatives", ""]
-    if derivatives and "error" not in derivatives:
+    if derivatives and "error" not in derivatives and derivatives.get("venues"):
+        parts += [
+            _table(
+                ["Venue", "Open Interest"],
+                [[_clean(name), money(value)] for name, value in derivatives["venues"].items()]
+                + [["Total at these venues", money(derivatives.get("open_interest"))]],
+            ),
+            "",
+            f"Source: {_clean(derivatives.get('source'))}. Venues not listed here are not counted, so the "
+            "market-wide total is higher.",
+            "",
+            "> **Reading this table:** open interest is the value of futures contracts not yet closed. "
+            "When it is large compared with market cap, forced closures can make price moves bigger.",
+            "",
+        ]
+    elif derivatives and "error" not in derivatives:
         parts += [
             _table(
                 ["Metric", "Value"],
@@ -324,7 +369,7 @@ def build_data_report(token, data_summary, date_str):
         ]
     else:
         parts += [
-            "Derivatives data is not connected. It needs a COINGLASS_API_KEY in .env.",
+            _clean(derivatives.get("error") or "Derivatives data could not be read").rstrip(".") + ".",
             "",
         ]
 

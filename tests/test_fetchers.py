@@ -48,3 +48,60 @@ def test_entity_expansion_in_a_feed_is_refused(monkeypatch):
 
     monkeypatch.setattr(fetchers.requests, "get", lambda *a, **k: FakeResponse(BOMB))
     assert "error" in fetchers.fetch_cryptopanic_news("XRP")[0]
+
+
+def test_order_book_market_reports_missing_liquidity_not_zero():
+    # DexScreener's Hyperliquid spot pair, 19 October 2026: volume, no liquidity object
+    from data_analytics.metrics import compute_derived_metrics
+    from data_engineering.fetchers import _pair_summary
+
+    pair = {"dexId": "hyperliquid", "chainId": "hyperliquid", "priceUsd": "77.47",
+            "volume": {"h24": 39_849_102}, "baseToken": {"symbol": "HYPE"}}
+    summary = _pair_summary(pair, "contract address published by CoinGecko")
+    assert summary["liquidity_usd"] is None
+    assert summary["liquidity_reported"] is False
+    metrics = compute_derived_metrics(summary, "HYPE")
+    assert metrics["liquidity_usd"] is None
+    assert metrics["depth_to_mcap_ratio"] is None
+
+
+def test_open_interest_separates_not_listed_from_failed(monkeypatch):
+    from data_engineering import derivatives
+
+    def listed(_symbol):
+        return 1_000_000.0
+
+    def not_listed(_symbol):
+        raise derivatives.NotListed("no contract")
+
+    def down(_symbol):
+        raise ConnectionError("timeout")
+
+    monkeypatch.setattr(derivatives, "VENUES", (("A", listed), ("B", not_listed), ("C", down)))
+    result = derivatives.fetch_open_interest("ETH")
+    assert result["open_interest"] == 1_000_000.0
+    assert result["not_listed"] == ["B"]
+    assert list(result["failed"]) == ["C"]
+
+    monkeypatch.setattr(derivatives, "VENUES", (("B", not_listed),))
+    assert "No perpetual futures market" in derivatives.fetch_open_interest("ZZZ")["error"]
+
+
+def test_market_depth_counts_only_large_exchanges(monkeypatch):
+    from data_engineering import fetchers
+
+    class Resp:
+        status_code = 200
+
+        def json(self):
+            return {"tickers": [
+                {"market": {"identifier": "binance", "name": "Binance"}, "base": "ETH", "target": "USDT",
+                 "cost_to_move_down_usd": 10_000_000, "cost_to_move_up_usd": 9_000_000},
+                {"market": {"identifier": "tiny-exchange", "name": "Tiny"}, "base": "ETH", "target": "USDT",
+                 "cost_to_move_down_usd": 900_000_000, "cost_to_move_up_usd": 900_000_000},
+            ]}
+
+    monkeypatch.setattr(fetchers, "_coingecko_get", lambda *_a, **_k: Resp())
+    depth = fetchers.fetch_market_depth("ethereum")
+    assert depth["depth_down_2pct_usd"] == 10_000_000
+    assert depth["markets_counted"] == 1

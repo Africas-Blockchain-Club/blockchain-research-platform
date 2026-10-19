@@ -108,6 +108,60 @@ def fetch_coingecko_data(token, coin_id=None):
         return {"error": f"CoinGecko fetch failed: {str(e)}"}
 
 
+# Depth is self-reported by each exchange, and CoinGecko stopped sending its trust
+# rating in 2026, so only large, long-established exchanges count (CoinGecko market
+# identifiers, checked 19 October 2026). A small exchange quoting deep books it
+# does not have would otherwise make a thin market look deep.
+DEPTH_EXCHANGES = {
+    "binance", "gdax", "kraken", "okex", "bybit_spot", "bitstamp", "upbit", "bithumb",
+    "bitget", "kucoin", "gemini", "crypto_com", "bitvavo", "gate", "valr", "luno",
+}
+
+
+def fetch_market_depth(coin_id):
+    """
+    Order-book depth across the exchanges CoinGecko tracks: how many US Dollars
+    of selling (or buying) it would take to move the price by 2% on each market,
+    added up. This is the liquidity measure for coins that trade mostly on
+    centralised exchanges, where one DEX pool says little.
+    """
+    if not coin_id:
+        return {"error": "No CoinGecko id, so market depth cannot be read"}
+    headers = {}
+    if os.getenv("COINGECKO_API_KEY"):
+        headers["x-cg-demo-api-key"] = os.getenv("COINGECKO_API_KEY")
+    try:
+        resp = _coingecko_get(
+            f"https://api.coingecko.com/api/v3/coins/{urllib.parse.quote(coin_id)}/tickers"
+            "?depth=true&order=volume_desc",
+            headers,
+        )
+        if resp.status_code != 200:
+            return {"error": f"CoinGecko tickers returned {resp.status_code}", "failed": True}
+        markets = [
+            t for t in resp.json().get("tickers") or []
+            if (t.get("market") or {}).get("identifier") in DEPTH_EXCHANGES
+            and not t.get("is_anomaly") and not t.get("is_stale")
+            and isinstance(t.get("cost_to_move_down_usd"), (int, float))
+        ]
+        if not markets:
+            return {"error": "None of the large exchanges reported order-book depth for this coin"}
+        markets.sort(key=lambda t: t["cost_to_move_down_usd"], reverse=True)
+        return {
+            "depth_down_2pct_usd": sum(t["cost_to_move_down_usd"] for t in markets),
+            "depth_up_2pct_usd": sum(t.get("cost_to_move_up_usd") or 0 for t in markets),
+            "markets_counted": len(markets),
+            "deepest_markets": [
+                {"exchange": (t.get("market") or {}).get("name"), "pair": f"{t.get('base')}/{t.get('target')}",
+                 "depth_down_2pct_usd": t["cost_to_move_down_usd"]}
+                for t in markets[:5]
+            ],
+            "source": "CoinGecko exchange tickers (large established exchanges only, current markets)",
+        }
+    except Exception as e:
+        return {"error": f"CoinGecko tickers error: {e}", "failed": True}
+
+
 # ====================== SOCIAL STATS ======================
 
 def fetch_reddit_stats(subreddit_name):
@@ -299,13 +353,18 @@ def token_contracts(token, coingecko_platforms=None):
 
 def _pair_summary(pair, match):
     info = pair.get("info", {})
+    # An order-book exchange (Hyperliquid's own spot market, for example) has no
+    # pool, so DexScreener sends no liquidity at all. That is missing data, not
+    # an empty pool, and must never be reported as zero.
+    liquidity = pair.get("liquidity") or {}
     return {
         "price_usd": pair.get("priceUsd"),
         "market_cap": pair.get("fdv"),
         "volume_24h": pair.get("volume", {}).get("h24", 0),
-        "liquidity_usd": pair.get("liquidity", {}).get("usd", 0),
-        "liquidity_base": pair.get("liquidity", {}).get("base", 0),
-        "liquidity_quote": pair.get("liquidity", {}).get("quote", 0),
+        "liquidity_usd": liquidity.get("usd"),
+        "liquidity_base": liquidity.get("base"),
+        "liquidity_quote": liquidity.get("quote"),
+        "liquidity_reported": bool(liquidity),
         "dex": pair.get("dexId"),
         "chain": pair.get("chainId"),
         "pair_address": pair.get("pairAddress"),
