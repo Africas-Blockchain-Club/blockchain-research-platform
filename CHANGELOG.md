@@ -2,6 +2,15 @@
 
 All notable changes, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions are build numbers (shown in the footer of every page).
 
+## 2026.10.19-6
+
+### Changed
+- Paying for a write-up: the networks and coins this wallet can pay with come first, and the rest fold under "Other ways to pay". The pay button says what it is waiting for instead of turning grey, and the payment component uses ABC's palette and follows the app's light or dark theme.
+- AI write-ups round their numbers (about $92.8 million, 97%), give the Rand equivalent only for the price, market cap and volume, replace a table whose values are all N/A with one sentence, and list only what each flagged risk check means, because the report page already shows every check as a card.
+
+### Fixed
+- While a paid write-up was being written, the old payment step stayed on screen greyed out beside the new one. The step is cleared once the payment verifies, and a "Payment confirmed" notice takes its place.
+
 ## 2026.10.19-5
 
 ### Added

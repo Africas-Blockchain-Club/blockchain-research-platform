@@ -20,37 +20,46 @@
 <html>
 <head>
 <meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600&display=swap">
 <style>
-  /* Matches dashboards/ui/theme.py: 48px pills, the brand accent, AA colours */
-  body { margin: 0; font-family: "Figtree", "Helvetica Neue", Helvetica, Arial, sans-serif; color: #16181b; }
+  /* ABC tokens from dashboards/ui/theme.py: dark first, amber accent, 48px pills, AA colours.
+     The theme follows Streamlit's own setting, sent with every render. */
+  :root {
+    --text: #f5f5f5; --muted: #a3a3a3; --line: rgba(255,255,255,0.18); --glass: rgba(255,255,255,0.06);
+    --accent: #f99c00; --on-accent: #0a0a0a; --glow: rgba(249,156,0,0.35); --stop: #f87171;
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --text: #171717; --muted: #525252; --line: #d4d4d4; --glass: rgba(10,10,10,0.03);
+    --accent: #b75000; --on-accent: #ffffff; --glow: rgba(249,156,0,0.25); --stop: #b91c1c;
+    color-scheme: light;
+  }
+  body { margin: 0; font-family: "Geist", "Helvetica Neue", Helvetica, Arial, sans-serif; color: var(--text); }
   button {
     width: 100%; min-height: 48px; padding: 0.7rem 1.4rem; border-radius: 999px;
-    border: 1.5px solid #0b57c9; background: #0b57c9; color: #ffffff;
+    border: 1.5px solid var(--accent); background: var(--accent); color: var(--on-accent);
     font: inherit; font-size: 1rem; font-weight: 600; cursor: pointer;
   }
-  button:hover { background: #0a3a8c; }
-  button:focus-visible, label:focus-within { outline: 3px solid #0b57c9; outline-offset: 2px; }
-  button:disabled { background: #c8cace; border-color: transparent; color: #4c4f55; cursor: not-allowed; }
+  button:hover:not(:disabled) { box-shadow: 0 0 0 4px var(--glow); }
+  button:focus-visible, label:focus-within, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  button:disabled { opacity: 0.55; cursor: not-allowed; }
+  /* Working, not broken: the button keeps its colour and says what is happening */
+  button.working, button.working:disabled { opacity: 1; background: transparent; color: var(--accent); cursor: progress; }
   #options { display: none; margin: 0.75rem 0; gap: 0.5rem; }
   #options.show { display: grid; }
+  .list { display: grid; gap: 0.5rem; }
   label {
     display: flex; align-items: center; gap: 0.6rem; min-height: 48px; padding: 0.5rem 0.9rem;
-    border: 1.5px solid #c8cace; border-radius: 12px; cursor: pointer; font-size: 0.9375rem;
+    border: 1px solid var(--line); border-radius: 12px; background: var(--glass); cursor: pointer; font-size: 0.9375rem;
   }
-  label.muted { color: #4c4f55; }
-  label .bal { margin-left: auto; font-variant-numeric: tabular-nums; color: #4c4f55; }
-  input[type=radio] { width: 18px; height: 18px; accent-color: #0b57c9; }
+  label.muted { color: var(--muted); }
+  label .bal { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--muted); }
+  input[type=radio] { width: 18px; height: 18px; accent-color: var(--accent); }
+  details { margin-top: 0.25rem; }
+  summary { padding: 0.65rem 0; cursor: pointer; color: var(--muted); font-size: 0.9375rem; }
+  details .list { margin-top: 0.5rem; }
   #status { margin-top: 0.5rem; font-size: 0.9375rem; line-height: 1.5; }
-  #status.err { color: #b42318; }
-  @media (prefers-color-scheme: dark) {
-    body { color: #e9edf1; }
-    button { background: #5ea3ff; border-color: #5ea3ff; color: #0b0f14; }
-    button:hover { background: #8bbcff; }
-    button:disabled { background: #3a4450; color: #b3bcc6; }
-    label { border-color: #3a4450; }
-    label.muted, label .bal { color: #b3bcc6; }
-    #status.err { color: #f08a85; }
-  }
+  #status.err { color: var(--stop); }
 </style>
 </head>
 <body>
@@ -98,6 +107,7 @@ window.addEventListener("message", function (event) {
   const data = event.data;
   if (!data || data.type !== "streamlit:render") return;
   cfg = data.args;
+  if (data.theme && data.theme.base) document.documentElement.dataset.theme = data.theme.base;
   if (!account && !busy) {
     connectBtn.textContent = "Connect your wallet to pay " + cfg.price + " " + cfg.asset_label;
     connectBtn.disabled = false;
@@ -156,6 +166,12 @@ async function showOptions() {
   checked.sort(function (a, b) { return rank(a) - rank(b); });
 
   optionsEl.innerHTML = "";
+  // Ways this wallet can pay come first; the rest fold away, unless nothing can pay
+  const canPay = checked.some(enough);
+  const mainList = document.createElement("div");
+  mainList.className = "list";
+  const otherList = document.createElement("div");
+  otherList.className = "list";
   checked.forEach(function (o, i) {
     const label = document.createElement("label");
     const radio = document.createElement("input");
@@ -173,14 +189,23 @@ async function showOptions() {
     else if (!o.gas || o.gas === 0n) bal.textContent = "you have " + units(o.balance, o.decimals) + ", but no " + o.native_symbol + " for the fee";
     else bal.textContent = "you have " + units(o.balance, o.decimals);
     label.append(radio, text, bal);
-    optionsEl.appendChild(label);
+    (canPay && o.balance !== null && !enough(o) ? otherList : mainList).appendChild(label);
   });
+  optionsEl.appendChild(mainList);
+  if (otherList.children.length) {
+    const more = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.textContent = "Other ways to pay (" + otherList.children.length + "), where this wallet holds less than " + cfg.price;
+    more.append(summary, otherList);
+    more.addEventListener("toggle", setHeight);
+    optionsEl.appendChild(more);
+  }
   optionsEl.checked = checked;
   optionsEl.classList.add("show");
   payBtn.style.display = "block";
   updatePayButton();
 
-  if (!checked.some(enough)) {
+  if (!canPay) {
     setStatus("This wallet does not seem to hold " + cfg.price + " USDC or USDT on a supported network. You can still try, or top up first.", true);
   } else {
     setStatus("You also need a little of the network's own coin (shown above) to pay the network fee.");
@@ -226,6 +251,8 @@ async function pay() {
   if (!o || busy) return;
   busy = true;
   payBtn.disabled = true;
+  payBtn.classList.add("working");
+  payBtn.textContent = "Waiting for your wallet...";
   try {
     setStatus("Switching your wallet to " + o.chain_name + "...");
     await switchChain(o);
@@ -235,6 +262,7 @@ async function pay() {
       method: "eth_sendTransaction",
       params: [{ from: account, to: o.token_contract, data: data }],
     });
+    payBtn.textContent = "Payment sent: checking it on-chain";
     setStatus("Payment sent. Checking it on-chain and writing your report; this can take a few minutes.");
     send({
       type: "streamlit:setComponentValue",
@@ -243,7 +271,9 @@ async function pay() {
     });
   } catch (err) {
     setStatus("Payment did not complete: " + (err && err.message ? err.message : String(err)), true);
+    payBtn.classList.remove("working");
     payBtn.disabled = false;
+    updatePayButton();
   } finally {
     busy = false;
   }
