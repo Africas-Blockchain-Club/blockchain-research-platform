@@ -3,8 +3,8 @@ End-to-end check of the live platform. Runs unattended from GitHub Actions
 (.github/workflows/monitor.yml) and on demand from the brp-check skill.
 
   python scripts/monitor.py            quick: DNS, health endpoint, payment networks
-  python scripts/monitor.py --full     also: every page in a real browser, and the
-                                       data pipeline against the live data sources
+  python scripts/monitor.py --full     also: every page in a real browser, the data
+                                       pipeline, and every data source for every chain
   add --email                          email OWNER_ALERT_EMAIL when a check fails
   add --email-always                   email the result even when everything passes
 
@@ -152,17 +152,56 @@ def check_pipeline():
         raise RuntimeError(f"ETH pool was not found by contract address: {info.get('dex_pair_match')}")
     if not info.get("market_cap_usd"):
         raise RuntimeError("CoinGecko returned no market cap for ETH")
-    if len(analysis["risk_checks"]) != 10:
-        raise RuntimeError(f"expected 10 risk checks, got {len(analysis['risk_checks'])}")
+    if len(analysis["risk_checks"]) != 8:
+        raise RuntimeError(f"expected 8 risk checks, got {len(analysis['risk_checks'])}")
+    # A paid write-up is only worth selling when every source answers
+    failed = analysis["data_summary"].get("source_errors") or {}
+    if failed:
+        raise RuntimeError("sources failed for ETH: " + "; ".join(f"{k} ({v[:80]})" for k, v in failed.items()))
+    missing = [c["name"] for c in analysis["risk_checks"] if c["status"] == "no_data"]
+    if missing:
+        raise RuntimeError(f"ETH risk checks with no data: {', '.join(missing)}")
     assert_educational(build_data_report("ETH", analysis["data_summary"], "monitor run"),
                        quoted=quoted_passages(analysis["data_summary"]))
     return f"ETH data fetched (main pool {info.get('dex')} on {info.get('chain')}); report passes the advice check"
 
 
+def check_sources():
+    """Every featured chain's network endpoint and futures venues answer. The
+    CoinGecko sources are covered for ETH by the pipeline check; asking for all
+    seven here would hit its free rate limit."""
+    from data_analytics.chains import FEATURED
+    from data_engineering.derivatives import fetch_open_interest
+    from data_engineering.networks import fetch_network
+
+    def problems_for(symbol):
+        found = []
+        network = fetch_network(symbol)
+        if network and network.get("error"):
+            found.append(f"{symbol} network: {network['error'][:80]}")
+        futures = fetch_open_interest(symbol)
+        found += [f"{symbol} {venue} futures: {err[:60]}" for venue, err in futures["failed"].items()]
+        if not futures.get("venues"):
+            found.append(f"{symbol}: no futures venue reported open interest")
+        return found
+
+    problems = []
+    for symbol in FEATURED:
+        found = problems_for(symbol)
+        if found:
+            # One retry after a pause: a single dropped connection is not an outage
+            time.sleep(20)
+            problems += problems_for(symbol)
+    if problems:
+        raise RuntimeError("; ".join(problems))
+    return f"network data and futures open interest for all {len(FEATURED)} featured chains"
+
+
 def run(full):
     checks = [("DNS", check_dns), ("Site health", check_health), ("Payment networks", check_payment_networks)]
     if full:
-        checks += [("Pages in a browser", check_pages), ("Data pipeline", check_pipeline)]
+        checks += [("Pages in a browser", check_pages), ("Data pipeline", check_pipeline),
+                   ("Data sources", check_sources)]
     results = []
     for name, check in checks:
         try:

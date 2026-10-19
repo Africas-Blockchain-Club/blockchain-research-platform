@@ -79,10 +79,11 @@ Two or three sentences on what limits or expands this asset's supply over time, 
 
 ## Phase 1.5: Exchange Pool Maths
 Explain the constant product formula (x multiplied by y equals k) in plain English, then show the calculation with the pool balances in the data, and what happens to the price when 10% of the token side is bought out of the pool.
+If token_info.liquidity_reported is false, the main market is an order book (buyers and sellers posting orders at chosen prices, as on Hyperliquid's own spot exchange), not a pool: explain the difference, say the formula does not apply, and do not treat the missing liquidity as zero.
 
 ## Phase 2: Market Structure
 ### 2.1 Liquidity
-Metric | Value | Teaching Threshold | What This Measures, covering pool liquidity, 24-hour volume, turnover and depth compared with market cap.
+Metric | Value | Teaching Threshold | What This Measures, covering pool liquidity, 24-hour volume, turnover and depth compared with market cap. When market_depth is in the data, add a table of order-book depth on the large exchanges (the selling needed to move the price down 2%) and explain that most trading in a chain's coin happens on centralised exchanges, not in DEX pools.
 ### 2.2 What a Large Sale Would Do
 Trade Size | Estimated Price Fall | What This Shows, for sales of 50 thousand, 100 thousand, 500 thousand, 1 million and 5 million US Dollars, calculated with the constant product formula from the pool balances. Say the estimate ignores fees and assumes the whole sale goes through one pool.
 
@@ -91,7 +92,7 @@ Field | Value | What This Means, from the DefiLlama data. Then two or three sent
 
 ## Phase 3: Derivatives
 ### 3.1 Futures Market
-Metric | Value | What It Describes, from the derivatives data, or N/A with an explanation of each metric.
+Venue | Open Interest | What It Describes, from the derivatives data (derivatives_data.venues), with the total, or N/A with an explanation of each metric. Say that venues not listed are not counted.
 ### 3.2 Liquidation Levels
 Explain what a liquidation is and summarise any liquidation data provided, or write N/A.
 

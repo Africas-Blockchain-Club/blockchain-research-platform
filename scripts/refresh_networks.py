@@ -25,6 +25,7 @@ import requests  # noqa: E402
 
 from config import NETWORK_DIR  # noqa: E402
 from data_analytics.chains import FEATURED, PROFILES  # noqa: E402
+from data_analytics.risk_profile import CHECKS_VERSION  # noqa: E402
 from data_engineering.networks import fetch_network  # noqa: E402
 
 log = logging.getLogger("refresh")
@@ -99,8 +100,9 @@ def _refresh_reports(report_store, fetch_and_analyse, save_data_report):
             if meta.get("mode") == "ai":
                 continue
             generated = datetime.datetime.fromisoformat(meta["generated_at"])
-            # A recent, complete report is left alone; an incomplete one is redone
-            if now - generated < max_age and not meta.get("source_errors"):
+            # A recent, complete report on the current checks is left alone; anything else is redone
+            current = meta.get("checks_version") == CHECKS_VERSION
+            if now - generated < max_age and not meta.get("source_errors") and current:
                 continue
         try:
             analysis = fetch_and_analyse(symbol, log_fn=lambda _msg: None)

@@ -17,7 +17,7 @@ import re
 
 import db
 from config import REPORTS_DIR, SETTINGS
-from data_analytics.risk_profile import risk_checks_markdown, summarise_checks
+from data_analytics.risk_profile import CHECKS_VERSION, risk_checks_markdown, summarise_checks
 from data_science.compliance import long_disclaimer
 
 log = logging.getLogger(__name__)
@@ -32,7 +32,9 @@ _SOURCES = [
     ("CoinMarketCap", "Whether the token is listed (listing check only)"),
     ("Google News RSS", "Recent headlines"),
     ("DefiLlama", "Total value locked and protocol category"),
-    ("Coinglass", "Open interest and liquidations (needs an API key)"),
+    ("CoinGecko exchange tickers", "Order-book depth on large exchanges"),
+    ("Binance, Bybit, OKX, Hyperliquid", "Open interest on perpetual futures (public APIs)"),
+    ("Coinglass", "Open interest and liquidations, when an API key is set"),
     ("Ultrasound.money", "ETH burn data (ETH only)"),
 ]
 
@@ -112,6 +114,7 @@ def save_report(token, body, *, mode, model, risk_checks, data_summary, screensh
         "clear": counts["clear"],
         "no_data": counts["no_data"],
         "risk_checks": risk_checks,
+        "checks_version": CHECKS_VERSION,
         "screenshot": screenshot_path,
         "price_usd": info.get("current_price_usd"),
         "market_cap_usd": info.get("market_cap_usd"),

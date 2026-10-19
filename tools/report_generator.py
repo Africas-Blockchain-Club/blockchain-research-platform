@@ -20,6 +20,7 @@ from data_analytics.chains import CHAIN_ALIASES, profile
 from data_analytics.data_report import build_data_report, quoted_passages
 from data_analytics.metrics import compute_derived_metrics
 from data_analytics.risk_profile import compute_risk_checks
+from data_engineering.derivatives import fetch_open_interest
 from data_engineering.fetchers import (
     check_cmc_listed,
     fetch_coingecko_data,
@@ -28,6 +29,7 @@ from data_engineering.fetchers import (
     fetch_defillama_data,
     fetch_dexscreener_data,
     fetch_liquidation_data,
+    fetch_market_depth,
     fetch_ultrasound_data,
     fetch_usd_zar,
     token_contracts,
@@ -78,6 +80,23 @@ def _listed_on_coingecko(coingecko_data):
     return False if "not found" in coingecko_data["error"].lower() else None
 
 
+def _source_errors(dex_data, coingecko_data, market_depth, derivatives_data, network):
+    """Every source that should have answered and did not. A coin with no futures
+    market or no exchange depth is a fact about the coin, not a failed source."""
+    errors = {
+        name: data["error"]
+        for name, data in (("dexscreener", dex_data), ("coingecko", coingecko_data))
+        if isinstance(data, dict) and "error" in data
+    }
+    if market_depth.get("failed"):
+        errors["coingecko depth"] = market_depth["error"]
+    for venue, err in (derivatives_data.get("failed") or {}).items():
+        errors[f"{venue.lower()} futures"] = err
+    if network and network.get("error"):
+        errors["network"] = network["error"]
+    return errors
+
+
 def fetch_and_analyse(token, log_fn=None):
     """Stage 1: data and rule-based analysis only. No AI call, no file write.
 
@@ -107,8 +126,13 @@ def fetch_and_analyse(token, log_fn=None):
         say("Capturing the DexScreener chart...")
         screenshot_path = capture_dexscreener_chart(token, dex_data["url"])
 
-    say("Reading derivatives data from Coinglass...")
-    coinglass_data = fetch_coinglass_data(token)
+    say("Reading order-book depth on large exchanges...")
+    market_depth = fetch_market_depth(coingecko_data.get("id"))
+    say("Reading open interest on futures exchanges...")
+    # Coinglass when a key is set; otherwise the exchanges' own free APIs
+    derivatives_data = fetch_coinglass_data(token)
+    if "error" in derivatives_data:
+        derivatives_data = fetch_open_interest(token)
     liquidation_data = fetch_liquidation_data(token)
     say("Reading protocol data from DefiLlama...")
     defillama_data = fetch_defillama_data(token, name=coingecko_data.get("name"))
@@ -153,6 +177,7 @@ def fetch_and_analyse(token, log_fn=None):
             "24h_volume_dex_pair_usd": metrics["volume_24h"],
             "24h_volume_total_all_exchanges_usd": cg.get("total_volume_24h_usd"),
             "liquidity_usd": metrics["liquidity_usd"],
+            "liquidity_reported": dex_data.get("liquidity_reported"),
             "liquidity_base_tokens": metrics["liquidity_base"],
             "liquidity_quote_tokens": metrics["liquidity_quote"],
             "liquidity_turnover_ratio_pct": metrics["liquidity_turnover_ratio"],
@@ -171,14 +196,11 @@ def fetch_and_analyse(token, log_fn=None):
             "listed_on_coinmarketcap": is_cmc_listed,
             "listed_on_coingecko": _listed_on_coingecko(coingecko_data),
         },
-        "source_errors": {
-            name: data["error"]
-            for name, data in (("dexscreener", dex_data), ("coingecko", coingecko_data))
-            if isinstance(data, dict) and "error" in data
-        },
+        "source_errors": _source_errors(dex_data, coingecko_data, market_depth, derivatives_data, network),
+        "market_depth": market_depth,
         "protocol_analytics": defillama_data,
         "eth_burn_data": ultrasound_data,
-        "derivatives_data": coinglass_data,
+        "derivatives_data": derivatives_data,
         "liquidation_data": liquidation_data,
     }
 
