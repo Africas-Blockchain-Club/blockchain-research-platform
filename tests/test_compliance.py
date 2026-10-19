@@ -16,6 +16,8 @@ ADVICE = [
     "Investors should buy below $2.",
     "You should consider selling now.",
     "Set a stop-loss at $1.80.",
+    "Place stop losses at $1.50.",
+    "Use a stop loss below the last low.",
     "Our price target is $5.",
     "Entry trigger: price holds above $2.",
     "Build a position gradually.",
@@ -35,6 +37,7 @@ TEACHING = [
     "Traders who hold long positions pay a fee to those who hold short ones.",
     "Selling 10% of the pool's tokens lowers the price by about 19%.",
     "The project says the upgrade will reduce fees.",
+    "If the price moves against them, the exchange closes their position to stop losses exceeding the deposit.",
 ]
 
 
