@@ -90,7 +90,7 @@ def check_pages():
         ("/reports/", "Research reports"),
         ("/how-it-works.html", "Research, not advice"),
         ("/app/", "Research a blockchain"),
-        ("/app/attack-cost", "What does it cost to attack Ethereum?"),
+        ("/app/attack-cost", "What does it take to attack a blockchain?"),
     ]
     footer = ""
     with sync_playwright() as p:
