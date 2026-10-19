@@ -33,7 +33,7 @@ _SOURCES = [
     ("Google News RSS", "Recent headlines"),
     ("DefiLlama", "Total value locked and protocol category"),
     ("CoinGecko exchange tickers", "Order-book depth on large exchanges"),
-    ("Binance, Bybit, OKX, Hyperliquid", "Open interest on perpetual futures (public APIs)"),
+    ("OKX, Bitget, Gate, Hyperliquid", "Open interest on perpetual futures (public APIs)"),
     ("Coinglass", "Open interest and liquidations, when an API key is set"),
     ("Ultrasound.money", "ETH burn data (ETH only)"),
 ]

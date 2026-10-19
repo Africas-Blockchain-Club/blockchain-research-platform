@@ -4,16 +4,16 @@
   "name": "Bitcoin",
   "mode": "data",
   "model": null,
-  "generated_at": "2026-10-18T19:11:22.263615+00:00",
-  "flagged": 1,
-  "clear": 6,
-  "no_data": 3,
+  "generated_at": "2026-10-19T05:05:07.835031+00:00",
+  "flagged": 0,
+  "clear": 8,
+  "no_data": 0,
   "risk_checks": [
     {
       "key": "artificial_volume",
       "name": "Unusually high trading volume",
       "status": "clear",
-      "value": "1.1% of market cap traded in 24 hours",
+      "value": "1.3% of market cap traded in 24 hours",
       "threshold": "More than 100% of market cap traded in 24 hours",
       "measures": "Turnover: 24-hour trading volume divided by market capitalisation.",
       "meaning": "When more than the whole market cap changes hands in a day, part of that volume is often wash trading (one party trading with itself to make a token look busy).",
@@ -21,13 +21,13 @@
     },
     {
       "key": "thin_liquidity",
-      "name": "Thin on-chain liquidity",
-      "status": "flagged",
-      "value": "0.49% of market cap in the main DEX pool",
-      "threshold": "Less than 1% of market cap in the main DEX pool",
-      "measures": "Depth: money in the main decentralised exchange (DEX) pool, divided by market cap.",
-      "meaning": "A thin pool means a single large sale moves the price sharply (slippage). Large, established tokens trade mostly on centralised exchanges, so this check says most about tokens that trade mainly on DEXs.",
-      "source": "DexScreener"
+      "name": "Thin market depth",
+      "status": "clear",
+      "value": "$183,236,793 of selling moves the price 2% across 20 large-exchange markets",
+      "threshold": "Less than $1,000,000 of selling moves the price 2%",
+      "measures": "Depth: how many US Dollars of selling it takes to push the price down 2% on each order book, added up across large, established exchanges. Smaller exchanges are not counted.",
+      "meaning": "Thin depth means a single large sale moves the price sharply (slippage). Deep books absorb large trades with little price change.",
+      "source": "CoinGecko exchange tickers"
     },
     {
       "key": "dilution",
@@ -50,26 +50,6 @@
       "source": "CoinGecko"
     },
     {
-      "key": "unlock_schedule",
-      "name": "Large token unlock in the next 30 days",
-      "status": "no_data",
-      "value": "N/A",
-      "threshold": "More than 15% of supply unlocking within 30 days",
-      "measures": "Unlock schedule: dates on which locked tokens become free to trade.",
-      "meaning": "Large unlocks often add selling pressure around the unlock date. This platform does not yet read an unlock schedule source, so check the project's own vesting documents.",
-      "source": "Not connected (a token-unlock data source is needed)"
-    },
-    {
-      "key": "holder_concentration",
-      "name": "Supply held by a few wallets",
-      "status": "no_data",
-      "value": "N/A",
-      "threshold": "Top 10 wallets holding more than 80% of supply",
-      "measures": "Concentration: the share of supply held by the largest wallets.",
-      "meaning": "When a few wallets hold most of the supply, one decision by one holder can move the price. Check a block explorer's holder list, and remember exchange and contract wallets hold tokens for many people.",
-      "source": "Not connected (an on-chain holder data source is needed)"
-    },
-    {
       "key": "listing_coverage",
       "name": "Not tracked by major data sites",
       "status": "clear",
@@ -83,7 +63,7 @@
       "key": "drawdown",
       "name": "Large fall from all-time high",
       "status": "clear",
-      "value": "-35.7% from all-time high of $126,080",
+      "value": "-34.4% from all-time high of $126,080",
       "threshold": "Price more than 70% below its all-time high",
       "measures": "Drawdown: how far the price sits below its highest recorded price.",
       "meaning": "A deep drawdown shows how volatile the token has been. It does not show whether the price will recover; many tokens never return to an earlier high.",
@@ -93,7 +73,7 @@
       "key": "volatility",
       "name": "Large price swing in 30 days",
       "status": "clear",
-      "value": "0.2% over 30 days",
+      "value": "2.0% over 30 days",
       "threshold": "Price moved more than 30% up or down in 30 days",
       "measures": "Volatility: how much the price has moved over a recent period.",
       "meaning": "Large swings in either direction mean the value of any holding can change quickly.",
@@ -102,20 +82,22 @@
     {
       "key": "leverage",
       "name": "Heavy leveraged trading",
-      "status": "no_data",
-      "value": "N/A",
+      "status": "clear",
+      "value": "Open interest is 0.6% of market cap",
       "threshold": "Open interest above 10% of market cap",
-      "measures": "Open interest: the value of futures contracts not yet closed.",
+      "measures": "Open interest: the value of futures contracts not yet closed, added up across the venues named in the source. Venues not named are not counted, so the true total is higher.",
       "meaning": "Heavy leverage can turn a small price move into a large one, because forced closures (liquidations) trigger more buying or selling.",
-      "source": "Coinglass (needs COINGLASS_API_KEY)"
+      "source": "OKX, Bitget, Gate and Hyperliquid public futures APIs (USDT-margined perpetuals)"
     }
   ],
+  "checks_version": 2,
   "screenshot": null,
-  "price_usd": 81102,
-  "market_cap_usd": 1629532278135,
+  "price_usd": 82646,
+  "market_cap_usd": 1661510959628,
   "fx": {
-    "usd_zar": 16.49,
+    "usd_zar": 16.45,
     "source": "CoinGecko (USDC priced in ZAR)"
   },
+  "source_errors": {},
   "cost_usd": null
 }

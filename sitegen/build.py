@@ -125,6 +125,12 @@ def build_site(out_dir=None):
     (staging / "static").mkdir(parents=True)
     (staging / "blockchains").mkdir()
     (staging / "reports").mkdir()
+    # Which data sources answered on the server's last refresh, for the monitor. It holds
+    # source names only, never error text, which can contain an endpoint's URL or key.
+    status = NETWORK_DIR / "sources.json"
+    if status.exists():
+        (staging / "status").mkdir()
+        shutil.copy2(status, staging / "status" / "sources.json")
 
     for name in ("abc-shell.css", "wtc-shell.js", "site.css", "site.js", "theme.js"):
         shutil.copy2(HERE / "static" / name, staging / "static" / name)
