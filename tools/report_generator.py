@@ -14,6 +14,7 @@ Run from the command line:
 import argparse
 import datetime
 import logging
+import re
 
 from config import SETTINGS
 from data_analytics.chains import CHAIN_ALIASES, profile
@@ -72,6 +73,17 @@ def normalise_token(token):
     return CHAIN_ALIASES.get(upper) or _TOKEN_ALIASES.get(upper, upper)
 
 
+# A full name may have spaces and hyphens ("NEAR Protocol", "Shiba Inu"); it is only
+# ever sent, URL-encoded, to the CoinGecko search, which turns it into a ticker
+_QUERY_PATTERN = re.compile(r"^[A-Z0-9]+(?:[ -][A-Z0-9]+)*$")
+
+
+def is_valid_query(query):
+    """A blockchain name or ticker made of letters, digits, spaces and hyphens."""
+    query = str(query or "").upper()
+    return len(query) <= 40 and bool(_QUERY_PATTERN.match(query))
+
+
 def _listed_on_coingecko(coingecko_data):
     """True, False, or None when CoinGecko could not be asked. A rate limit
     or outage must not read as "not listed"."""
@@ -104,13 +116,25 @@ def fetch_and_analyse(token, log_fn=None):
     Returns {"token", "data_summary", "risk_checks", "screenshot_path"}.
     """
     say = log_fn or log.info
-    token = normalise_token(token)
-    # Every outbound URL below contains the token, so only plain tickers go any further
-    if not report_store.is_valid_token(token):
-        raise ValueError(f"{token!r} is not a valid ticker: use letters and digits only, for example ADA.")
+    typed = " ".join(str(token or "").split())
+    token = normalise_token(typed)
+    if not is_valid_query(token):
+        raise ValueError(f"\"{typed}\" is not a blockchain name or ticker. Use letters, digits and spaces only, "
+                         "for example Celestia or TIA.")
 
     say("Reading market, supply and project data from CoinGecko...")
     coingecko_data = fetch_coingecko_data(token, coin_id=(profile(token) or {}).get("coingecko_id"))
+    # A full name ("Celestia") becomes its ticker ("TIA"), so every source below
+    # asks for the same coin and the report is stored once under its ticker
+    if coingecko_data.get("symbol"):
+        token = coingecko_data["symbol"]
+    # Every outbound URL below contains the token, so only plain tickers go any further
+    if not report_store.is_valid_token(token):
+        if "not found" in coingecko_data.get("error", ""):
+            raise LookupError(f"No blockchain called \"{typed}\" was found. Check the spelling of its full name, "
+                              "for example Celestia, or use its coin's ticker, for example TIA.")
+        raise LookupError(f"Could not look up \"{typed}\" just now (CoinGecko said: "
+                          f"{coingecko_data.get('error', 'no plain ticker for this coin')}). Try again in a minute.")
     say("Finding the token's main exchange pool on DexScreener...")
     dex_data = fetch_dexscreener_data(
         token,

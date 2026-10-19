@@ -10,6 +10,7 @@ import logging
 import sys
 from html import escape
 from pathlib import Path
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -51,6 +52,32 @@ def _write_logo():
         LOGO_PATH.write_text(svg, encoding="utf-8")
 
 
+def _home_link():
+    """The static site's home page. Streamlit accepts only absolute links on the
+    logo, so without SITE_URL it is the root of the address in the browser,
+    which in production is the site Caddy serves beside /app."""
+    if SETTINGS.site_url.startswith("http"):
+        return f"{SETTINGS.site_url}/"
+    parts = urlsplit(st.context.url or "")
+    return f"{parts.scheme}://{parts.netloc}/" if parts.scheme in ("http", "https") and parts.netloc else None
+
+
+# A fixed script, no user input. Streamlit redraws the top bar, so it watches for the logo.
+_LOGO_SAME_TAB = """<script>
+(() => {
+  const doc = window.parent.document;
+  if (doc.brpLogoSameTab) return;
+  doc.brpLogoSameTab = true;
+  const fix = () => doc.querySelectorAll('a[data-testid="stLogoLink"]').forEach((a) => {
+    a.target = "_self";
+    a.removeAttribute("rel");
+  });
+  fix();
+  new MutationObserver(fix).observe(doc.body, {childList: true, subtree: true});
+})();
+</script>"""
+
+
 st.set_page_config(
     page_title=SETTINGS.app_name,
     page_icon=str(ROOT_DIR / "dashboards" / "static" / "abc-logo-tile-180.png"),
@@ -61,10 +88,9 @@ apply_theme()
 # The ABC logo tile when it is present; a fork without it gets a tile drawn from config
 BRAND_LOGO = ROOT_DIR / "dashboards" / "static" / "abc-logo-tile.png"
 if BRAND_LOGO.exists():
-    # Streamlit accepts only absolute links on the logo; on the same host the
-    # page's own "All blockchains" link leads back to the site instead
-    site_link = f"{SETTINGS.site_url}/" if SETTINGS.site_url.startswith("http") else None
-    st.logo(str(BRAND_LOGO), size="large", link=site_link)
+    st.logo(str(BRAND_LOGO), size="large", link=_home_link())
+    # Streamlit opens a logo link in a new tab; the home page belongs in this one
+    st.html(_LOGO_SAME_TAB, unsafe_allow_javascript=True)
 else:
     _write_logo()
     st.logo(str(LOGO_PATH), size="large", link=None)
