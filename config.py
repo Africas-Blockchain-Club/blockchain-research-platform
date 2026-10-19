@@ -28,7 +28,7 @@ IMAGES_DIR = DATA_DIR / "data" / "images"
 
 # Bump on every release. The footer shows it so a screenshot always says
 # which build it came from.
-BUILD = "2026.10.19-3"
+BUILD = "2026.10.19-4"
 
 # Current Claude models, cheapest last. Haiku is left out on purpose: a
 # research write-up needs the depth of Sonnet or Opus.

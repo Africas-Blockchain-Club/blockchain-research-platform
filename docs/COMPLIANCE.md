@@ -24,7 +24,7 @@ Explaining facts is different from recommending an action. This platform stays o
 
 The v2.0 platform produced a Blueprint Score, a Buy/Sell verdict, entry and exit triggers, a Long-Term Conviction Score and an "AI Investment Brief" tailored to the reader. Each of those is a recommendation, and tailoring is what makes a recommendation personal. All of them are gone:
 
-- The **score and verdict** are replaced by ten rule-based **risk checks** (`data_analytics/risk_profile.py`). They are never added together.
+- The **score and verdict** are replaced by eight rule-based **risk checks** (`data_analytics/risk_profile.py`). They are never added together.
 - The **phase signals** (bullish, bearish) are replaced by plain descriptions of what market participants are doing.
 - The **forecast and scenario probabilities** are replaced by "developments that would strengthen or weaken the project".
 - The **tailored brief** is removed. The platform does not ask who the reader is or what they want.

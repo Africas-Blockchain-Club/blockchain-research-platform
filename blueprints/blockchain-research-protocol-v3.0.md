@@ -42,7 +42,7 @@ The `## Phase` headings are a contract with the dashboard, which turns each one 
 | Phase 3: Derivatives | Open interest, funding and liquidations, explained |
 | Phase 4: What the Data Shows | A summary of facts, the risk checks explained, a SWOT table, and questions to research further |
 | Phase 5: Long-Term Factors to Watch | Chain, protocol and supply metrics to track over time, and developments that would strengthen or weaken the project, with no probabilities and no price effects |
-| Risk Checks | Written by code, not by the model: ten rule-based checks |
+| Risk Checks | Written by code, not by the model: eight rule-based checks, plus the topics they do not cover |
 | Sources and Limitations | Written by code: every source, the snapshot time, and which model wrote the explanations |
 
 ---

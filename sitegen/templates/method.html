@@ -25,6 +25,9 @@
       <tr><th>Check</th><th>Teaching threshold</th><th>Source</th></tr>
       {% for c in checks %}<tr><td>{{ c.name }}</td><td>{{ c.threshold }}</td><td>{{ c.source }}</td></tr>{% endfor %}
     </table></div>
+    <h3>Not covered by the checks</h3>
+    <p>No free, reliable source answers these for a blockchain's coin, so the platform lists them in every report for you to check yourself, instead of counting them as missing data:</p>
+    <ul>{% for item in not_covered %}<li><strong>{{ item.name }}.</strong> {{ item.why }} Where to look: {{ item.where }}</li>{% endfor %}</ul>
 
     <h2>Data-only reports and AI write-ups</h2>
     <p>A <strong>data-only report</strong> is built by code from public data. It needs no AI and costs nothing. An <strong>AI write-up</strong> adds plain-English explanation from the same data. AI can make mistakes, so every write-up names the model that wrote it, and every number should be checked against the sources listed at its end.</p>

@@ -26,6 +26,9 @@
       </article>
       {% endfor %}
     </div>
+    <h3>Not covered by these checks</h3>
+    <p class="muted">No free, reliable source answers these, so the platform does not measure them. Check them yourself:</p>
+    <ul>{% for item in not_covered %}<li><strong>{{ item.name }}.</strong> {{ item.why }} Where to look: {{ item.where }}</li>{% endfor %}</ul>
     {% for title, html in sections %}<div id="s{{ loop.index }}">{{ html }}</div>{% endfor %}
   </div>
   <aside class="card glass">
@@ -35,7 +38,13 @@
     <span class="aside-rule" aria-hidden="true"></span>
     {% if has_pdf %}<a class="btn btn-ghost" href="/reports/{{ meta.token }}.pdf" download>Download PDF</a>{% endif %}
     <a class="btn btn-ghost" href="/reports/{{ meta.token }}.md" download>Download markdown</a>
-    <a class="btn btn-primary" href="{{ app_url }}/?token={{ meta.token }}">Refresh with live data</a>
+    <a class="btn btn-ghost" href="{{ app_url }}/?token={{ meta.token }}">Refresh with live data</a>
+    {% if ai_on_offer %}
+    <span class="aside-rule" aria-hidden="true"></span>
+    <span class="kicker">Want it explained?</span>
+    <p class="small">The AI write-up turns this data into a full lesson: what each figure means, every risk check explained, and the questions to research next. Emailed to you with a receipt.</p>
+    <a class="btn btn-primary" href="{{ app_url }}/?token={{ meta.token }}">Get the AI write-up</a>
+    {% endif %}
   </aside>
 </section>
 {% endblock %}

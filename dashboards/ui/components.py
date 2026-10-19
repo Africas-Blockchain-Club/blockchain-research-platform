@@ -51,6 +51,17 @@ def risk_cards(checks):
     st.html(f'<div class="brp-grid three">{"".join(cards)}</div>')
 
 
+def offer_card(kicker, title, price, intro, items, note=""):
+    """One option on the research page: what it costs and exactly what it contains."""
+    rows = "".join(f"<li>{escape(item)}</li>" for item in items)
+    note_html = f'<span class="brp-meta">{escape(note)}</span>' if note else ""
+    st.html(
+        f'<div class="brp-offer"><span class="brp-kicker">{escape(kicker)}</span>'
+        f'<div class="brp-offer-head"><h3>{escape(title)}</h3><span class="brp-price">{escape(price)}</span></div>'
+        f"<p>{escape(intro)}</p><ul>{rows}</ul>{note_html}</div>"
+    )
+
+
 def footer():
     ai_state = "AI write-ups on" if SETTINGS.ai_enabled else "AI write-ups off"
     if not SETTINGS.payments_enabled:

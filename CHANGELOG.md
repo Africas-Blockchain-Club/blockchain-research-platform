@@ -2,6 +2,23 @@
 
 All notable changes, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions are build numbers (shown in the footer of every page).
 
+## 2026.10.19-4
+
+### Added
+- The research page shows the free data and the paid AI write-up side by side from the start, with exactly what the write-up contains and what it costs. "Get the AI write-up" fetches the data and opens the payment step; report pages offer the write-up too.
+- Order-book depth across large, established exchanges (CoinGecko tickers): the liquidity check now measures where a chain's coin actually trades, instead of one DEX pool.
+- Open interest from the public futures APIs of Binance, Bybit, OKX and Hyperliquid, so the leverage check has data without a paid Coinglass key.
+- The monitor checks every data source for every featured chain and emails when one stops answering; the pipeline check fails on any source error or "No data" result.
+
+### Changed
+- Token unlocks and holder concentration have no free, reliable source for a chain's coin. They are listed under "Not covered by these checks" with where to look, instead of counting as "No data" on every report. Eight checks remain.
+- The page column is 100rem with gutters of at most 2rem, and card grids reach four across from 1400px wide.
+- Featured reports rebuild as soon as the checks change, not when they next turn a day old.
+
+### Fixed
+- An order-book market with no pool (Hyperliquid's own spot exchange) was reported as a pool holding $0, which flagged thin liquidity. Missing liquidity now stays missing, and the report explains order books.
+- The `site` link to a local build folder had been committed; it is untracked, and the ignore rules now match a link as well as a folder.
+
 ## 2026.10.19-3
 
 ### Fixed

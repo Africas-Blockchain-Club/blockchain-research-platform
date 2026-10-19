@@ -20,7 +20,7 @@ data/images/*.png
 dashboards/static/logo.svg
 amm_mechanics.png
 defi_mechanisms.png
-site/
+/site
 network/
 pdf-cache/
 .site-builds/
