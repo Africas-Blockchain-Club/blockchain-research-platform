@@ -125,6 +125,9 @@ header[data-testid="stHeader"] {
 @media (min-width:720px) { .brp-grid { grid-template-columns:repeat(2,1fr); } }
 @media (min-width:1100px) { .brp-grid.three { grid-template-columns:repeat(3,1fr); } }
 @media (min-width:1400px) { .brp-grid.three { grid-template-columns:repeat(4,1fr); } }
+/* A row of exactly one or three cards, such as the attack cost goals, still fills the column */
+.brp-grid.one { grid-template-columns:1fr; }
+@media (min-width:1100px) { .brp-grid.fit3 { grid-template-columns:repeat(3,1fr); } }
 /* Glass cards, as on the ABC site; solid enough to read without backdrop-filter */
 .brp-card { background:var(--glass); border:1px solid var(--glass-line); border-radius:16px; padding:clamp(1rem,3vw,1.5rem);
   backdrop-filter:blur(8px);

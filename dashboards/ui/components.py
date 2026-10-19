@@ -4,6 +4,7 @@ from html import escape
 import streamlit as st
 
 from config import BUILD, SETTINGS
+from data_analytics.chains import FEATURED, PROFILES
 from data_analytics.risk_profile import CLEAR, FLAGGED, NO_DATA, STATUS_LABELS
 from data_science.compliance import SHORT_DISCLAIMER
 
@@ -21,6 +22,31 @@ def notice(kicker, text, tone="info"):
         f'<div class="brp-notice {"warn" if tone == "warn" else ""}">'
         f'<span class="brp-kicker">{escape(kicker)}</span><p>{escape(text)}</p></div>'
     )
+
+
+def choose_chain(help_text="The seven blockchains with hand-checked profiles and live network data."):
+    """A featured chain from the list, or any chain typed by its full name.
+    Returns its ticker when the name is known, otherwise the spelling typed."""
+    from tools.report_generator import normalise_token
+
+    featured = [f"{PROFILES[s]['chain']} ({s})" for s in FEATURED]
+    # A link (?token=XRP) arrives with its blockchain chosen
+    linked = normalise_token(st.query_params.get("token", ""))
+    preset = next((i for i, s in enumerate(FEATURED) if s == linked), None)
+    col_pick, col_type = st.columns(2)
+    with col_pick:
+        picked = st.selectbox("Pick a blockchain", featured, index=preset, placeholder="Choose a blockchain",
+                              help=help_text)
+    with col_type:
+        typed = st.text_input("Or type any blockchain's full name", value="" if preset is not None else linked,
+                              placeholder="For example Celestia or Cardano",
+                              help="Its coin's ticker works too, for example TIA, but the full name is clearer.")
+    if picked and not typed.strip():
+        return FEATURED[featured.index(picked)]
+    raw = " ".join(typed.split())
+    # A known name becomes its ticker; anything else keeps the spelling the user typed
+    resolved = normalise_token(raw)
+    return resolved if resolved != raw.upper() else raw
 
 
 def disclaimer_notice():

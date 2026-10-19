@@ -44,6 +44,7 @@
     <span class="small muted">Report data from {{ card.report.generated_at | when }}</span>
     {% endif %}
     <a class="btn btn-ghost" href="{{ app_url }}/?token={{ card.symbol }}">Research it live</a>
+    <a class="btn btn-ghost" href="{{ app_url }}/attack-cost?token={{ card.symbol }}">What would an attack cost?</a>
   </aside>
 </section>
 {% endblock %}

@@ -2,6 +2,21 @@
 
 All notable changes, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions are build numbers (shown in the footer of every page).
 
+## 2026.10.19-5
+
+### Added
+- The attack cost calculator works for any blockchain, not only Ethereum. Pick one or type its full name; the price is live from CoinGecko, and the share of stake each attack needs follows the chain's consensus design, with a source for every figure. Proof-of-work chains and trusted validator lists (Bitcoin, XRP) are explained rather than priced, because buying coins does not attack them.
+- Live staked totals and validator counts for Solana, Avalanche, Hyperliquid, Celestia and Cosmos Hub (`data_engineering/staking.py`, off switch `STAKING_DATA_ENABLED`), with the fewest validators that together hold a third and two thirds of stake. Ethereum, BNB Chain and Cardano ask for the staked total, with where to read it.
+- A section on why smaller blockchains are easier to attack, with the Ethereum Classic attacks of August 2020 as the worked example, and a link to share each calculation. Each blockchain page on the site links to its own calculation.
+
+### Changed
+- The calculator counts the attacker's new stake in the total, so a third of stake takes half of what is staked today and two thirds takes twice it. A chain whose consensus design is not known asks the user to choose it instead of assuming one.
+
+### Fixed
+- Searching by a blockchain's full name found nothing unless the name was also its ticker: "Celestia" failed although CoinGecko lists Celestia (TIA). Full names, CoinGecko ids and tickers all work now, names with spaces such as "NEAR Protocol" are accepted, and a report is still stored once under its ticker.
+- The ABC logo in the research app had no link in production (no `SITE_URL` was set) and Streamlit opens logo links in a new tab. It now returns to the home page in the same tab.
+- A failed search repeated the name in capitals and was not written to the log; it now quotes the name as typed and is logged.
+
 ## 2026.10.19-4
 
 ### Added
