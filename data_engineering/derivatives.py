@@ -2,7 +2,7 @@
 Open interest on perpetual futures, from the exchanges' own free public APIs.
 
 Coinglass (fetchers.fetch_coinglass_data) needs a paid key. Without one, this
-adapter asks four large venues directly and adds up what they report, so the
+adapter asks four large venues directly (OKX, Bitget, Gate, Hyperliquid) and adds up what they report, so the
 leverage check has data. It never raises. Each venue ends in one of three
 states:
   ok          the venue lists the contract and reported its open interest
@@ -30,19 +30,17 @@ def _get(url, **params):
     return resp.json()
 
 
-def _binance(symbol):
-    pair = f"{symbol}USDT"
-    contracts = float(_get("https://fapi.binance.com/fapi/v1/openInterest", symbol=pair)["openInterest"])
-    mark = float(_get("https://fapi.binance.com/fapi/v1/premiumIndex", symbol=pair)["markPrice"])
-    return contracts * mark
+def _bitget(symbol):
+    rows = _get("https://api.bitget.com/api/v2/mix/market/ticker", symbol=f"{symbol}USDT",
+                productType="usdt-futures").get("data") or []
+    if not rows:
+        raise NotListed("no contract")
+    return float(rows[0]["holdingAmount"]) * float(rows[0]["markPrice"])
 
 
-def _bybit(symbol):
-    data = _get("https://api.bybit.com/v5/market/tickers", category="linear", symbol=f"{symbol}USDT")
-    rows = (data.get("result") or {}).get("list") or []
-    if data.get("retCode") != 0 or not rows:
-        raise NotListed(data.get("retMsg") or "no contract")
-    return float(rows[0]["openInterestValue"])
+def _gate(symbol):
+    contract = _get(f"https://api.gateio.ws/api/v4/futures/usdt/contracts/{symbol}_USDT")
+    return float(contract["position_size"]) * float(contract["quanto_multiplier"]) * float(contract["mark_price"])
 
 
 def _okx(symbol):
@@ -65,7 +63,9 @@ def _hyperliquid(symbol):
     return float(ctx["openInterest"]) * float(ctx["markPx"])
 
 
-VENUES = (("Binance", _binance), ("Bybit", _bybit), ("OKX", _okx), ("Hyperliquid", _hyperliquid))
+# Binance and Bybit are not used: both refuse requests from cloud servers (HTTP 451
+# and 403 from Fly's Johannesburg machines and GitHub's runners, 19 October 2026).
+VENUES = (("OKX", _okx), ("Bitget", _bitget), ("Gate", _gate), ("Hyperliquid", _hyperliquid))
 
 
 def fetch_open_interest(symbol):
@@ -82,9 +82,9 @@ def fetch_open_interest(symbol):
         except Exception as e:
             failed[name] = f"{type(e).__name__}: {e}"[:120]
     result = {"venues": venues, "not_listed": not_listed, "failed": failed,
-              "source": "Binance, Bybit, OKX and Hyperliquid public futures APIs (USDT-margined perpetuals)"}
+              "source": "OKX, Bitget, Gate and Hyperliquid public futures APIs (USDT-margined perpetuals)"}
     if not venues:
-        result["error"] = ("No perpetual futures market found at Binance, Bybit, OKX or Hyperliquid"
+        result["error"] = ("No perpetual futures market found at OKX, Bitget, Gate or Hyperliquid"
                            if not failed else "Futures venues could not be read: " + ", ".join(failed))
         return result
     result["open_interest"] = sum(venues.values())

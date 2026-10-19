@@ -7,8 +7,8 @@ All notable changes, newest first. The format follows [Keep a Changelog](https:/
 ### Added
 - The research page shows the free data and the paid AI write-up side by side from the start, with exactly what the write-up contains and what it costs. "Get the AI write-up" fetches the data and opens the payment step; report pages offer the write-up too.
 - Order-book depth across large, established exchanges (CoinGecko tickers): the liquidity check now measures where a chain's coin actually trades, instead of one DEX pool.
-- Open interest from the public futures APIs of Binance, Bybit, OKX and Hyperliquid, so the leverage check has data without a paid Coinglass key.
-- The monitor checks every data source for every featured chain and emails when one stops answering; the pipeline check fails on any source error or "No data" result.
+- Open interest from the public futures APIs of OKX, Bitget, Gate and Hyperliquid (Binance and Bybit refuse cloud servers), so the leverage check has data without a paid Coinglass key.
+- The server records which data sources answered on every 15-minute refresh and publishes the names (never error text) at /status/sources.json. The monitor reads it and emails when a source stops answering, so sources are judged from the server's location; some exchanges refuse other locations.
 
 ### Changed
 - Token unlocks and holder concentration have no free, reliable source for a chain's coin. They are listed under "Not covered by these checks" with where to look, instead of counting as "No data" on every report. Eight checks remain.

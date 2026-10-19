@@ -26,6 +26,7 @@ import requests  # noqa: E402
 from config import NETWORK_DIR  # noqa: E402
 from data_analytics.chains import FEATURED, PROFILES  # noqa: E402
 from data_analytics.risk_profile import CHECKS_VERSION  # noqa: E402
+from data_engineering.derivatives import fetch_open_interest  # noqa: E402
 from data_engineering.networks import fetch_network  # noqa: E402
 
 log = logging.getLogger("refresh")
@@ -50,10 +51,21 @@ def fetch_prices():
         return {}
 
 
+def _write_json(path, data):
+    # Write then rename, so the site never reads a half-written file
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    tmp.replace(path)
+
+
 def refresh_once():
     NETWORK_DIR.mkdir(parents=True, exist_ok=True)
     prices = fetch_prices()
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    # Every source each featured chain needs, checked from where the site runs:
+    # some exchanges refuse requests from some locations, so only this machine's
+    # view counts. Names only; error text stays in the log.
+    problems = {} if prices else {"ALL": ["CoinGecko prices"]}
     for symbol in FEATURED:
         snapshot = {
             "symbol": symbol,
@@ -61,15 +73,21 @@ def refresh_once():
             "network": fetch_network(symbol),
             "price": prices.get(PROFILES[symbol]["coingecko_id"]),
         }
-        # Write then rename, so the site never reads a half-written file
-        path = NETWORK_DIR / f"{symbol}.json"
-        tmp = path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(snapshot, indent=2), encoding="utf-8")
-        tmp.replace(path)
+        _write_json(NETWORK_DIR / f"{symbol}.json", snapshot)
         status = snapshot["network"].get("error") or "ok"
         log.info("%s network snapshot: %s", symbol, status)
+        failed = ["network"] if snapshot["network"].get("error") else []
+        if not snapshot["price"]:
+            failed.append("price")
+        futures = fetch_open_interest(symbol)
+        failed += [f"{venue} futures" for venue in futures["failed"]]
+        if failed:
+            log.warning("%s sources not answering: %s %s", symbol, failed, futures["failed"])
+            problems[symbol] = failed
 
-    refresh_featured_reports()
+    for symbol, failed in refresh_featured_reports().items():
+        problems.setdefault(symbol, []).extend(f"report: {name}" for name in failed)
+    _write_json(NETWORK_DIR / "sources.json", {"checked_at": now, "chains": list(FEATURED), "problems": problems})
 
     from sitegen.build import build_site
 
@@ -86,11 +104,13 @@ def refresh_featured_reports():
     from tools.report_generator import fetch_and_analyse, save_data_report
 
     with report_store.site_rebuilds_suspended():
-        _refresh_reports(report_store, fetch_and_analyse, save_data_report)
+        return _refresh_reports(report_store, fetch_and_analyse, save_data_report)
 
 
 def _refresh_reports(report_store, fetch_and_analyse, save_data_report):
+    """Returns {symbol: [source names]} for reports made with a source failing."""
     # The caller rebuilds the site once afterwards, not once per report
+    failures = {}
     max_age = datetime.timedelta(hours=int(os.getenv("REPORT_REFRESH_HOURS") or "24"))
     now = datetime.datetime.now(datetime.timezone.utc)
     for symbol in FEATURED:
@@ -107,11 +127,15 @@ def _refresh_reports(report_store, fetch_and_analyse, save_data_report):
         try:
             analysis = fetch_and_analyse(symbol, log_fn=lambda _msg: None)
             meta = save_data_report(analysis)
+            if meta.get("source_errors"):
+                failures[symbol] = sorted(meta["source_errors"])
             log.info("%s report refreshed: %s flagged, %s clear, %s no data",
                      symbol, meta["flagged"], meta["clear"], meta["no_data"])
         except Exception:
             log.exception("%s report refresh failed", symbol)
+            failures[symbol] = ["report refresh"]
         time.sleep(int(os.getenv("REPORT_REFRESH_SPACING_SECONDS") or "20"))
+    return failures
 
 
 def main():

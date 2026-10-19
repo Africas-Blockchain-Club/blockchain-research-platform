@@ -4,7 +4,7 @@ End-to-end check of the live platform. Runs unattended from GitHub Actions
 
   python scripts/monitor.py            quick: DNS, health endpoint, payment networks
   python scripts/monitor.py --full     also: every page in a real browser, the data
-                                       pipeline, and every data source for every chain
+                                       pipeline, and the sources status the server publishes
   add --email                          email OWNER_ALERT_EMAIL when a check fails
   add --email-always                   email the result even when everything passes
 
@@ -155,10 +155,12 @@ def check_pipeline():
     if len(analysis["risk_checks"]) != 8:
         raise RuntimeError(f"expected 8 risk checks, got {len(analysis['risk_checks'])}")
     # A paid write-up is only worth selling when every source answers
-    failed = analysis["data_summary"].get("source_errors") or {}
+    # Futures venues are checked from the server's location by check_sources
+    failed = {k: v for k, v in (analysis["data_summary"].get("source_errors") or {}).items()
+              if not k.endswith("futures")}
     if failed:
         raise RuntimeError("sources failed for ETH: " + "; ".join(f"{k} ({v[:80]})" for k, v in failed.items()))
-    missing = [c["name"] for c in analysis["risk_checks"] if c["status"] == "no_data"]
+    missing = [c["name"] for c in analysis["risk_checks"] if c["status"] == "no_data" and c["key"] != "leverage"]
     if missing:
         raise RuntimeError(f"ETH risk checks with no data: {', '.join(missing)}")
     assert_educational(build_data_report("ETH", analysis["data_summary"], "monitor run"),
@@ -167,34 +169,29 @@ def check_pipeline():
 
 
 def check_sources():
-    """Every featured chain's network endpoint and futures venues answer. The
-    CoinGecko sources are covered for ETH by the pipeline check; asking for all
-    seven here would hit its free rate limit."""
-    from data_analytics.chains import FEATURED
-    from data_engineering.derivatives import fetch_open_interest
-    from data_engineering.networks import fetch_network
+    """Every data source answered on the server's last refresh. Read from the
+    status file the server publishes, not fetched from here: exchanges refuse
+    some locations, and only the server's location decides what a report gets.
+    A machine that has just started writes its first file a few minutes in, so
+    a missing file is waited for before it counts as a failure."""
+    import datetime
 
-    def problems_for(symbol):
-        found = []
-        network = fetch_network(symbol)
-        if network and network.get("error"):
-            found.append(f"{symbol} network: {network['error'][:80]}")
-        futures = fetch_open_interest(symbol)
-        found += [f"{symbol} {venue} futures: {err[:60]}" for venue, err in futures["failed"].items()]
-        if not futures.get("venues"):
-            found.append(f"{symbol}: no futures venue reported open interest")
-        return found
-
-    problems = []
-    for symbol in FEATURED:
-        found = problems_for(symbol)
-        if found:
-            # One retry after a pause: a single dropped connection is not an outage
-            time.sleep(20)
-            problems += problems_for(symbol)
+    deadline = time.time() + int(os.getenv("MONITOR_SOURCES_WAIT_SECONDS") or "600")
+    while True:
+        resp = requests.get(f"{SITE}/status/sources.json", timeout=30)
+        if resp.status_code == 200 or time.time() > deadline:
+            break
+        time.sleep(30)
+    if resp.status_code != 200:
+        raise RuntimeError(f"no source status published (HTTP {resp.status_code}); the refresher may not be running")
+    status = resp.json()
+    age = datetime.datetime.now(datetime.timezone.utc) - datetime.datetime.fromisoformat(status["checked_at"])
+    if age > datetime.timedelta(minutes=45):
+        raise RuntimeError(f"source status is {age.seconds // 60} minutes old; the refresher has stopped")
+    problems = status.get("problems") or {}
     if problems:
-        raise RuntimeError("; ".join(problems))
-    return f"network data and futures open interest for all {len(FEATURED)} featured chains"
+        raise RuntimeError("sources not answering: " + "; ".join(f"{k}: {', '.join(v)}" for k, v in problems.items()))
+    return f"every source answered for all {len(status.get('chains') or [])} featured chains at {status['checked_at'][:16]} UTC"
 
 
 def run(full):
