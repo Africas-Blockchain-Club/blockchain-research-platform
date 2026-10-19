@@ -9,6 +9,12 @@ from data_analytics.risk_profile import CLEAR, FLAGGED, NO_DATA, STATUS_LABELS
 from data_science.compliance import SHORT_DISCLAIMER
 
 
+def one_line(value):
+    """Text that came from a user, made safe to log: a line break in it could
+    otherwise forge a second log entry."""
+    return str(value).replace("\r", " ").replace("\n", " ")
+
+
 def page_header(kicker, title, lede=""):
     lede_html = f"<p>{escape(lede)}</p>" if lede else ""
     st.html(
