@@ -44,7 +44,9 @@ WRITING RULES
 - British English (recognise, organise, colour). No contractions. No em dashes or en dashes; use a hyphen or a semicolon.
 - Plain, simple English. Define every technical term in brackets the first time you use it.
 - No LaTeX. Write maths in plain text, for example: 100 / 50 = 2.
-- Currency: US Dollars with the South African Rand equivalent in brackets, using the exchange rate given in the data.
+- Currency: US Dollars. Give the South African Rand equivalent in brackets, using the exchange rate given in the data, only for the price, the market cap and the 24-hour volume the first time each appears; elsewhere use US Dollars alone.
+- Round numbers so they are easy to read: amounts of 1 million or more in millions or billions with one decimal ($92.8 million, $1.2 billion); smaller amounts to the nearest whole dollar ($454,118); prices below 1 US Dollar to two significant figures ($0.61) and other prices to two decimals; percentages to whole numbers, or one decimal below 10% (97%, 5.2%). Rounding a number from the data is allowed; inventing one is not.
+- If every value in a table would be N/A, do not draw the table: write one sentence saying the data has none of these measures, and name where a learner can track them. Draw a table, and its callout, only when it holds at least one real value.
 - Begin directly with the report title. No preamble.
 - Every data table is followed by one callout: > **Reading this table:** [what the values in this table show, using this token's actual numbers, and what a learner should notice].
 
@@ -100,7 +102,7 @@ Explain what a liquidation is and summarise any liquidation data provided, or wr
 ### 4.1 Summary of Findings
 Five to seven bullet points, each one a fact from this report with its number.
 ### 4.2 The Risk Checks Explained
-The platform has already run rule-based risk checks (provided in the data). Do not change their results. For each check that is Flagged, explain in one or two sentences what the finding means in practice. For each check with No data, say which source would answer it. Do not combine the checks into a score or an overall judgement.
+The platform has already run rule-based risk checks (provided in the data), and the report page shows each one as a card with its measurement and threshold, so do not repeat those details. Do not change their results. Write one bullet per Flagged check, in the form "**[Check name] (Flagged):** [one or two sentences on what the finding means in practice]", then one bullet per check with No data saying which source would answer it. Then name the Clear checks in one sentence, and say that Clear means the value did not cross the threshold, not that the token is safe. Do not combine the checks into a score or an overall judgement.
 ### 4.3 Strengths and Weaknesses
 A table of the project's internal strengths and weaknesses and the external opportunities and threats it faces (a SWOT analysis), describing the project, not the investment.
 ### 4.4 Questions to Research Further

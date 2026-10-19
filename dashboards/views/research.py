@@ -242,37 +242,45 @@ def _payment_gate(analysis, model):
         st.info("Enter your email address to continue. Your write-up and receipt are sent there.")
         return
 
-    result = wallet_pay(
-        price=str(price),
-        recipient=payment_verifier.RECIPIENT_ADDRESS,
-        asset_label=payment_verifier.ASSET_LABEL,
-        options=payment_verifier.payment_options(),
-        key=f"wallet_pay_{token}",
-        default=None,
-    )
-
-    tx_hash, chain_id = None, None
-    # The component re-sends its last value on every rerun; handle each hash once
-    handled = st.session_state.setdefault("handled_tx", set())
-    if result and result.get("tx_hash") and result["tx_hash"] not in handled:
-        tx_hash, chain_id = result["tx_hash"].strip(), int(result["chain_id"])
-        handled.add(tx_hash)
-
-    with st.expander("No wallet extension, or retrying a paid write-up? Paste the transaction hash"):
-        chain_names = {payment_verifier.NETWORKS[c]["name"]: c for c in payment_verifier.PAYMENT_CHAINS}
-        typed_chain = st.selectbox("Network you paid on", list(chain_names))
-        st.caption(
-            f"Send {price} USDC or USDT on {typed_chain} to {payment_verifier.RECIPIENT_ADDRESS}, then paste "
-            f"the transaction hash within {payment_verifier.MAX_PAYMENT_AGE_MINUTES} minutes."
+    # One slot for the whole payment step, so it can be cleared once the payment verifies;
+    # otherwise Streamlit shows the old step greyed out beside the new one while the write-up runs
+    slot = st.empty()
+    with slot.container():
+        result = wallet_pay(
+            price=str(price),
+            recipient=payment_verifier.RECIPIENT_ADDRESS,
+            asset_label=payment_verifier.ASSET_LABEL,
+            options=payment_verifier.payment_options(),
+            key=f"wallet_pay_{token}",
+            default=None,
         )
-        typed_hash = st.text_input("Transaction hash", placeholder="0x...")
-        if st.button("Check the payment"):
-            tx_hash, chain_id = typed_hash.strip(), chain_names[typed_chain]
+
+        tx_hash, chain_id = None, None
+        # The component re-sends its last value on every rerun; handle each hash once
+        handled = st.session_state.setdefault("handled_tx", set())
+        if result and result.get("tx_hash") and result["tx_hash"] not in handled:
+            tx_hash, chain_id = result["tx_hash"].strip(), int(result["chain_id"])
+            handled.add(tx_hash)
+
+        with st.expander("No wallet extension, or retrying a paid write-up? Paste the transaction hash"):
+            chain_names = {payment_verifier.NETWORKS[c]["name"]: c for c in payment_verifier.PAYMENT_CHAINS}
+            typed_chain = st.selectbox("Network you paid on", list(chain_names))
+            st.caption(
+                f"Send {price} USDC or USDT on {typed_chain} to {payment_verifier.RECIPIENT_ADDRESS}, then paste "
+                f"the transaction hash within {payment_verifier.MAX_PAYMENT_AGE_MINUTES} minutes."
+            )
+            typed_hash = st.text_input("Transaction hash", placeholder="0x...")
+            if st.button("Check the payment"):
+                tx_hash, chain_id = typed_hash.strip(), chain_names[typed_chain]
 
     if tx_hash:
         payment = _verify_payment(analysis, tx_hash, chain_id, email)
         if payment:
             paid[token] = {"payment": payment, "tx_hash": tx_hash, "email": email}
+            slot.empty()
+            notice("Payment confirmed", f"{payment['amount_decimal']} {payment['asset_symbol']} on "
+                   f"{payment['chain_name']}. Your write-up is being written now and takes a few minutes; "
+                   "keep this page open.")
             _write_paid(analysis, model, payment, tx_hash, email)
 
 
