@@ -6,6 +6,7 @@ The AI write-up sits behind the testnet payment demo only when
 PAYMENTS_ENABLED is true. Nothing after the payment gate costs anything
 until a transaction verifies on-chain.
 """
+import logging
 import re
 import uuid
 
@@ -16,36 +17,25 @@ import db
 import emailer
 import payment_verifier
 from config import SETTINGS
-from dashboards.ui.components import disclaimer_notice, notice, offer_card, page_header, risk_cards, stat_tiles
+from dashboards.ui.components import (
+    choose_chain,
+    disclaimer_notice,
+    notice,
+    offer_card,
+    page_header,
+    risk_cards,
+    stat_tiles,
+)
 from dashboards.ui.wallet import wallet_connect, wallet_pay
-from data_analytics.chains import FEATURED, PROFILES
 from data_analytics.risk_profile import NOT_COVERED, summarise_checks
 from data_science.compliance import AdviceLanguageError
 from data_science.llm import AIRefusalError, AIResponseError, AIUnavailableError
 from payment_verifier import PaymentVerificationError
-from tools import report_store
-from tools.report_generator import fetch_and_analyse, normalise_token, save_ai_report, save_data_report
+from tools.report_generator import fetch_and_analyse, is_valid_query, save_ai_report, save_data_report
 
 AI_ERRORS = (AIUnavailableError, AIRefusalError, AIResponseError, AdviceLanguageError)
+log = logging.getLogger(__name__)
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-
-
-def _choose_token():
-    featured = [f"{PROFILES[s]['chain']} ({s})" for s in FEATURED]
-    # A link from the static site (?token=XRP) arrives with its blockchain chosen
-    linked = normalise_token(st.query_params.get("token", ""))
-    preset = next((i for i, s in enumerate(FEATURED) if s == linked), None)
-    col_pick, col_type = st.columns(2)
-    with col_pick:
-        picked = st.selectbox("Pick a blockchain", featured, index=preset, placeholder="Choose a blockchain",
-                              help="The seven blockchains with hand-checked profiles and live network data.")
-    with col_type:
-        typed = st.text_input("Or type any blockchain or coin", value="" if preset is not None else linked,
-                              placeholder="For example Cardano or ADA")
-    if picked and not typed.strip():
-        return FEATURED[featured.index(picked)]
-    raw = typed.strip()
-    return normalise_token(raw) if raw else ""
 
 
 def _fetch(token):
@@ -53,12 +43,19 @@ def _fetch(token):
         try:
             analysis = fetch_and_analyse(token, log_fn=status.write)
         except Exception as e:
+            log.warning("Fetch failed for %r: %s", token, e)
             status.update(label=f"Could not fetch data for {token}", state="error", expanded=True)
             st.error(f"{e}")
             return
-        status.update(label=f"Data for {token} is ready", state="complete", expanded=False)
+        status.update(label=f"Data for {_display_name(analysis)} is ready", state="complete", expanded=False)
     st.session_state["analysis"] = analysis
     st.session_state["analysis_id"] = str(uuid.uuid4())
+
+
+def _display_name(analysis):
+    """"Celestia (TIA)" when the name is known, so a typed name shows what it found."""
+    name = (analysis["data_summary"].get("token_info") or {}).get("name")
+    return f"{name} ({analysis['token']})" if name else analysis["token"]
 
 
 def _saved(meta):
@@ -377,11 +374,12 @@ def render():
     )
     disclaimer_notice()
 
-    token = _choose_token()
+    token = choose_chain()
     fetch, want_ai = _offers(token)
     if fetch or want_ai:
-        if not report_store.is_valid_token(token):
-            st.error("Use a blockchain name or its coin's ticker, for example Cardano or ADA. Check the spelling and try again.")
+        if not is_valid_query(token):
+            st.error("Type the blockchain's full name, for example Celestia or Cardano, using letters, digits "
+                     "and spaces only. Check the spelling and try again.")
         else:
             # The write-up is built from the fetched data, so both buttons fetch first
             st.session_state["ai_step"] = "top" if want_ai else None
