@@ -40,7 +40,10 @@ _ADVICE_PATTERNS = [
     (r"\b(buy|sell|hold|accumulate|distribute)\s+(rating|signal|recommendation|zone|call)s?\b", "a trading signal"),
     (r"\brating\W{0,6}(buy|sell|hold|accumulate|distribute|neutral)\b", "a rating"),
     (r"\b(entry|exit)\s+(trigger|point|price|signal|level)s?\b", "an entry or exit instruction"),
-    (r"\bstop[- ]?loss", "a stop-loss instruction"),
+    # The order, in any form ("a stop-loss", "stop loss", "set stop losses at"), but not the
+    # verb in "the exchange closes the position to stop losses exceeding the deposit"
+    (r"\bstop-loss|\bstop\s?loss\b|\b(set|place|put|use|add|with)\s+(a\s+|your\s+)?stop\s?losses\b"
+     r"|\bstop\s?losses\s+(at|below|above|order)", "a stop-loss instruction"),
     (r"\btake[- ]profit", "a take-profit instruction"),
     (r"\bprice\s+target", "a price target"),
     (r"\bposition\s+siz", "position sizing"),

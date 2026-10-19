@@ -9,6 +9,7 @@ All notable changes, newest first. The format follows [Keep a Changelog](https:/
 - AI write-ups round their numbers (about $92.8 million, 97%), give the Rand equivalent only for the price, market cap and volume, replace a table whose values are all N/A with one sentence, and list only what each flagged risk check means, because the report page already shows every check as a card.
 
 ### Fixed
+- The advice-language guard rejected a correct explanation of liquidation ("the exchange closes the position to stop losses exceeding the deposit") as a stop-loss instruction, which would discard a write-up the payer had paid for. The pattern now catches the order in every form but not the verb.
 - While a paid write-up was being written, the old payment step stayed on screen greyed out beside the new one. The step is cleared once the payment verifies, and a "Payment confirmed" notice takes its place.
 
 ## 2026.10.19-5
