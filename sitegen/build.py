@@ -30,7 +30,7 @@ from markupsafe import Markup
 
 from config import BUILD, DATA_DIR, NETWORK_DIR, ROOT_DIR, SETTINGS, SITE_DIR
 from data_analytics.chains import CHECKED, FEATURED, PROFILES
-from data_analytics.risk_profile import STATUS_LABELS, compute_risk_checks, summarise_checks
+from data_analytics.risk_profile import NOT_COVERED, STATUS_LABELS, compute_risk_checks, summarise_checks
 from data_science.compliance import SHORT_DISCLAIMER, long_disclaimer
 from tools import report_store
 
@@ -162,9 +162,12 @@ def build_site(out_dir=None):
             shutil.copy2(pdf, staging / "reports" / f"{token}.pdf")
         write(f"reports/{token}.html", "report.html", meta=meta, sections=sections, page="reports",
               counts=summarise_checks(meta["risk_checks"]), has_pdf=bool(pdf),
-              profile=PROFILES.get(token), long_disclaimer=safe_markdown(long_disclaimer()))
+              profile=PROFILES.get(token), long_disclaimer=safe_markdown(long_disclaimer()),
+              not_covered=NOT_COVERED, ai_on_offer=meta["mode"] != "ai" and SETTINGS.ai_enabled)
     write("reports/index.html", "reports.html", reports=reports, page="reports")
-    write("how-it-works.html", "method.html", page="method", checks=compute_risk_checks({}),
+    # The method page lists the checks as a chain's report runs them: with exchange depth
+    method_checks = compute_risk_checks({"market_depth": {"depth_down_2pct_usd": 0}})
+    write("how-it-works.html", "method.html", page="method", checks=method_checks, not_covered=NOT_COVERED,
           featured=[PROFILES[s] for s in FEATURED])
     write("404.html", "404.html", page="")
 

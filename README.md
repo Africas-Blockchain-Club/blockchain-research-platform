@@ -47,7 +47,7 @@ Visitor ──HTTPS──> Fly.io ──> Caddy :8080 ─┬─ /        static 
                │    data_engineering/github_activity.py   developer activity
                ├─ Phase 1 onwards, the native asset
                │    data_engineering/fetchers.py          CoinGecko, DexScreener (by contract), DefiLlama
-               │    data_analytics/risk_profile.py        ten rule-based risk checks, never summed
+               │    data_analytics/risk_profile.py        eight rule-based risk checks, never summed
                └─ the write-up
                     data_analytics/data_report.py         data-only report (no AI)
                     data_science/llm.py, ai_generator.py  optional AI write-up

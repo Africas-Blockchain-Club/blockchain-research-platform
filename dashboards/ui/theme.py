@@ -73,16 +73,16 @@ body { overflow-x:clip; }
 .stApp { font-family:"Geist","Helvetica Neue",Helvetica,Arial,sans-serif; }
 .stApp, .stApp p, .stApp li { letter-spacing:var(--track-body); line-height:var(--lh-body); }
 
-/* One centred 76rem column for every page, matching the top bar */
+/* One centred 100rem column for every page, matching the top bar */
 [data-testid="stMainBlockContainer"], .block-container {
-  max-width:76rem; padding-left:clamp(1rem,4vw,2.5rem); padding-right:clamp(1rem,4vw,2.5rem);
+  max-width:100rem; padding-left:clamp(1rem,2.5vw,2rem); padding-right:clamp(1rem,2.5vw,2rem);
   padding-top:5rem; padding-bottom:4rem;
 }
 /* Streamlit's top bar holds the logo and navigation; line it up with the column */
 header[data-testid="stHeader"] {
   /* Streamlit pads the bar by 1rem itself, so subtract that to land on the column edge */
-  padding-left:max(0px, calc((100vw - 76rem) / 2 + clamp(1rem,4vw,2.5rem) - 1rem));
-  padding-right:max(0px, calc((100vw - 76rem) / 2 + clamp(1rem,4vw,2.5rem) - 1rem));
+  padding-left:max(0px, calc((100vw - 100rem) / 2 + clamp(1rem,2.5vw,2rem) - 1rem));
+  padding-right:max(0px, calc((100vw - 100rem) / 2 + clamp(1rem,2.5vw,2rem) - 1rem));
   border-bottom:1px solid var(--line);
 }
 
@@ -124,6 +124,7 @@ header[data-testid="stHeader"] {
 .brp-grid { display:grid; gap:1rem; grid-template-columns:1fr; margin:0.5rem 0 1rem; }
 @media (min-width:720px) { .brp-grid { grid-template-columns:repeat(2,1fr); } }
 @media (min-width:1100px) { .brp-grid.three { grid-template-columns:repeat(3,1fr); } }
+@media (min-width:1400px) { .brp-grid.three { grid-template-columns:repeat(4,1fr); } }
 /* Glass cards, as on the ABC site; solid enough to read without backdrop-filter */
 .brp-card { background:var(--glass); border:1px solid var(--glass-line); border-radius:16px; padding:clamp(1rem,3vw,1.5rem);
   backdrop-filter:blur(8px);
@@ -155,6 +156,13 @@ header[data-testid="stHeader"] {
 .brp-steps { counter-reset:step; }
 .brp-steps .brp-card h3::before { counter-increment:step; content:counter(step) ". "; color:var(--blue); }
 
+.brp-offer { display:grid; gap:0.6rem; }
+.brp-offer-head { display:flex; align-items:baseline; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+.brp-offer h3 { margin:0; padding:0; font-size:1.25rem; font-weight:700; color:var(--head); }
+.brp-price { font-weight:800; font-size:1.25rem; color:var(--blue); white-space:nowrap; }
+.brp-offer p { margin:0; font-size:0.9375rem; }
+.brp-offer .brp-meta { font-size:0.875rem; color:var(--subtle); }
+.brp-offer ul { margin:0; padding-left:1.2rem; display:grid; gap:0.3rem; font-size:0.9375rem; }
 .brp-footer { border-top:1px solid var(--line); margin-top:3rem; padding-top:1.25rem; display:grid; gap:0.4rem;
   font-size:0.875rem; color:var(--subtle); }
 .brp-footer p { margin:0; }

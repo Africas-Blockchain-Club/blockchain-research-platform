@@ -6,7 +6,7 @@ The dashboard follows the ABC front-end standard (October 2026), adapted to Stre
 
 | Rule | How |
 |---|---|
-| One centred column, equal sides | `[data-testid="stMainBlockContainer"]` capped at 76rem with `clamp(1rem, 4vw, 2.5rem)` sides (`dashboards/ui/theme.py`). Measured equal at 375, 390, 768, 1280, 1440 and 1920 pixels wide |
+| One centred column, equal sides | `[data-testid="stMainBlockContainer"]` capped at 100rem with `clamp(1rem, 2.5vw, 2rem)` sides, so four cards fit across from 1400 pixels (`dashboards/ui/theme.py`). Measured equal at 375, 390, 768, 1280, 1440 and 1920 pixels wide |
 | Blocks fill the column | Cards, tiles, notices and report tables run the full column width |
 | The page never moves sideways | `overflow-y: scroll` on `html`, `overflow-x: clip` on `body`; wide tables and the tab strip scroll inside themselves |
 | Colour tokens, dark and light | ABC's palette as CSS variables (dark first; amber `#f99c00` on dark, `#b75000` on light so it passes AA as text), with dark values chosen from Streamlit's own theme setting (`st.context.theme`) and the operating system preference as the fallback. Streamlit's theme in `.streamlit/config.toml` uses the same values |

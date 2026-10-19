@@ -43,7 +43,7 @@ node_modules/
 *.Identifier
 
 # Generated at run time
-site/
+/site
 site.building/
 site.previous/
 network/

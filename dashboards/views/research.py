@@ -16,10 +16,10 @@ import db
 import emailer
 import payment_verifier
 from config import SETTINGS
-from dashboards.ui.components import disclaimer_notice, notice, page_header, risk_cards, stat_tiles
+from dashboards.ui.components import disclaimer_notice, notice, offer_card, page_header, risk_cards, stat_tiles
 from dashboards.ui.wallet import wallet_connect, wallet_pay
 from data_analytics.chains import FEATURED, PROFILES
-from data_analytics.risk_profile import summarise_checks
+from data_analytics.risk_profile import NOT_COVERED, summarise_checks
 from data_science.compliance import AdviceLanguageError
 from data_science.llm import AIRefusalError, AIResponseError, AIUnavailableError
 from payment_verifier import PaymentVerificationError
@@ -291,21 +291,100 @@ def _wallet_identity():
             st.caption(f"Reports unlocked by this wallet: {len(past)}")
 
 
+AI_CONTENTS = (
+    "Every section explained in plain English: what the blockchain is for, how it reaches agreement, "
+    "and what its live network figures mean",
+    "The native asset's supply, issuance and scarcity, with each technical term defined",
+    "Trading, pool depth and futures data read for you, with what a learner should notice in each table",
+    "Each risk check explained, plus the questions to research next and where to find the answers",
+    "Strengths, weaknesses and the long-term factors worth watching on the chain and its asset",
+    "Emailed to you with your receipt, and published on the Reports page",
+)
+
+
+def _ai_availability():
+    """Why the AI write-up cannot be bought right now, or None when it can."""
+    if not SETTINGS.ai_enabled:
+        return SETTINGS.ai_off_reason
+    if SETTINGS.ai_requires_payment and not SETTINGS.payments_enabled:
+        return "AI write-ups on this site need a payment, and payments are not switched on yet."
+    return None
+
+
+def _price_label():
+    if not SETTINGS.payments_enabled:
+        return "Free here"
+    price = payment_verifier.REPORT_PRICE_USDC
+    return f"{price} test USDC" if payment_verifier.IS_TESTNET else f"${price} in USDC or USDT"
+
+
+def _offers(token):
+    """Both options side by side from the start, so the paid write-up is never hidden."""
+    col_free, col_ai = st.columns(2, border=True)
+    with col_free:
+        offer_card(
+            "Step 1, free",
+            "Live data and risk checks",
+            "Free",
+            "The blockchain's live network figures, its native asset's market data and eight rule-based risk "
+            "checks, built by code with no AI involved.",
+            ("Network health: blocks, fees, throughput and validators", "Supply, price and trading data",
+             "Eight risk checks, each flagged, clear or no data", "A data-only report you can save and share"),
+        )
+        fetch = st.button("Fetch the free data" if token else "Choose a blockchain first", type="primary",
+                          disabled=not token, use_container_width=True, key="fetch_free")
+    with col_ai:
+        unavailable = _ai_availability()
+        networks = ", ".join(payment_verifier.NETWORKS[c]["name"] for c in payment_verifier.PAYMENT_CHAINS)
+        offer_card(
+            "Step 2, the full write-up",
+            "AI research write-up",
+            _price_label(),
+            "A complete research report that turns the same public data into a lesson you can read in "
+            "one sitting. It explains; it never tells you what to buy, sell or hold.",
+            AI_CONTENTS,
+            note=unavailable or (f"Pay from any wallet on {networks}. Checked for advice language before "
+                                 "it is saved. If it fails after you pay, you can retry free within the hour."),
+        )
+        want_ai = st.button("Get the AI write-up" if token else "Choose a blockchain first",
+                            disabled=not token or bool(unavailable), type="primary",
+                            use_container_width=True, key="want_ai")
+    return fetch, want_ai
+
+
+def _ai_section(analysis):
+    st.subheader(f"Your AI write-up for {analysis['token']}")
+    unavailable = _ai_availability()
+    if unavailable:
+        notice("Not available", unavailable, tone="warn")
+        return
+    model = st.selectbox("AI model", SETTINGS.ai_models, help="The first model in AI_MODELS is the default.")
+    if SETTINGS.payments_enabled:
+        _wallet_identity()
+        _payment_gate(analysis, model)
+    elif st.button("Write the AI report", type="primary"):
+        meta = _write_ai(analysis, model)
+        if meta:
+            _saved(meta)
+
+
 def render():
     st.html(f'<a class="brp-link" href="{SETTINGS.site_url}/blockchains/" target="_self">All blockchains</a>')
     page_header(
         "Live research",
         "Research a blockchain",
-        "Fetch the live data first: the blockchain's network, its native asset and the risk checks. It is free.",
+        "Start with the free live data and risk checks. When you want the full explanation, get the AI write-up.",
     )
     disclaimer_notice()
 
     token = _choose_token()
-    fetch = st.button("Fetch the data" if token else "Choose a blockchain first", type="primary", disabled=not token)
-    if fetch:
+    fetch, want_ai = _offers(token)
+    if fetch or want_ai:
         if not report_store.is_valid_token(token):
             st.error("Use a blockchain name or its coin's ticker, for example Cardano or ADA. Check the spelling and try again.")
         else:
+            # The write-up is built from the fetched data, so both buttons fetch first
+            st.session_state["ai_step"] = "top" if want_ai else None
             _fetch(token)
 
     analysis = st.session_state.get("analysis")
@@ -313,6 +392,11 @@ def render():
         return
 
     st.divider()
+    if st.session_state.get("ai_step") == "top":
+        # Asked for the write-up: put the payment first, the free data under it
+        _ai_section(analysis)
+        st.divider()
+
     chain = analysis["data_summary"].get("blockchain") or {}
     profile, network = chain.get("profile"), chain.get("network")
     if profile:
@@ -330,6 +414,9 @@ def render():
     st.subheader(f"Risk checks for {analysis['token']}")
     stat_tiles(summarise_checks(analysis["risk_checks"]))
     risk_cards(analysis["risk_checks"])
+    notice("Not covered by these checks",
+           "No free, reliable source answers these, so check them yourself. "
+           + " ".join(f"{item['name']}: {item['where']}" for item in NOT_COVERED))
 
     st.subheader("Save the report")
     col_data, col_ai = st.columns(2, border=True)
@@ -339,19 +426,13 @@ def render():
         if st.button("Save the data-only report", use_container_width=True):
             _saved(save_data_report(analysis))
     with col_ai:
-        st.markdown("**AI write-up**")
-        st.caption("Adds plain-English explanation written by an AI model, checked for advice language before it is saved.")
-        if not SETTINGS.ai_enabled:
-            notice("AI is off", SETTINGS.ai_off_reason, tone="warn")
-            return
-        if SETTINGS.ai_requires_payment and not SETTINGS.payments_enabled:
-            notice("Not available yet", "AI write-ups on this site need a payment, and payments are not switched on yet.", tone="warn")
-            return
-        model = st.selectbox("AI model", SETTINGS.ai_models, help="The first model in AI_MODELS is the default.")
-        if SETTINGS.payments_enabled:
-            _wallet_identity()
-            _payment_gate(analysis, model)
-        elif st.button("Write the AI report", type="primary", use_container_width=True):
-            meta = _write_ai(analysis, model)
-            if meta:
-                _saved(meta)
+        st.markdown(f"**AI write-up, {_price_label()}**")
+        st.caption("Everything above explained in plain English, with the questions to research next. "
+                   "Emailed to you with your receipt.")
+        if st.session_state.get("ai_step") == "top":
+            st.caption("The payment step is at the top of this page.")
+        elif st.button("Get the AI write-up", type="primary", use_container_width=True,
+                       disabled=bool(_ai_availability()), key="want_ai_bottom"):
+            st.session_state["ai_step"] = "bottom"
+    if st.session_state.get("ai_step") == "bottom":
+        _ai_section(analysis)
