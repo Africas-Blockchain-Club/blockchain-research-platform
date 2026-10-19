@@ -27,3 +27,9 @@ def test_only_stake_chains_are_priced(symbol, kind):
 
 def test_a_chain_without_a_known_model_asks_the_user():
     assert ac.model_for("NEAR") is None
+
+
+def test_user_text_cannot_forge_a_log_line():
+    from dashboards.ui.components import one_line
+
+    assert "\n" not in one_line("Celestia\nINFO fake entry") and "\r" not in one_line("a\rb")

@@ -22,6 +22,7 @@ from dashboards.ui.components import (
     disclaimer_notice,
     notice,
     offer_card,
+    one_line,
     page_header,
     risk_cards,
     stat_tiles,
@@ -43,7 +44,7 @@ def _fetch(token):
         try:
             analysis = fetch_and_analyse(token, log_fn=status.write)
         except Exception as e:
-            log.warning("Fetch failed for %r: %s", token, e)
+            log.warning("Fetch failed for %r: %s", one_line(token), one_line(e))
             status.update(label=f"Could not fetch data for {token}", state="error", expanded=True)
             st.error(f"{e}")
             return

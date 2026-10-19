@@ -14,7 +14,7 @@ from urllib.parse import urlsplit
 import streamlit as st
 
 from config import SETTINGS
-from dashboards.ui.components import choose_chain, disclaimer_notice, notice, page_header
+from dashboards.ui.components import choose_chain, disclaimer_notice, notice, one_line, page_header
 from data_analytics import attack_cost as ac
 from data_analytics.chains import profile
 from data_analytics.formatting import count, usd_zar
@@ -223,7 +223,7 @@ def render():
     with st.spinner("Reading live market data..."):
         market = _market(token)
     if "error" in market:
-        log.warning("Attack cost lookup failed for %r: %s", token, market["error"])
+        log.warning("Attack cost lookup failed for %r: %s", one_line(token), one_line(market["error"]))
         if "not found" in market["error"]:
             st.error(f'No blockchain called "{token}" was found. Check the spelling of its full name, for '
                      "example Celestia, or use its coin's ticker, for example TIA.")
