@@ -3,7 +3,7 @@
 {% block content %}
 <section class="split">
   <div class="prose">
-    <span class="kicker">{{ 'AI write-up by ' ~ meta.model if meta.mode == 'ai' else 'Data-only report, no AI' }}</span>
+    <span class="kicker">{{ 'Written by AI (artificial intelligence): ' ~ meta.model if meta.mode == 'ai' else 'Data-only report, no AI (artificial intelligence)' }}</span>
     <h1>{{ profile.chain ~ ' (' ~ meta.token ~ ')' if profile else meta.name ~ ' (' ~ meta.token ~ ')' }}</h1>
     <p class="muted">Data from {{ meta.generated_at | when }}</p>
     {{ long_disclaimer }}

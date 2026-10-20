@@ -95,7 +95,8 @@ def offer_card(kicker, title, price, intro, items, note=""):
 
 
 def footer():
-    ai_state = "AI write-ups on" if SETTINGS.ai_enabled else "AI write-ups off"
+    ai_state = ("write-ups by AI (artificial intelligence) on" if SETTINGS.ai_enabled
+                else "write-ups by AI (artificial intelligence) off")
     if not SETTINGS.payments_enabled:
         pay_state = "payments off"
     else:
@@ -108,7 +109,7 @@ def footer():
         f"<p><strong>{escape(SETTINGS.app_name)}</strong> by {escape(SETTINGS.brand_name)}. "
         f"{escape(SHORT_DISCLAIMER)}</p>"
         "<p>Not an authorised financial services provider. Crypto assets are high risk. "
-        "For advice on your own situation, speak to a provider authorised by the FSCA.</p>"
+        "For advice on your own situation, speak to a provider authorised by the Financial Sector Conduct Authority (FSCA).</p>"
         f'<p>Build {escape(BUILD)} · {ai_state} · {pay_state} · '
         f'<a href="{site}/blockchains/" target="_self">Blockchains</a> · '
         f'<a href="{site}/reports/" target="_self">Reports</a> · '

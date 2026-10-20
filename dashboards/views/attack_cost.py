@@ -67,6 +67,16 @@ def _model_card(model):
         f'<div class="brp-notice"><span class="brp-kicker">How {escape(model.label)} reaches agreement</span>'
         f"<p>{escape(model.summary)}</p>{note}<p>{_source_link(model.source, 'Where these figures come from')}</p></div>"
     )
+    if model.explainer:
+        _explainer_card(model.explainer)
+
+
+def _explainer_card(explainer):
+    """A term taught in full before the figures that depend on it."""
+    paragraphs = "".join(f"<p><strong>{escape(lead)}</strong> {escape(text)}</p>" for lead, text in explainer.paragraphs)
+    sources = " · ".join(_source_link(url, label) for label, url in explainer.sources)
+    st.html(f'<article class="brp-card"><h3>{escape(explainer.title)}</h3>{paragraphs}'
+            f'<span class="brp-meta">Sources: {sources}</span></article>')
 
 
 def _choose_model(symbol, detected):
@@ -97,8 +107,9 @@ def _explain_work(name):
         "> **Why the size of the chain matters most here:** an attacker does not have to own the mining "
         "power, only rent it. On the largest proof-of-work chains there is not enough rentable power "
         "in the world to do it. On a smaller one there can be. In August 2020 an attacker rented mining "
-        "power for Ethereum Classic and reversed about 807,000 ETC (about 5.6 million US Dollars at the "
-        "time), according to Bitquery's investigation, and Ethereum Classic was attacked again within a "
+        "power for Ethereum Classic and reversed payments worth about 807,000 of its coins (ETC), about 5.6 "
+        "million US Dollars at the "
+        "time, according to Bitquery's investigation, and Ethereum Classic was attacked again within a "
         "week."
     )
     st.html(f"<p>{_source_link(ac.WORK.source, 'Bitquery: the Ethereum Classic attack')}</p>")
