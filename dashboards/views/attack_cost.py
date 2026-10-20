@@ -18,7 +18,7 @@ from dashboards.ui.components import choose_chain, disclaimer_notice, notice, on
 from data_analytics import attack_cost as ac
 from data_analytics.chains import profile
 from data_analytics.formatting import count, usd_zar
-from data_engineering.fetchers import fetch_coingecko_data, fetch_usd_zar
+from data_engineering.fetchers import fetch_asset_platforms, fetch_coingecko_data, fetch_usd_zar
 from data_engineering.staking import fetch_staking
 from tools.report_generator import is_valid_query, normalise_token
 
@@ -32,6 +32,11 @@ CHOOSABLE = ("bft", "longest", "ethereum", "avalanche", "work", "trust")
 def _market(query):
     token = normalise_token(query)
     return fetch_coingecko_data(token, coin_id=(profile(token) or {}).get("coingecko_id"))
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def _platforms():
+    return fetch_asset_platforms()
 
 
 @st.cache_data(ttl=300, show_spinner=False)
@@ -64,16 +69,21 @@ def _model_card(model):
     )
 
 
-def _choose_model(symbol):
+def _choose_model(symbol, detected):
     known = ac.model_for(symbol)
     if known:
         return known
     labels = [ac.MODELS[k].label for k in CHOOSABLE]
+    guess = detected["model"]
     picked = st.selectbox(
-        "How does this blockchain reach agreement?", labels, index=None, placeholder="Choose its consensus design",
+        "How does this blockchain reach agreement?", labels,
+        index=CHOOSABLE.index(guess) if guess in CHOOSABLE else None, placeholder="Choose its consensus design",
         help="Read it in the blockchain's own documentation, usually under 'consensus'. The share of stake "
-             "an attacker needs depends on it, so the page does not guess.",
+             "an attacker needs depends on it.",
     )
+    if detected["reason"]:
+        suffix = " Change it if the blockchain's documentation says otherwise." if guess else ""
+        st.caption(detected["reason"] + suffix)
     return ac.MODELS[CHOOSABLE[labels.index(picked)]] if picked else None
 
 
@@ -233,7 +243,23 @@ def render():
     symbol, name = market["symbol"], market.get("name") or market["symbol"]
     st.subheader(f"{name} ({symbol})")
 
-    model = _choose_model(symbol)
+    needs_platforms = market.get("asset_platform_id") and symbol not in ac.CHAIN_MODELS
+    detected = ac.detect(market, _platforms() if needs_platforms else {})
+    if detected["host"]:
+        # A token: the chain it lives on is the one an attacker would have to beat
+        notice("Where an attack would happen",
+               detected["reason"] + f" Attacking that chain is not the only risk to {name}: a token can also "
+               "be hit through its own smart contract, or by whoever controls it (for example, the power to "
+               "create more tokens), which this page does not measure.")
+        host_market = _market(detected["host"])
+        if "error" in host_market:
+            st.error(f"Live market data for {detected['host']} is unavailable just now. Try again in a minute.")
+            return
+        market = host_market
+        symbol, name = market["symbol"], market.get("name") or market["symbol"]
+        st.subheader(f"What it takes to attack {name} ({symbol})")
+
+    model = _choose_model(symbol, detected)
     if not model:
         notice("Next step", f"Choose how {name} reaches agreement to see what an attack on it would take.")
         _smaller_chains()

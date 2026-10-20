@@ -136,3 +136,18 @@ def test_a_full_name_finds_its_coin_and_an_impostor_loses_on_rank():
     assert _best_search_match(coins, "CELESTIA")["symbol"] == "TIA"
     assert _best_search_match(coins, "tia")["id"] == "celestia"
     assert _best_search_match(coins, "Celest") is None
+
+
+def test_a_network_read_that_drops_once_is_retried(monkeypatch):
+    from data_engineering import networks
+
+    calls = []
+
+    def flaky(symbol):
+        calls.append(symbol)
+        return {"chain": "Hyperliquid", "metrics": [], "error": "dropped"} if len(calls) == 1 else {"chain": "Hyperliquid", "metrics": []}
+
+    monkeypatch.setattr(networks, "RETRY_SECONDS", 0)
+    monkeypatch.setattr(networks, "_read_network", flaky)
+    assert "error" not in networks.fetch_network("HYPE")
+    assert len(calls) == 2

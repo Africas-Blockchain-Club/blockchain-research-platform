@@ -9,11 +9,14 @@ Every endpoint was checked live on 18 October 2026. Override any of them
 with NETWORK_RPC_<SYMBOL>, for example NETWORK_RPC_ETH=https://...
 """
 import os
+import time
 
 import requests
 
 TIMEOUT = 12
 BLOCK_SAMPLE = 100  # blocks used to measure the average block time on EVM chains
+# One retry: Hyperliquid's public RPC dropped the first request after a cold start on staging
+RETRY_SECONDS = 2
 
 EVM = {
     "ETH": ("Ethereum", "https://ethereum-rpc.publicnode.com", 1),
@@ -150,7 +153,16 @@ def xrpl_network():
 
 def fetch_network(symbol):
     """Live network data for a featured chain's native asset symbol, or None
-    for a chain without a network adapter yet."""
+    for a chain without a network adapter yet. A failed read is tried once
+    more before it counts as a failed source."""
+    result = _read_network(symbol)
+    if result and result.get("error"):
+        time.sleep(RETRY_SECONDS)
+        result = _read_network(symbol)
+    return result
+
+
+def _read_network(symbol):
     symbol = (symbol or "").upper()
     if symbol == "BTC":
         return bitcoin_network()
