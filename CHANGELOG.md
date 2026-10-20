@@ -2,6 +2,14 @@
 
 All notable changes, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions are build numbers (shown in the footer of every page).
 
+## 2026.10.20-1
+
+### Added
+- The attack cost page works out how a blockchain reaches agreement from CoinGecko's data instead of asking. A token that lives on another chain (AI Rig Complex on Solana, anything on Base or Arbitrum) is priced as an attack on that chain, with a note that the token has risks of its own; a mining algorithm means proof of work; a Cosmos ecosystem tag means CometBFT. "Proof of stake" alone does not say which kind, so the page still asks, and every detected answer can be changed.
+
+### Fixed
+- A network read that fails is tried once more before it counts as a failed source. Hyperliquid's public RPC dropped the first request after a cold start on staging twice on 19 October, failing the end-to-end check although production was healthy.
+
 ## 2026.10.19-6
 
 ### Changed

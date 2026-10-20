@@ -137,6 +137,57 @@ STAKE_LOOKUP = {
 }
 
 
+# Platforms (CoinGecko ids) whose tokens are secured by a chain this page knows
+ROLLUPS = {"base": "Base", "arbitrum-one": "Arbitrum One", "optimistic-ethereum": "OP Mainnet",
+           "linea": "Linea", "zksync": "zkSync"}
+PLATFORM_CHAINS = {"solana": "SOL", "ethereum": "ETH", "binance-smart-chain": "BNB", "avalanche": "AVAX",
+                   "hyperevm": "HYPE", "hyperliquid": "HYPE", **{key: "ETH" for key in ROLLUPS}}
+
+
+def detect(coin, platforms=None):
+    """Work out how a coin's chain reaches agreement from CoinGecko's data.
+
+    Returns {"model": key or None, "host": symbol or None, "reason": str}.
+    A token that lives on another chain has no consensus of its own, so its
+    host chain is the one an attacker would have to beat. Otherwise the
+    mining algorithm and CoinGecko's category tags are the clues; "proof of
+    stake" alone does not say which kind, so the user is asked."""
+    symbol = (coin.get("symbol") or "").upper()
+    name = coin.get("name") or symbol
+    if symbol in CHAIN_MODELS:
+        return {"model": CHAIN_MODELS[symbol], "host": None, "reason": ""}
+    platform = coin.get("asset_platform_id")
+    platform_info = (platforms or {}).get(platform) or {}
+    if platform and platform != coin.get("id") and platform_info.get("native_coin_id") != coin.get("id"):
+        host = PLATFORM_CHAINS.get(platform)
+        platform_name = platform_info.get("name") or platform
+        if not host:
+            return {"model": None, "host": None,
+                    "reason": f"{name} is a token on {platform_name}, a chain this page has no model for. "
+                              f"Choose how {platform_name} reaches agreement."}
+        reason = (f"{name} is a token on {platform_name}. It has no consensus of its own: "
+                  f"{platform_name}'s validators order its transfers, so an attacker would have to beat "
+                  f"{platform_name}.")
+        if platform in ROLLUPS:
+            reason += (f" {platform_name} is a rollup: it posts its transactions to Ethereum, so its "
+                       "history rests on Ethereum's security, while one operator (the sequencer) "
+                       "decides the order of transactions.")
+        return {"model": CHAIN_MODELS[host], "host": host, "reason": reason}
+    tags = coin.get("consensus_tags") or []
+    if coin.get("hashing_algorithm") or "Proof of Work (PoW)" in tags:
+        algorithm = coin.get("hashing_algorithm")
+        clue = f"its mining algorithm ({algorithm})" if algorithm else "its proof-of-work tag"
+        return {"model": "work", "host": None, "reason": f"Detected from {clue} on CoinGecko."}
+    if "Cosmos Ecosystem" in tags:
+        return {"model": "bft", "host": None,
+                "reason": "Detected from CoinGecko's Cosmos ecosystem tag: Cosmos chains use CometBFT."}
+    if "Proof of Stake (PoS)" in tags:
+        return {"model": None, "host": None,
+                "reason": f"CoinGecko lists {name} as proof of stake, but not which kind. Choose it from "
+                          "the blockchain's documentation."}
+    return {"model": None, "host": None, "reason": ""}
+
+
 def model_for(symbol):
     """The known model for a chain's symbol, or None when the user must choose."""
     key = CHAIN_MODELS.get((symbol or "").upper())

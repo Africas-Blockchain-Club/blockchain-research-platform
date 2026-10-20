@@ -26,6 +26,27 @@ def _coingecko_get(url, headers, timeout=12, attempts=3):
     return resp
 
 
+# CoinGecko categories that say something about consensus
+CONSENSUS_TAGS = ("Proof of Work (PoW)", "Proof of Stake (PoS)", "Cosmos Ecosystem")
+
+
+def fetch_asset_platforms():
+    """CoinGecko's platforms (the chains tokens live on): {id: {"name", "native_coin_id"}},
+    or {} when CoinGecko cannot be asked."""
+    try:
+        headers = {}
+        api_key = os.getenv("COINGECKO_API_KEY", "")
+        if api_key:
+            headers["x-cg-demo-api-key"] = api_key
+        resp = _coingecko_get("https://api.coingecko.com/api/v3/asset_platforms", headers)
+        if resp.status_code != 200:
+            return {}
+        return {p["id"]: {"name": p.get("name") or p["id"], "native_coin_id": p.get("native_coin_id")}
+                for p in resp.json() if p.get("id")}
+    except Exception:
+        return {}
+
+
 def _best_search_match(coins, query):
     """The coin whose full name, CoinGecko id or ticker is exactly what was
     typed, so "Celestia" and "TIA" both find Celestia. Several matches go to
@@ -96,6 +117,10 @@ def fetch_coingecko_data(token, coin_id=None):
             "symbol": d.get("symbol", "").upper(),
             "description": (d.get("description", {}).get("en") or "")[:600],
             "categories": d.get("categories", [])[:5],
+            # Clues to how the chain reaches agreement, for the attack cost page
+            "asset_platform_id": d.get("asset_platform_id"),
+            "hashing_algorithm": d.get("hashing_algorithm"),
+            "consensus_tags": [c for c in d.get("categories") or [] if c in CONSENSUS_TAGS],
             "price_usd": market.get("current_price", {}).get("usd"),
             "market_cap_usd": market.get("market_cap", {}).get("usd"),
             "fully_diluted_valuation_usd": market.get("fully_diluted_valuation", {}).get("usd"),
