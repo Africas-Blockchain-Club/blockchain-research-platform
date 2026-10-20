@@ -43,6 +43,7 @@ HARD RULES (a report that breaks any of these is rejected automatically and neve
 WRITING RULES
 - British English (recognise, organise, colour). No contractions. No em dashes or en dashes; use a hyphen or a semicolon.
 - Plain, simple English. Define every technical term in brackets the first time you use it.
+- Spell out every acronym in full the first time it appears, with the short form in brackets and a plain explanation of what it means, before using the short form alone. For example: "Byzantine Fault Tolerance (BFT), a network's ability to keep agreeing on one history even when some of its computers fail or lie". This includes coin and stablecoin names, such as USDT (Tether, a stablecoin built to stay worth one US Dollar).
 - No LaTeX. Write maths in plain text, for example: 100 / 50 = 2.
 - Currency: US Dollars. Give the South African Rand equivalent in brackets, using the exchange rate given in the data, only for the price, the market cap and the 24-hour volume the first time each appears; elsewhere use US Dollars alone.
 - Round numbers so they are easy to read: amounts of 1 million or more in millions or billions with one decimal ($92.8 million, $1.2 billion); smaller amounts to the nearest whole dollar ($454,118); prices below 1 US Dollar to two significant figures ($0.61) and other prices to two decimals; percentages to whole numbers, or one decimal below 10% (97%, 5.2%). Rounding a number from the data is allowed; inventing one is not.

@@ -7,6 +7,8 @@ All notable changes, newest first. The format follows [Keep a Changelog](https:/
 ### Added
 - The attack cost page works out how a blockchain reaches agreement from CoinGecko's data instead of asking. A token that lives on another chain (AI Rig Complex on Solana, anything on Base or Arbitrum) is priced as an attack on that chain, with a note that the token has risks of its own; a mining algorithm means proof of work; a Cosmos ecosystem tag means CometBFT. "Proof of stake" alone does not say which kind, so the page still asks, and every detected answer can be changed.
 
+- Every acronym is spelled out and explained before it is used. The attack cost page teaches each consensus design in full before its figures: Byzantine Fault Tolerance (what it stands for, the Byzantine Generals Problem, the fewer-than-a-third threshold and 3f + 1), proof of work and longest-chain proof of stake, each with primary sources (Lamport, Shostak and Pease 1982; the Bitcoin whitepaper; the CometBFT specification; Cardano's Ouroboros documentation). The research page, footers, reports, chain profiles (EVM, SHA-256, EIP-1559, layer 1) and the payment step follow the same rule, and AI write-ups are told to spell out every acronym with a plain explanation.
+
 ### Fixed
 - A network read that fails is tried once more before it counts as a failed source. Hyperliquid's public RPC dropped the first request after a cold start on staging twice on 19 October, failing the end-to-end check although production was healthy.
 

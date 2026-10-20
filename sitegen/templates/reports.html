@@ -4,7 +4,7 @@
 {% block content %}
 <section>
   <div class="sec-head"><span class="kicker">Reports</span><h1>Research reports</h1>
-    <p class="muted">Every report saved on this platform, newest first.</p></div>
+    <p class="muted">Every report saved on this platform, newest first. A data-only report is built by code; an AI write-up is written by artificial intelligence (AI) from the same data.</p></div>
   {% if reports %}<div class="chain-grid">{% for meta in reports %}{{ report_card(meta) }}{% endfor %}</div>
   {% else %}<p>No reports yet. <a href="{{ app_url }}/">Research a blockchain</a> to create the first one.</p>{% endif %}
 </section>

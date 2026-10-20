@@ -300,7 +300,7 @@ def fetch_usd_zar():
         resp.raise_for_status()
         rate = resp.json().get("usd-coin", {}).get("zar")
         if rate:
-            return float(rate), "CoinGecko (USDC priced in ZAR)"
+            return float(rate), "CoinGecko (USD Coin, a stablecoin worth one US Dollar, priced in South African Rand)"
         return None, "CoinGecko returned no ZAR rate"
     except Exception as e:
         return None, f"Exchange rate fetch failed: {e}"

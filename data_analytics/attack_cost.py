@@ -22,6 +22,15 @@ class Attack:
 
 
 @dataclass(frozen=True)
+class Explainer:
+    """A term taught to the platform's standard: what it stands for, what it
+    means, the problem it solves and the threshold that matters, with sources."""
+    title: str
+    paragraphs: tuple  # (lead, text) pairs
+    sources: tuple  # (label, url) pairs
+
+
+@dataclass(frozen=True)
 class Model:
     key: str
     label: str
@@ -30,6 +39,75 @@ class Model:
     source: str
     attacks: tuple = field(default_factory=tuple)
     note: str = ""
+    explainer: Explainer = None
+
+
+BFT_EXPLAINER = Explainer(
+    "What Byzantine Fault Tolerance (BFT) means",
+    (
+        ("What it stands for.",
+         "BFT stands for Byzantine Fault Tolerance: the ability of a network to keep agreeing on one history "
+         "even when some of its computers (nodes) crash, go offline or lie on purpose."),
+        ("The problem it solves.",
+         "The name comes from the Byzantine Generals Problem, set out by Leslie Lamport, Robert Shostak and "
+         "Marshall Pease in 1982. Generals camped around a city must all agree to attack or to retreat, but "
+         "they can only talk through messengers, and some of the generals are traitors who send different "
+         "orders to different generals. In a blockchain the generals are the validators and the messengers "
+         "are network messages, so an honest validator cannot simply trust what it is told."),
+        ("The threshold.",
+         "Agreement can be guaranteed only while fewer than a third of the participants are faulty: coping "
+         "with f faulty participants takes at least 3f + 1 in total. Proof-of-stake chains count stake "
+         "instead of computers, so a block needs the signatures of more than two thirds of all stake. That "
+         "is why a third of stake can halt such a chain, and two thirds can make it accept anything."),
+        ("Names you will meet.",
+         "CometBFT (formerly Tendermint) runs the chains built with the Cosmos software kit, Celestia among "
+         "them; once more than two thirds of stake has signed a block, it is final straight away. HotStuff "
+         "is a newer BFT design, and Hyperliquid's HyperBFT is based on it. Solana's Tower BFT is Solana's "
+         "own variant."),
+    ),
+    (
+        ("Lamport, Shostak and Pease (1982), The Byzantine Generals Problem",
+         "https://lamport.azurewebsites.net/pubs/byz.pdf"),
+        ("CometBFT consensus specification",
+         "https://github.com/cometbft/cometbft/blob/main/spec/consensus/consensus.md"),
+    ),
+)
+
+WORK_EXPLAINER = Explainer(
+    "What proof of work (PoW) means",
+    (
+        ("What it stands for.",
+         "Proof of work (PoW) means a computer proves it has done a large amount of calculation before it may "
+         "add a block. Miners run a hash function (a calculation that turns any data into a short, fixed-length "
+         "fingerprint) over and over until the result falls below a target: finding it takes vast numbers of "
+         "attempts, while checking it takes anyone a moment."),
+        ("The problem it solves.",
+         "With no one in charge, the network needs a rule for which history is the real one. Proof of work "
+         "makes it the chain with the most accumulated work, so rewriting history means redoing that work "
+         "faster than everyone else combined."),
+        ("The threshold.",
+         "An attacker with more than half of all mining power will, given time, overtake the honest chain; "
+         "this is called a 51% attack. With less than half, the chance of catching up falls quickly with "
+         "every block added after a payment, which is why exchanges wait for several confirmations. Section 11 "
+         "of the Bitcoin whitepaper works through this maths."),
+    ),
+    (("Satoshi Nakamoto (2008), Bitcoin: A Peer-to-Peer Electronic Cash System", "https://bitcoin.org/bitcoin.pdf"),),
+)
+
+LONGEST_EXPLAINER = Explainer(
+    "What longest-chain proof of stake (PoS) means",
+    (
+        ("What it stands for.",
+         "Proof of stake (PoS) means the right to add a block comes from coins locked up as a deposit (stake), "
+         "not from computing power. In a longest-chain design such as Ouroboros, the protocol family behind "
+         "Cardano, stake decides who may add each block, and every node follows the longest valid chain."),
+        ("The threshold.",
+         "Its security rests on more than half of the stake being honest, so an attacker holding a majority "
+         "of stake could build the longest chain and decide which transactions it contains."),
+    ),
+    (("Cardano: the basics of Ouroboros Praos",
+      "https://ouroboros-consensus.cardano.intersectmbo.org/docs/references/miscellaneous/cardano_praos_basics"),),
+)
 
 
 ETHEREUM = Model(
@@ -48,7 +126,7 @@ ETHEREUM = Model(
 )
 
 BFT = Model(
-    "bft", "BFT proof of stake (CometBFT, HotStuff and similar)", "stake",
+    "bft", "Byzantine Fault Tolerance (BFT) proof of stake: CometBFT, HotStuff and similar", "stake",
     "Validators vote in rounds, and a block is committed when more than two thirds of stake signs it. "
     "Most newer proof-of-stake chains work this way.",
     "https://github.com/cometbft/cometbft/blob/main/spec/consensus/consensus.md",
@@ -58,23 +136,27 @@ BFT = Model(
         Attack(2 / 3, "Commit its own blocks",
                "Sign any block the attacker likes, including ones that rewrite recent history."),
     ),
+    explainer=BFT_EXPLAINER,
 )
 
 SOLANA = Model(
-    "solana", "Solana (Tower BFT)", "stake",
-    "Validators vote on slots, and a block is final once two thirds of stake has voted for it.",
+    "solana", "Solana (Tower BFT, a Byzantine Fault Tolerance design)", "stake",
+    "Validators vote on slots (short, fixed time windows, each a chance to add one block), and a block is "
+    "final once two thirds of stake has voted for it.",
     "https://solana.com/news/tower-bft--solana-s-high-performance-implementation-of-pbft",
     BFT.attacks,
     note="Solana keeps producing blocks without that two thirds, so a third of stake stalls finality "
          "rather than block production.",
+    explainer=BFT_EXPLAINER,
 )
 
 HYPERLIQUID = Model(
-    "hyperliquid", "Hyperliquid (HyperBFT)", "stake",
+    "hyperliquid", "Hyperliquid (HyperBFT, a Byzantine Fault Tolerance design)", "stake",
     "A HotStuff-style design: a round is committed when validators holding more than two thirds of "
     "stake sign it.",
     "https://hyperliquid.gitbook.io/hyperliquid-docs/hypercore/staking",
     BFT.attacks,
+    explainer=BFT_EXPLAINER,
 )
 
 BNB = Model(
@@ -85,6 +167,7 @@ BNB = Model(
     BFT.attacks,
     note="The finality vote counts validators, not stake, and stake decides who is elected, so pricing "
          "it by stake is an approximation.",
+    explainer=BFT_EXPLAINER,
 )
 
 AVALANCHE = Model(
@@ -105,13 +188,15 @@ LONGEST = Model(
         Attack(1 / 2, "Control the chain",
                "Add most of the blocks, censor transactions and build a longer chain that reverses recent payments."),
     ),
+    explainer=LONGEST_EXPLAINER,
 )
 
 WORK = Model(
-    "work", "Proof of work", "work",
+    "work", "Proof of work (PoW)", "work",
     "Miners spend computing power to add blocks, and the chain with the most accumulated work wins. "
     "An attacker needs more than half of the mining power, not coins.",
     "https://bitquery.io/blog/attacker-stole-807k-etc-in-ethereum-classic-51-attack",
+    explainer=WORK_EXPLAINER,
 )
 
 TRUST = Model(

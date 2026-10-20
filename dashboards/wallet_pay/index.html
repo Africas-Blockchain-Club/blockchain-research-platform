@@ -99,7 +99,7 @@ async function rpc(url, method, params) {
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: method, params: params }),
   });
   const body = await resp.json();
-  if (body.error) throw new Error(body.error.message || "RPC error");
+  if (body.error) throw new Error(body.error.message || "the network's public endpoint returned an error");
   return body.result;
 }
 

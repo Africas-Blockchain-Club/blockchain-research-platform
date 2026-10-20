@@ -97,8 +97,8 @@ def _thin_liquidity(summary, info):
         "thin_liquidity",
         "Thin on-chain liquidity",
         status,
-        "N/A" if ratio is None else f"{ratio * 100:,.2f}% of market cap in the main DEX pool",
-        "Less than 1% of market cap in the main DEX pool",
+        "N/A" if ratio is None else f"{ratio * 100:,.2f}% of market cap in the main decentralised exchange (DEX) pool",
+        "Less than 1% of market cap in the main decentralised exchange (DEX) pool",
         "Depth: money in the main decentralised exchange (DEX) pool, divided by market cap. Used only "
         "when no large exchange reports order-book depth for this token.",
         "A thin pool means a single large sale moves the price sharply (slippage).",

@@ -321,7 +321,7 @@ def _price_label():
     if not SETTINGS.payments_enabled:
         return "Free here"
     price = payment_verifier.REPORT_PRICE_USDC
-    return f"{price} test USDC" if payment_verifier.IS_TESTNET else f"${price} in USDC or USDT"
+    return f"{price} test USDC" if payment_verifier.IS_TESTNET else f"${price}"
 
 
 def _offers(token):
@@ -349,7 +349,8 @@ def _offers(token):
             "A complete research report that turns the same public data into a lesson you can read in "
             "one sitting. It explains; it never tells you what to buy, sell or hold.",
             AI_CONTENTS,
-            note=unavailable or (f"Pay from any wallet on {networks}. Checked for advice language before "
+            note=unavailable or (f"Pay in USDC or USDT, stablecoins (tokens built to stay worth one US Dollar) "
+                                 f"issued by Circle and Tether, from any wallet on {networks}. Checked for advice language before "
                                  "it is saved. If it fails after you pay, you can retry free within the hour."),
         )
         want_ai = st.button("Get the AI write-up" if token else "Choose a blockchain first",
@@ -379,7 +380,8 @@ def render():
     page_header(
         "Live research",
         "Research a blockchain",
-        "Start with the free live data and risk checks. When you want the full explanation, get the AI write-up.",
+        "Start with the free live data and risk checks. When you want the full explanation, get the write-up "
+        "written by AI (artificial intelligence).",
     )
     disclaimer_notice()
 
