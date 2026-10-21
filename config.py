@@ -28,7 +28,7 @@ IMAGES_DIR = DATA_DIR / "data" / "images"
 
 # Bump on every release. The footer shows it so a screenshot always says
 # which build it came from.
-BUILD = "2026.10.20-1"
+BUILD = "2026.10.21-1"
 
 # Current Claude models, cheapest last. Haiku is left out on purpose: a
 # research write-up needs the depth of Sonnet or Opus.
@@ -78,6 +78,9 @@ class Settings:
 
     # Chart screenshots need Playwright and a browser; switch off on small hosts.
     screenshots_enabled: bool = field(default_factory=lambda: _flag("SCREENSHOTS_ENABLED", True))
+
+    # Seconds between live price updates on the site's pages; 0 switches them off.
+    live_price_seconds: int = field(default_factory=lambda: int(os.getenv("LIVE_PRICE_SECONDS") or "60"))
 
     # Live staked totals on the attack cost page; off means the user types them in.
     staking_data_enabled: bool = field(default_factory=lambda: _flag("STAKING_DATA_ENABLED", True))

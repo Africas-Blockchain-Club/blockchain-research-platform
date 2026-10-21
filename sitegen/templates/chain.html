@@ -36,8 +36,9 @@
   <aside class="card glass">
     <span class="kicker">{{ card.symbol }}</span>
     {% if card.price and card.price.usd %}
-    <span class="price">${{ "{:,.2f}".format(card.price.usd) }}</span>
-    <span class="muted">R{{ "{:,.2f}".format(card.price.zar) }} · {{ "{:+.2f}".format(card.price.usd_24h_change or 0) }}% in 24 hours</span>
+    <span class="price" data-live-price="{{ card.symbol }}">${{ "{:,.2f}".format(card.price.usd) }}</span>
+    <span class="muted" data-live-change="{{ card.symbol }}">R{{ "{:,.2f}".format(card.price.zar) }} · {{ "{:+.2f}".format(card.price.usd_24h_change or 0) }}% in 24 hours</span>
+    <span class="small muted" data-live-note>Price from CoinGecko, updated every minute while this page is open.</span>
     {% endif %}
     {% if card.report %}
     <a class="btn btn-primary" href="/reports/{{ card.symbol }}.html">Read the full report</a>

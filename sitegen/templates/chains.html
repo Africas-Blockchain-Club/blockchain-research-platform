@@ -9,5 +9,6 @@
     <p class="muted">Profiles checked against official sources on {{ checked }}. Live data refreshes every 15 minutes. Any other blockchain can be researched live in the research app.</p>
   </div>
   <div class="chain-grid">{% for card in cards %}{{ chain_card(card) }}{% endfor %}</div>
+  <p class="small muted" data-live-note>Prices from CoinGecko, updated every minute while this page is open.</p>
 </section>
 {% endblock %}
