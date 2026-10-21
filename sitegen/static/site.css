@@ -68,3 +68,8 @@ footer.site a { color:var(--blue); }
 .split aside a:not(.btn) { color:var(--blue); text-decoration:none; font-weight:600; min-height:32px; display:inline-flex; align-items:center; }
 .split aside a:not(.btn):hover { text-decoration:underline; }
 .aside-rule { display:block; border-top:1px solid var(--line); margin:0.25rem 0; }
+
+/* The inside of a fold-out. Not a .card: the shell fades cards in when they first
+   scroll into view, and a card inside a closed fold-out is never seen, so it stayed invisible */
+details.drop > .drop-body { border-top:1px solid var(--line); padding:1rem 1.25rem; display:grid; gap:0.75rem; }
+details.drop > .drop-body a { color:var(--blue); font-weight:600; }

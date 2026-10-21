@@ -75,3 +75,16 @@ def test_payments_report_runs_on_an_empty_and_a_used_database(temp_store, data_s
     )
     payments_report.main()
     assert "NO REPORT" in capsys.readouterr().out
+
+
+def test_searches_are_counted_and_ranked(tmp_path, monkeypatch):
+    import db
+
+    monkeypatch.setattr(db, "_engine", None)
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'test.db'}")
+    for symbol, name in (("TIA", "Celestia"), ("ADA", "Cardano"), ("TIA", "Celestia")):
+        db.record_search(symbol, "research", name)
+    rows = db.search_summary(days=30)
+    assert [(r["token"], r["name"], r["searches"]) for r in rows] == [("TIA", "Celestia", 2), ("ADA", "Cardano", 1)]
+    assert db.count_ai_write_ups() == 0
+    monkeypatch.setattr(db, "_engine", None)

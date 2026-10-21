@@ -14,7 +14,7 @@ from urllib.parse import urlsplit
 import streamlit as st
 
 from config import SETTINGS
-from dashboards.ui.components import choose_chain, disclaimer_notice, notice, one_line, page_header
+from dashboards.ui.components import choose_chain, count_search, disclaimer_notice, notice, one_line, page_header
 from data_analytics import attack_cost as ac
 from data_analytics.chains import profile
 from data_analytics.formatting import count, usd_zar
@@ -252,6 +252,7 @@ def render():
             st.error(f"Live market data is unavailable just now ({market['error']}). Try again in a minute.")
         return
     symbol, name = market["symbol"], market.get("name") or market["symbol"]
+    count_search(symbol, "attack-cost", name)
     st.subheader(f"{name} ({symbol})")
 
     needs_platforms = market.get("asset_platform_id") and symbol not in ac.CHAIN_MODELS

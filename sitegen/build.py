@@ -28,6 +28,7 @@ import markdown
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 
+import db
 from config import BUILD, DATA_DIR, NETWORK_DIR, ROOT_DIR, SETTINGS, SITE_DIR
 from data_analytics.chains import CHECKED, FEATURED, PROFILES
 from data_analytics.risk_profile import NOT_COVERED, STATUS_LABELS, compute_risk_checks, summarise_checks
@@ -115,6 +116,27 @@ def _chain_cards(reports_by_token):
     return cards
 
 
+def _research_activity(by_token, shown):
+    """(rows, ai_count) for the Reports page. Each row is a coin researched in the
+    last 30 days, with its report when there is one; a hidden report nobody has
+    searched for recently is listed too, so every report page stays reachable.
+    The database being unreachable must never stop the site building."""
+    try:
+        rows = db.search_summary(days=30)
+        ai_count = db.count_ai_write_ups()
+    except Exception:
+        log.exception("Research activity unavailable; building the Reports page without it")
+        return [], None
+    listed = {row["token"] for row in rows}
+    shown_tokens = {m["token"] for m in shown}
+    rows += [{"token": token, "name": None, "searches": 0, "last": None} for token in sorted(by_token)
+             if token not in listed and token not in shown_tokens]
+    for row in rows:
+        row["report"] = by_token.get(row["token"])
+        row["last"] = row["last"].isoformat() if hasattr(row["last"], "isoformat") else row["last"]
+    return rows, ai_count
+
+
 def build_site(out_dir=None):
     """Render every page into out_dir (default SITE_DIR), swapping it in whole."""
     out_dir = Path(out_dir or SITE_DIR)
@@ -147,7 +169,12 @@ def build_site(out_dir=None):
     def write(path, template, **context):
         (staging / path).write_text(env.get_template(template).render(**context), encoding="utf-8")
 
-    write("index.html", "index.html", home=True, cards=cards, reports=reports[:6], page="home")
+    # The seven featured chains and every AI write-up are shown; a data-only report on
+    # any other coin is a snapshot that nothing refreshes, so it is listed only under
+    # "What people are researching", with its page still reachable from there
+    shown = [m for m in reports if m["token"] in FEATURED or m.get("mode") == "ai"]
+    research, ai_count = _research_activity(by_token, shown)
+    write("index.html", "index.html", home=True, cards=cards, reports=shown[:6], page="home")
     write("blockchains/index.html", "chains.html", cards=cards, page="blockchains", checked=CHECKED)
     for card in cards:
         write(f"blockchains/{card['profile']['slug']}.html", "chain.html", card=card, page="blockchains",
@@ -170,7 +197,8 @@ def build_site(out_dir=None):
               counts=summarise_checks(meta["risk_checks"]), has_pdf=bool(pdf),
               profile=PROFILES.get(token), long_disclaimer=safe_markdown(long_disclaimer()),
               not_covered=NOT_COVERED, ai_on_offer=meta["mode"] != "ai" and SETTINGS.ai_enabled)
-    write("reports/index.html", "reports.html", reports=reports, page="reports")
+    write("reports/index.html", "reports.html", reports=shown, research=research, ai_count=ai_count,
+          page="reports")
     # The method page lists the checks as a chain's report runs them: with exchange depth
     method_checks = compute_risk_checks({"market_depth": {"depth_down_2pct_usd": 0}})
     write("how-it-works.html", "method.html", page="method", checks=method_checks, not_covered=NOT_COVERED,
