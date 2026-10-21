@@ -2,6 +2,11 @@
 
 All notable changes, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions are build numbers (shown in the footer of every page).
 
+## 2026.10.21-1
+
+### Added
+- Live prices on the site. The pages are rebuilt every 15 minutes, too slow for a price, so a new background job (`scripts/refresh_prices.py`) asks CoinGecko for the seven featured prices in one request every minute and writes `/status/prices.json`; the home, blockchains and chain pages read it once a minute while they are open, pause while the tab is hidden, and say when the prices were last updated. One request a minute however many visitors there are. `LIVE_PRICE_SECONDS=0` switches it off.
+
 ## 2026.10.20-1
 
 ### Added

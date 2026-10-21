@@ -1,8 +1,9 @@
 #!/bin/sh
-# Container start. Three processes, each unprivileged:
+# Container start. Four processes, each unprivileged:
 #   Caddy      serves the static site and proxies /app (the only public port)
 #   Streamlit  the research app, on localhost only
 #   refresher  updates the featured blockchains' network data every 15 minutes
+#   prices     updates their prices every minute for pages that are open
 # If Caddy or Streamlit stops, the health check fails and Fly restarts the machine.
 set -eu
 DATA_DIR="${DATA_DIR:-/data}"
@@ -25,5 +26,6 @@ fi
 $AS_APP python -m sitegen.build || echo "Initial site build failed; the refresher will retry" >&2
 
 $AS_APP python scripts/refresh_networks.py --loop &
+$AS_APP python scripts/refresh_prices.py --loop &
 $AS_APP streamlit run dashboards/app.py &
 exec $AS_APP caddy run --config /app/Caddyfile --adapter caddyfile

@@ -151,3 +151,10 @@ def test_a_network_read_that_drops_once_is_retried(monkeypatch):
     monkeypatch.setattr(networks, "_read_network", flaky)
     assert "error" not in networks.fetch_network("HYPE")
     assert len(calls) == 2
+
+
+def test_the_live_price_file_skips_a_coin_coingecko_did_not_return():
+    from scripts.refresh_prices import price_file
+
+    data = price_file({"bitcoin": {"usd": 100_000, "zar": 1_800_000, "usd_24h_change": 1.5}, "ethereum": {}})
+    assert data["prices"] == {"BTC": {"usd": 100_000, "zar": 1_800_000, "usd_24h_change": 1.5}}
