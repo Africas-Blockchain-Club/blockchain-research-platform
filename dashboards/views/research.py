@@ -19,6 +19,7 @@ import payment_verifier
 from config import SETTINGS
 from dashboards.ui.components import (
     choose_chain,
+    count_search,
     disclaimer_notice,
     notice,
     offer_card,
@@ -51,6 +52,7 @@ def _fetch(token):
         status.update(label=f"Data for {_display_name(analysis)} is ready", state="complete", expanded=False)
     st.session_state["analysis"] = analysis
     st.session_state["analysis_id"] = str(uuid.uuid4())
+    count_search(analysis["token"], "research", (analysis["data_summary"].get("token_info") or {}).get("name"))
 
 
 def _display_name(analysis):

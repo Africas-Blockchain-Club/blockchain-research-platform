@@ -81,6 +81,19 @@ reports = Table(
 )
 Index("idx_reports_token_created", reports.c.token_symbol, reports.c.created_at.desc())
 
+# What people research, for the "What people are researching" list on the Reports
+# page. Only the coin and the time: nothing that identifies who searched.
+searches = Table(
+    "searches",
+    metadata,
+    Column("id", _PK, primary_key=True, autoincrement=True),
+    Column("token_symbol", String, nullable=False),
+    Column("name", String),  # the coin's full name, as CoinGecko gives it
+    Column("page", String, nullable=False),  # "research" or "attack-cost"
+    Column("created_at", TIMESTAMP(timezone=True), nullable=False, server_default=func.now()),
+)
+Index("idx_searches_created", searches.c.created_at)
+
 _engine = None
 
 
@@ -218,6 +231,36 @@ def list_recent_reports(limit=10):
     with get_engine().connect() as conn:
         rows = conn.execute(select(reports).order_by(reports.c.created_at.desc()).limit(limit)).mappings().all()
         return [dict(r) for r in rows]
+
+
+def record_search(token_symbol, page, name=None):
+    """Count one search for a coin. Stores the coin, its name and the time only."""
+    with get_engine().begin() as conn:
+        conn.execute(insert(searches).values(token_symbol=token_symbol.upper(), name=name, page=page))
+
+
+def search_summary(days=30):
+    """Coins researched in the last `days` days, most researched first:
+    [{"token", "name", "searches", "last"}]."""
+    import datetime
+
+    since = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
+    query = (
+        select(searches.c.token_symbol.label("token"), func.max(searches.c.name).label("name"),
+               func.count().label("searches"),
+               func.max(searches.c.created_at).label("last"))
+        .where(searches.c.created_at >= since)
+        .group_by(searches.c.token_symbol)
+        .order_by(func.count().desc(), searches.c.token_symbol)
+    )
+    with get_engine().connect() as conn:
+        return [dict(r) for r in conn.execute(query).mappings().all()]
+
+
+def count_ai_write_ups():
+    """Every AI write-up saved on this platform, paid or not."""
+    with get_engine().connect() as conn:
+        return conn.execute(select(func.count()).select_from(reports).where(reports.c.model != "none")).scalar_one()
 
 
 def report_exists_for_payment(payment_id):

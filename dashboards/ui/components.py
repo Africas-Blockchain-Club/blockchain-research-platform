@@ -9,6 +9,24 @@ from data_analytics.risk_profile import CLEAR, FLAGGED, NO_DATA, STATUS_LABELS
 from data_science.compliance import SHORT_DISCLAIMER
 
 
+def count_search(symbol, page, name=None):
+    """Count a search for the Reports page's "What people are researching" list:
+    once per coin per visit, since Streamlit reruns the page on every click.
+    Only the coin and the time are stored. A database fault never blocks the page."""
+    import logging
+
+    import db
+
+    seen = st.session_state.setdefault("counted_searches", set())
+    if (page, symbol) in seen:
+        return
+    seen.add((page, symbol))
+    try:
+        db.record_search(symbol, page, name)
+    except Exception:
+        logging.getLogger(__name__).exception("Could not count a search")
+
+
 def one_line(value):
     """Text that came from a user, made safe to log: a line break in it could
     otherwise forge a second log entry."""

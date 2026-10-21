@@ -7,5 +7,33 @@
     <p class="muted">Every report saved on this platform, newest first. A data-only report is built by code; an AI write-up is written by artificial intelligence (AI) from the same data.</p></div>
   {% if reports %}<div class="chain-grid">{% for meta in reports %}{{ report_card(meta) }}{% endfor %}</div>
   {% else %}<p>No reports yet. <a href="{{ app_url }}/">Research a blockchain</a> to create the first one.</p>{% endif %}
+  <p class="small muted">The seven featured blockchains are refreshed every day, and every AI write-up is kept. Data-only reports on other coins are snapshots that nothing refreshes, so they are listed below instead.</p>
+  <details class="drop">
+    <summary>
+      <span><span class="drop-title">What people are researching</span>
+        <span class="small muted">{% if research %}{{ research | length }} {{ 'coin' if research | length == 1 else 'coins' }} in the last 30 days{% else %}No searches yet{% endif %}{% if ai_count is not none %} · {{ ai_count }} AI {{ 'write-up' if ai_count == 1 else 'write-ups' }} made so far{% endif %}</span></span>
+      <span class="drop-count">Show</span>
+    </summary>
+    <div class="drop-body">
+    {% if research %}
+    <table class="table">
+      <thead><tr><th>Blockchain or coin</th><th>Times researched (30 days)</th><th>Last researched</th><th>Report</th></tr></thead>
+      <tbody>
+      {% for row in research %}
+      <tr>
+        <td data-label="Blockchain or coin"><strong>{{ (row.report.name if row.report else row.name) or row.token }} ({{ row.token }})</strong></td>
+        <td data-label="Times researched" class="num">{{ row.searches if row.searches else 'Not in the last 30 days' }}</td>
+        <td data-label="Last researched">{{ row.last | when if row.last else '-' }}</td>
+        <td data-label="Report">{% if row.report %}<a href="/reports/{{ row.token }}.html">{{ 'AI write-up' if row.report.mode == 'ai' else 'Data-only' }}, {{ row.report.generated_at | when }}</a>{% else %}None saved{% endif %}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="small muted">Counted each time someone fetches a coin's data on the research or attack cost page. Only the coin and the time are stored, never who searched.</p>
+    {% else %}
+    <p class="muted">No searches recorded yet.</p>
+    {% endif %}
+    </div>
+  </details>
 </section>
 {% endblock %}
