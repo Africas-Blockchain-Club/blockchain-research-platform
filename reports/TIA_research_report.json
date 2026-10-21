@@ -1,0 +1,105 @@
+{
+  "format": 3,
+  "token": "TIA",
+  "name": "Celestia",
+  "mode": "ai",
+  "model": "claude-opus-5-5",
+  "generated_at": "2026-10-19T20:30:24.522040+00:00",
+  "flagged": 2,
+  "clear": 6,
+  "no_data": 0,
+  "risk_checks": [
+    {
+      "key": "artificial_volume",
+      "name": "Unusually high trading volume",
+      "status": "clear",
+      "value": "15.5% of market cap traded in 24 hours",
+      "threshold": "More than 100% of market cap traded in 24 hours",
+      "measures": "Turnover: 24-hour trading volume divided by market capitalisation.",
+      "meaning": "When more than the whole market cap changes hands in a day, part of that volume is often wash trading (one party trading with itself to make a token look busy).",
+      "source": "CoinGecko, DexScreener"
+    },
+    {
+      "key": "thin_liquidity",
+      "name": "Thin market depth",
+      "status": "clear",
+      "value": "$2,261,491 of selling moves the price 2% across 20 large-exchange markets",
+      "threshold": "Less than $1,000,000 of selling moves the price 2%",
+      "measures": "Depth: how many US Dollars of selling it takes to push the price down 2% on each order book, added up across large, established exchanges. Smaller exchanges are not counted.",
+      "meaning": "Thin depth means a single large sale moves the price sharply (slippage). Deep books absorb large trades with little price change.",
+      "source": "CoinGecko exchange tickers"
+    },
+    {
+      "key": "dilution",
+      "name": "Large future supply (dilution)",
+      "status": "clear",
+      "value": "Fully diluted value is 1.20 times market cap",
+      "threshold": "Fully diluted value more than 3 times market cap",
+      "measures": "FDV (fully diluted valuation): the market cap if every token that will ever exist were already in circulation.",
+      "meaning": "A large gap means many tokens are still to be released. Each release adds supply, and existing holders own a smaller share of the total afterwards.",
+      "source": "CoinGecko"
+    },
+    {
+      "key": "low_float",
+      "name": "Most supply not yet circulating",
+      "status": "clear",
+      "value": "83.3% of supply circulating",
+      "threshold": "Less than 50% of supply circulating",
+      "measures": "Float: circulating supply divided by maximum (or total) supply.",
+      "meaning": "A low float means the price today is set by a small part of the supply. The rest is held by teams, investors or treasuries and can reach the market later.",
+      "source": "CoinGecko"
+    },
+    {
+      "key": "listing_coverage",
+      "name": "Not tracked by major data sites",
+      "status": "clear",
+      "value": "Listed on CoinGecko and CoinMarketCap",
+      "threshold": "Absent from both CoinGecko and CoinMarketCap",
+      "measures": "Coverage: whether independent market-data sites track the token.",
+      "meaning": "Untracked tokens have less independent price and supply data, and scams are more common among them. A listing is not an endorsement either.",
+      "source": "CoinGecko, CoinMarketCap"
+    },
+    {
+      "key": "drawdown",
+      "name": "Large fall from all-time high",
+      "status": "flagged",
+      "value": "-97.1% from all-time high of $21",
+      "threshold": "Price more than 70% below its all-time high",
+      "measures": "Drawdown: how far the price sits below its highest recorded price.",
+      "meaning": "A deep drawdown shows how volatile the token has been. It does not show whether the price will recover; many tokens never return to an earlier high.",
+      "source": "CoinGecko"
+    },
+    {
+      "key": "volatility",
+      "name": "Large price swing in 30 days",
+      "status": "flagged",
+      "value": "45.0% over 30 days",
+      "threshold": "Price moved more than 30% up or down in 30 days",
+      "measures": "Volatility: how much the price has moved over a recent period.",
+      "meaning": "Large swings in either direction mean the value of any holding can change quickly.",
+      "source": "CoinGecko"
+    },
+    {
+      "key": "leverage",
+      "name": "Heavy leveraged trading",
+      "status": "clear",
+      "value": "Open interest is 5.2% of market cap",
+      "threshold": "Open interest above 10% of market cap",
+      "measures": "Open interest: the value of futures contracts not yet closed, added up across the venues named in the source. Venues not named are not counted, so the true total is higher.",
+      "meaning": "Heavy leverage can turn a small price move into a large one, because forced closures (liquidations) trigger more buying or selling.",
+      "source": "OKX, Bitget, Gate and Hyperliquid public futures APIs (USDT-margined perpetuals)"
+    }
+  ],
+  "checks_version": 2,
+  "screenshot": null,
+  "price_usd": 0.608262,
+  "market_cap_usd": 597858786,
+  "fx": {
+    "usd_zar": 16.43,
+    "source": "CoinGecko (USDC priced in ZAR)"
+  },
+  "source_errors": {
+    "dexscreener": "DexScreener returned 404"
+  },
+  "cost_usd": 0.543824
+}
