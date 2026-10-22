@@ -23,10 +23,12 @@ jobs:
         with:
           python-version: "3.12"
       - name: Audit pinned dependencies against known vulnerabilities (PyPA advisory database)
+        # Only advisories reviewed in scripts/audit_gate.py pass (issue #16: Pillow 12.3.0 until
+        # Streamlit allows Pillow 13, reviewed by 29 October 2026); anything else fails
         run: |
           pip install pip-audit==2.10.1
-          pip-audit -r requirements.txt --progress-spinner off
-          pip-audit -r requirements-x402.txt --progress-spinner off
+          pip-audit -r requirements.txt -f json --progress-spinner off | python scripts/audit_gate.py
+          pip-audit -r requirements-x402.txt -f json --progress-spinner off | python scripts/audit_gate.py
 
   static-analysis:
     name: static analysis

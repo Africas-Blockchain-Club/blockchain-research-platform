@@ -81,3 +81,18 @@ def test_quoted_headlines_are_not_the_platforms_voice():
     assert_educational(text, quoted=[headline])
     with pytest.raises(AdviceLanguageError):
         assert_educational(text + "\nOur price target is $5.", quoted=[headline])
+
+
+def test_audit_gate_accepts_only_the_reviewed_pillow_advisories():
+    import datetime
+
+    from scripts.audit_gate import judge
+
+    report = {"dependencies": [
+        {"name": "pillow", "version": "12.3.0", "vulns": [{"id": "CVE-X", "fix_versions": ["13.0.0"]}]},
+        {"name": "requests", "version": "2.0.0", "vulns": [{"id": "CVE-Y", "fix_versions": ["2.1.0"]}]},
+    ]}
+    accepted, failing = judge(report, datetime.date(2026, 10, 22))
+    assert [a.split()[2] for a in accepted] == ["CVE-X"] and [f.split()[2] for f in failing] == ["CVE-Y"]
+    # After the review date the exception stops passing, so it is looked at again
+    assert len(judge(report, datetime.date(2026, 11, 1))[1]) == 2
