@@ -11,6 +11,12 @@ All notable changes, newest first. The format follows [Keep a Changelog](https:/
 - The Reports page and the home page show the seven featured blockchains and every AI write-up only. Data-only reports on other coins are snapshots that nothing refreshes, so they move into a "What people are researching" fold-out with each coin's searches in the last 30 days, when it was last researched and a link to any report, and the number of AI write-ups made so far. Searches are counted from the research and attack cost pages (new `searches` table, coin, name and time only, nothing about who searched).
 - The Uniswap and Ethena sample reports are removed: they were tokens, not blockchains, and nothing kept them current. The Aave, Uniswap and Ethena reports were deleted from the live site.
 
+### Security
+- Pillow 12.3.0, which arrives through Streamlit, has advisories fixed only in Pillow 13, which no Streamlit release allows yet. They are triggered by opening crafted image, PDF or font files, and the platform never opens an image it did not ship. `scripts/audit_gate.py` accepts exactly these until 29 October 2026 (issue #16) and fails on anything else.
+
+### Removed
+- References to the weekly workshop sessions as if they were still running. The README notes, in the past tense, that the first features were built during the series, which has ended.
+
 ## 2026.10.20-1
 
 ### Added

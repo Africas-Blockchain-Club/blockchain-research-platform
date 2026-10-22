@@ -210,7 +210,7 @@ def get_latest_report(token_symbol):
 
 def get_payments_by_payer(payer_address, limit=20):
     """Returns confirmed payments made by a wallet address, newest first.
-    Backs the Session 3 wallet sign-in: your address is your purchase history."""
+    Backs the wallet sign-in: your address is your purchase history."""
     with get_engine().connect() as conn:
         rows = (
             conn.execute(

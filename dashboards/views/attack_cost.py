@@ -1,5 +1,5 @@
 """
-Attack cost (Session 4): what it takes to attack any blockchain, with live data.
+Attack cost: what it takes to attack any blockchain, with live data.
 
 The lesson: a proof-of-stake chain is not secure because an attack is
 impossible. It is secure because the attack costs more than it can win, and

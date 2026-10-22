@@ -96,9 +96,9 @@ docs/                   WBS, ADRs, threat model, compliance and front-end notes
 teaching/, x402/        standalone teaching examples, never deployed
 ```
 
-## The build journey
+## How it was built
 
-The platform grows one feature per session of the Exclusive Friday Web3 and AI Workshop series; the lesson notes live in the [PeterManda repository](https://github.com/Africas-Blockchain-Club/PeterManda/tree/main/sessions): smart contracts (Session 2), Web3 identity and paying agents (Session 3), proof of stake and the cost of an attack (Session 4). [CHANGELOG.md](CHANGELOG.md) records each release since.
+The first features were built during the Exclusive Friday Web3 and AI Workshop series, which has ended; its lesson notes are kept in the [PeterManda repository](https://github.com/Africas-Blockchain-Club/PeterManda/tree/main/sessions). [CHANGELOG.md](CHANGELOG.md) records every release.
 
 ## Contributing and security
 

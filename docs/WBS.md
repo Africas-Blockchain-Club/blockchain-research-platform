@@ -10,7 +10,7 @@ An educational platform from Africa's Blockchain Club that teaches people to res
 
 **In scope:** the research content, data adapters, public site and research app, payments and delivery, the production platform and its pipeline, the security and quality standards, documentation, and the two teaching examples kept in the repository.
 
-**Out of scope:** financial advice of any kind; custody of anyone's funds; the session lesson notes (they live in the PeterManda repository); the Africa's Blockchain Club website itself.
+**Out of scope:** financial advice of any kind; custody of anyone's funds; the lesson notes from the ended workshop series (kept in the PeterManda repository); the Africa's Blockchain Club website itself.
 
 ## The WBS
 
@@ -380,7 +380,7 @@ flowchart TD
 |---|---|
 | Type | Work package |
 | Owner | Peter Manda |
-| Description | Session 4 calculator for the cost of attacking Ethereum. |
+| Description | Calculator for the cost of attacking a blockchain, priced with live data. |
 | Deliverables | dashboards/views/attack_cost.py |
 | Acceptance criteria | Page renders with and without the live price |
 | Milestones | Delivered |
