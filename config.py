@@ -28,7 +28,7 @@ IMAGES_DIR = DATA_DIR / "data" / "images"
 
 # Bump on every release. The footer shows it so a screenshot always says
 # which build it came from.
-BUILD = "2026.10.21-1"
+BUILD = "2026.10.22-1"
 
 # Current Claude models, cheapest last. Haiku is left out on purpose: a
 # research write-up needs the depth of Sonnet or Opus.
@@ -81,6 +81,11 @@ class Settings:
 
     # Seconds between live price updates on the site's pages; 0 switches them off.
     live_price_seconds: int = field(default_factory=lambda: int(os.getenv("LIVE_PRICE_SECONDS") or "60"))
+
+    # Fresh data fetches allowed per minute for the whole server, and per visitor per
+    # ten minutes, so no one can use up the free data providers' allowance for everyone.
+    fetch_limit_per_minute: int = field(default_factory=lambda: int(os.getenv("FETCH_LIMIT_PER_MINUTE") or "10"))
+    fetch_limit_per_visitor: int = field(default_factory=lambda: int(os.getenv("FETCH_LIMIT_PER_VISITOR") or "10"))
 
     # Live staked totals on the attack cost page; off means the user types them in.
     staking_data_enabled: bool = field(default_factory=lambda: _flag("STAKING_DATA_ENABLED", True))

@@ -19,6 +19,7 @@ from data_analytics import attack_cost as ac
 from data_analytics.chains import profile
 from data_analytics.formatting import count, usd_zar
 from data_engineering.fetchers import fetch_asset_platforms, fetch_coingecko_data, fetch_usd_zar
+from data_engineering.limits import RateLimited, Window
 from data_engineering.staking import fetch_staking
 from tools.report_generator import is_valid_query, normalise_token
 
@@ -28,8 +29,17 @@ log = logging.getLogger(__name__)
 CHOOSABLE = ("bft", "longest", "ethereum", "avalanche", "work", "trust")
 
 
+# Shared by every visitor; one lookup is one or two CoinGecko requests
+LOOKUPS = Window(SETTINGS.fetch_limit_per_minute * 2, 60)
+
+
 @st.cache_data(ttl=300, show_spinner=False)
 def _market(query):
+    """Live market data, shared for five minutes. Only a fresh lookup counts
+    towards the shared limit; a refused lookup is not cached."""
+    if not LOOKUPS.take():
+        raise RateLimited("Many people are looking up blockchains right now, and the free data providers only "
+                          "allow so many requests a minute. Try again in a minute.")
     token = normalise_token(query)
     return fetch_coingecko_data(token, coin_id=(profile(token) or {}).get("coingecko_id"))
 
@@ -241,8 +251,12 @@ def render():
                  "and spaces only. Check the spelling and try again.")
         return
 
-    with st.spinner("Reading live market data..."):
-        market = _market(token)
+    try:
+        with st.spinner("Reading live market data..."):
+            market = _market(token)
+    except RateLimited as e:
+        notice("Please wait a minute", str(e), tone="warn")
+        return
     if "error" in market:
         log.warning("Attack cost lookup failed for %r: %s", one_line(token), one_line(market["error"]))
         if "not found" in market["error"]:
@@ -263,7 +277,11 @@ def render():
                detected["reason"] + f" Attacking that chain is not the only risk to {name}: a token can also "
                "be hit through its own smart contract, or by whoever controls it (for example, the power to "
                "create more tokens), which this page does not measure.")
-        host_market = _market(detected["host"])
+        try:
+            host_market = _market(detected["host"])
+        except RateLimited as e:
+            notice("Please wait a minute", str(e), tone="warn")
+            return
         if "error" in host_market:
             st.error(f"Live market data for {detected['host']} is unavailable just now. Try again in a minute.")
             return

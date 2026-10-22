@@ -158,3 +158,12 @@ def test_the_live_price_file_skips_a_coin_coingecko_did_not_return():
 
     data = price_file({"bitcoin": {"usd": 100_000, "zar": 1_800_000, "usd_24h_change": 1.5}, "ethereum": {}})
     assert data["prices"] == {"BTC": {"usd": 100_000, "zar": 1_800_000, "usd_24h_change": 1.5}}
+
+
+def test_the_shared_limit_refuses_once_full_and_frees_up_after_the_window():
+    from data_engineering.limits import Window
+
+    window = Window(2, 60)
+    assert window.take(now=0) and window.take(now=1)
+    assert not window.take(now=30)
+    assert window.take(now=61)

@@ -8,6 +8,7 @@ until a transaction verifies on-chain.
 """
 import logging
 import re
+import time
 import uuid
 
 import streamlit as st
@@ -30,6 +31,7 @@ from dashboards.ui.components import (
 )
 from dashboards.ui.wallet import wallet_connect, wallet_pay
 from data_analytics.risk_profile import NOT_COVERED, summarise_checks
+from data_engineering.limits import RateLimited, Window
 from data_science.compliance import AdviceLanguageError
 from data_science.llm import AIRefusalError, AIResponseError, AIUnavailableError
 from payment_verifier import PaymentVerificationError
@@ -37,13 +39,45 @@ from tools.report_generator import fetch_and_analyse, is_valid_query, save_ai_re
 
 AI_ERRORS = (AIUnavailableError, AIRefusalError, AIResponseError, AdviceLanguageError)
 log = logging.getLogger(__name__)
+# Shared by every visitor: the app serves them all from one process
+FETCHES = Window(SETTINGS.fetch_limit_per_minute, 60)
+VISITOR_WINDOW_SECONDS = 600
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
+@st.cache_data(ttl=300, show_spinner=False)
+def _analyse(token, _log_fn):
+    """The free data for a coin, shared by every visitor for five minutes, so a
+    repeat fetch costs the data providers nothing. Only a fresh fetch counts
+    towards the shared limit; a refused fetch is not cached."""
+    if not FETCHES.take():
+        raise RateLimited("Many people are fetching data right now, and the free data providers only allow "
+                          "so many requests a minute. Try again in a minute.")
+    return fetch_and_analyse(token, log_fn=_log_fn)
+
+
+def _visitor_allowed():
+    """At most FETCH_LIMIT_PER_VISITOR fetches per visitor in ten minutes."""
+    now = time.time()
+    recent = [t for t in st.session_state.get("fetch_times", []) if now - t < VISITOR_WINDOW_SECONDS]
+    allowed = len(recent) < SETTINGS.fetch_limit_per_visitor
+    if allowed:
+        recent.append(now)
+    st.session_state["fetch_times"] = recent
+    return allowed
+
+
 def _fetch(token):
+    if not _visitor_allowed():
+        notice("Please wait a few minutes",
+               f"You have fetched data {SETTINGS.fetch_limit_per_visitor} "
+               f"{'time' if SETTINGS.fetch_limit_per_visitor == 1 else 'times'} in the last ten minutes. The free "
+               "data providers limit how often the platform can ask, so wait a few minutes before the next fetch.",
+               tone="warn")
+        return
     with st.status(f"Fetching public data for {token}...", expanded=True) as status:
         try:
-            analysis = fetch_and_analyse(token, log_fn=status.write)
+            analysis = _analyse(token, status.write)
         except Exception as e:
             log.warning("Fetch failed for %r: %s", one_line(token), one_line(e))
             status.update(label=f"Could not fetch data for {token}", state="error", expanded=True)

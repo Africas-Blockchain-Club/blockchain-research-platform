@@ -1,0 +1,70 @@
+name: Off-site backup
+
+# Every night: copy what cannot be rebuilt (the database with its payments, the
+# saved reports and the AI usage log) off the Fly volume, prove the copy
+# restores, encrypt it with a passphrase only the owner holds, and keep it for
+# 30 days. Fly's own volume snapshots stay in the same provider and region;
+# this copy does not. Restore steps: docs/BACKUPS.md.
+on:
+  schedule:
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: back up and test the restore
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      APP: blockchain-research-platform
+      # A token that can only open SSH sessions to this one app
+      FLY_API_TOKEN: ${{ secrets.FLY_SSH_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # 1.6
+
+      - name: Check the secrets are set
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          [ -n "$FLY_API_TOKEN" ] || { echo "::error::FLY_SSH_TOKEN is not set"; exit 1; }
+          [ -n "$BACKUP_PASSPHRASE" ] || { echo "::error::BACKUP_PASSPHRASE is not set"; exit 1; }
+
+      - name: Pack the data on the machine and download it
+        run: |
+          flyctl ssh console -a "$APP" -C "python /app/scripts/backup_data.py /tmp/brp-backup.tar.gz"
+          flyctl ssh sftp get -a "$APP" /tmp/brp-backup.tar.gz brp-backup.tar.gz
+          flyctl ssh console -a "$APP" -C "rm -f /tmp/brp-backup.tar.gz"
+
+      - name: Prove the copy restores
+        run: |
+          pip install --quiet python-dotenv
+          python scripts/backup_data.py --verify brp-backup.tar.gz
+
+      - name: Encrypt it (AES-256, passphrase held only by the owner)
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+            --symmetric --cipher-algo AES256 --output brp-backup.tar.gz.gpg brp-backup.tar.gz
+          shred -u brp-backup.tar.gz
+          echo "STAMP=$(date -u +%Y-%m-%d)" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: brp-backup-${{ env.STAMP }}
+          path: brp-backup.tar.gz.gpg
+          retention-days: 30
+          if-no-files-found: error

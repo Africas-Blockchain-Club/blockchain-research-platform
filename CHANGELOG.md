@@ -2,6 +2,14 @@
 
 All notable changes, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions are build numbers (shown in the footer of every page).
 
+## 2026.10.22-1
+
+### Security
+- Nightly off-site backup (`.github/workflows/backup.yml`): the database, saved reports and AI usage log are copied off the Fly volume, proved to restore (SQLite integrity check, tables present), encrypted with AES-256 under a passphrase only the owner holds, and kept for 30 days. It uses a token that can only open SSH sessions to this app. Fly volume snapshots are now kept 14 days instead of 5. Restore steps: docs/BACKUPS.md.
+- Data fetches are limited: a shared cap per minute across all visitors and a cap per visitor per ten minutes (`FETCH_LIMIT_PER_MINUTE`, `FETCH_LIMIT_PER_VISITOR`), and a coin's free data is shared for five minutes, so no one can use up the free data providers' allowance for everyone.
+- `/.well-known/security.txt` tells researchers how to report a vulnerability (GitHub private reporting, as in SECURITY.md); it is rebuilt with the site so its expiry stays a year ahead.
+- The SQLite connection waits up to 30 seconds for another writer instead of failing with "database is locked".
+
 ## 2026.10.21-1
 
 ### Added

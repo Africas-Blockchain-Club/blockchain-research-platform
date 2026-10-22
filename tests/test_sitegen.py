@@ -72,3 +72,13 @@ def test_report_saves_can_share_one_rebuild(temp_store, data_summary, monkeypatc
             report_store.save_report(token, "# T\n", mode=report_store.MODE_DATA, model=None,
                                      risk_checks=compute_risk_checks(data_summary), data_summary=data_summary)
     assert calls == []
+
+
+def test_security_txt_names_a_contact_and_expires_within_a_year():
+    import datetime
+
+    from sitegen.build import _security_txt
+
+    text = _security_txt(datetime.datetime(2026, 10, 22, tzinfo=datetime.timezone.utc))
+    assert "Contact: https://github.com/" in text and "/security/advisories/new" in text
+    assert "Expires: 2027-10-22T00:00:00Z" in text
