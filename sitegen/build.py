@@ -116,6 +116,19 @@ def _chain_cards(reports_by_token):
     return cards
 
 
+def _security_txt(now=None):
+    """The security contact file. Reports go to GitHub's private vulnerability
+    reporting, as SECURITY.md describes; no personal address is published."""
+    now = now or datetime.datetime.now(datetime.timezone.utc)
+    expires = (now + datetime.timedelta(days=365)).strftime("%Y-%m-%dT00:00:00Z")
+    repo = SETTINGS.repo_url.rstrip("/")
+    lines = [f"Contact: {repo}/security/advisories/new", f"Expires: {expires}",
+             f"Policy: {repo}/blob/main/SECURITY.md", "Preferred-Languages: en"]
+    if SETTINGS.site_url.startswith("https://"):
+        lines.append(f"Canonical: {SETTINGS.site_url}/.well-known/security.txt")
+    return "\n".join(lines) + "\n"
+
+
 def _research_activity(by_token, shown):
     """(rows, ai_count) for the Reports page. Each row is a coin researched in the
     last 30 days, with its report when there is one; a hidden report nobody has
@@ -153,6 +166,10 @@ def build_site(out_dir=None):
     for name in ("sources.json", "prices.json"):
         if (NETWORK_DIR / name).exists():
             shutil.copy2(NETWORK_DIR / name, staging / "status" / name)
+
+    # How to report a vulnerability (RFC 9116), rebuilt each time so Expires stays a year ahead
+    (staging / ".well-known").mkdir()
+    (staging / ".well-known" / "security.txt").write_text(_security_txt(), encoding="utf-8")
 
     for name in ("abc-shell.css", "wtc-shell.js", "site.css", "site.js", "theme.js"):
         shutil.copy2(HERE / "static" / name, staging / "static" / name)

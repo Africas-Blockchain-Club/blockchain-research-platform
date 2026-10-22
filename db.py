@@ -103,7 +103,10 @@ def get_engine():
     global _engine
     if _engine is None:
         database_url = os.getenv("DATABASE_URL") or _DEFAULT_SQLITE_URL
-        _engine = create_engine(database_url)
+        # SQLite: the research app and the background refresher write the same file, so a
+        # writer waits up to 30 seconds for the other instead of failing with "database is locked"
+        connect_args = {"timeout": 30} if database_url.startswith("sqlite") else {}
+        _engine = create_engine(database_url, connect_args=connect_args)
         # Create missing tables on first use, so the command line and the
         # dashboard both work on a fresh clone with no setup step.
         metadata.create_all(_engine)
