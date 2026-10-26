@@ -1,5 +1,5 @@
 # Runtime dependencies, pinned so every fork installs the same versions.
-anthropic==1.15.0
+anthropic==2.1.0
 defusedxml==0.7.1
 Jinja2==3.1.6
 Markdown==3.10.3
