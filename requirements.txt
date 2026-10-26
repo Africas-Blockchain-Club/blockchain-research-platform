@@ -4,10 +4,10 @@ defusedxml==0.7.1
 Jinja2==3.1.6
 Markdown==3.10.3
 MarkupSafe==3.0.4
-playwright==1.64.0
+playwright==1.64.1
 psycopg2-binary==2.9.13
 python-dotenv==1.2.4
 requests==2.34.2
-SQLAlchemy==2.0.54
+SQLAlchemy==2.0.55
 streamlit==1.65.0
-xhtml2pdf==0.2.24
+xhtml2pdf==0.2.27
