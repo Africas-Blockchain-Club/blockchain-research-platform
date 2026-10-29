@@ -42,18 +42,24 @@ log = logging.getLogger(__name__)
 # Shared by every visitor: the app serves them all from one process
 FETCHES = Window(SETTINGS.fetch_limit_per_minute, 60)
 VISITOR_WINDOW_SECONDS = 600
+# scripts/monitor.py adds this to its browser's User-Agent
+MONITOR_AGENT = "BRP-monitor"
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 @st.cache_data(ttl=300, show_spinner=False)
-def _analyse(token, _log_fn):
+def _analyse(token):
     """The free data for a coin, shared by every visitor for five minutes, so a
     repeat fetch costs the data providers nothing. Only a fresh fetch counts
-    towards the shared limit; a refused fetch is not cached."""
+    towards the shared limit; a refused fetch is not cached. Returns the data
+    and its progress lines: writing them to the page from in here breaks
+    every cache hit, as Streamlit cannot replay writes into a box made outside."""
     if not FETCHES.take():
         raise RateLimited("Many people are fetching data right now, and the free data providers only allow "
                           "so many requests a minute. Try again in a minute.")
-    return fetch_and_analyse(token, log_fn=_log_fn)
+    steps = []
+    analysis = fetch_and_analyse(token, log_fn=steps.append)
+    return analysis, steps
 
 
 def _visitor_allowed():
@@ -77,7 +83,9 @@ def _fetch(token):
         return
     with st.status(f"Fetching public data for {token}...", expanded=True) as status:
         try:
-            analysis = _analyse(token, status.write)
+            analysis, steps = _analyse(token)
+            for step in steps:
+                status.write(step)
         except Exception as e:
             log.warning("Fetch failed for %r: %s", one_line(token), one_line(e))
             status.update(label=f"Could not fetch data for {token}", state="error", expanded=True)
@@ -86,7 +94,9 @@ def _fetch(token):
         status.update(label=f"Data for {_display_name(analysis)} is ready", state="complete", expanded=False)
     st.session_state["analysis"] = analysis
     st.session_state["analysis_id"] = str(uuid.uuid4())
-    count_search(analysis["token"], "research", (analysis["data_summary"].get("token_info") or {}).get("name"))
+    # The monitor's test visits are not people researching
+    if MONITOR_AGENT not in (st.context.headers.get("User-Agent") or ""):
+        count_search(analysis["token"], "research", (analysis["data_summary"].get("token_info") or {}).get("name"))
 
 
 def _display_name(analysis):

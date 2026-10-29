@@ -2,6 +2,15 @@
 
 All notable changes, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions are build numbers (shown in the footer of every page).
 
+## 2026.10.29-1
+
+### Fixed
+- Fetching a coin that anyone had fetched in the last five minutes failed with a Streamlit cache error ("a streamlit element is called on some layout block created outside the function"), so the paid write-up could not be reached: its button fetches first. The shared cache (2026.10.22-1) replayed the progress lines into a box made outside the cached function. The cached fetch now returns its progress lines and the page writes them. Test: `tests/test_research_fetch.py`.
+
+### Added
+- The monitor's full check walks the paying steps in a real browser: two fetches of ETH (the second from the cache), the write-up step, an email, a test wallet that connects and presses Pay. The test wallet refuses the transaction, so nothing is paid; the check confirms the transfer would go to the owner's wallet (`MONITOR_RECIPIENT`). Staging stops after the fetches (`MONITOR_EXPECT_PAYMENTS=false`).
+- The full check now runs every 3 hours instead of once a day, and after every production deploy, emailing on failure.
+
 ## 2026.10.22-1
 
 ### Security

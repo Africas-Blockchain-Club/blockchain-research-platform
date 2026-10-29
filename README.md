@@ -73,7 +73,7 @@ Paid AI write-ups take 2 US Dollars in USDC or USDT on Base, Arbitrum, Optimism,
 | Workflow | Protected `main`; every change by pull request with required checks; code owners; templates | [CONTRIBUTING.md](CONTRIBUTING.md), [.github/](.github/) |
 | Quality | Over 100 offline tests, Ruff, pre-commit hooks running the same checks as CI | `tests/`, `.pre-commit-config.yaml`, `make check` |
 | Delivery | Every pull request deployed to staging and checked end to end; merges deploy to production after CI and security pass; smoke test after each deploy | `.github/workflows/deploy*.yml` |
-| Operations | Health checks through both servers; monitoring every 30 minutes with email alerts; daily volume snapshots | `scripts/monitor.py`, [deploy.md](deploy.md) |
+| Operations | Health checks through both servers; monitoring every 30 minutes (full check, paying steps included, every 3 hours and after each deploy) with email alerts; daily volume snapshots | `scripts/monitor.py`, [deploy.md](deploy.md) |
 | Security | Threat model; Bandit, pip-audit, Gitleaks and CodeQL on every pull request; Dependabot; actions pinned by commit and images by digest; strict content security policy and HSTS; unprivileged container | [SECURITY.md](SECURITY.md), [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) |
 | Front end | ABC front-end standard: dark first, AA contrast, equal gutters at six widths, reduced motion respected | [docs/FRONTEND.md](docs/FRONTEND.md) |
 

@@ -73,7 +73,7 @@ fly secrets set OWNER_ALERT_EMAIL=you@example.com --app blockchain-research-plat
 
 ### The monitor
 
-`.github/workflows/monitor.yml` runs `scripts/monitor.py` on GitHub's machines: a quick check every 30 minutes, a full check (every page in a browser, and the data pipeline) every day at 06:00 South African time, and a full report by email every Monday at 07:00. A failure emails `OWNER_ALERT_EMAIL` and fails the run, which GitHub also emails to the repository owner. The workflow needs the same mail settings as repository secrets:
+`.github/workflows/monitor.yml` runs `scripts/monitor.py` on GitHub's machines: a quick check every 30 minutes, a full check (every page in a browser, the paying steps up to the wallet with a test wallet that never pays, and the data pipeline) every 3 hours, and a full report by email every Monday at 07:00. The same full check runs after every production deploy and emails on failure. GitHub runs scheduled jobs late when it is busy, so the schedule is a safety net. A failure emails `OWNER_ALERT_EMAIL` and fails the run, which GitHub also emails to the repository owner. The workflow needs the same mail settings as repository secrets:
 
 ```bash
 grep -E '^(SMTP_HOST|SMTP_PORT|SMTP_USER|SMTP_PASSWORD)=' .env | while IFS='=' read -r key value; do
