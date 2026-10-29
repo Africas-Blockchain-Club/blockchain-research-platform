@@ -2,6 +2,11 @@
 
 All notable changes, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions are build numbers (shown in the footer of every page).
 
+## 2026.10.29-3
+
+### Changed
+- Every AI write-up is written by Claude Sonnet 5.5; the model picker is gone, so payers no longer choose. On one bitcoin write-up each, Sonnet caught the same bad data as Fable 5.1 at about a quarter of the cost (about $0.25 against $1.06), and Haiku 5.5 did not finish within 32,000 tokens. A refused request is still retried once on `AI_FALLBACK_MODEL`.
+
 ## 2026.10.29-2
 
 ### Fixed
