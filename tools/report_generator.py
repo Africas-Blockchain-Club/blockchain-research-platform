@@ -94,11 +94,12 @@ def _listed_on_coingecko(coingecko_data):
 
 def _source_errors(dex_data, coingecko_data, market_depth, derivatives_data, network):
     """Every source that should have answered and did not. A coin with no futures
-    market or no exchange depth is a fact about the coin, not a failed source."""
+    market, no exchange depth or no token contract (so no pool) is a fact about
+    the coin, not a failed source."""
     errors = {
         name: data["error"]
         for name, data in (("dexscreener", dex_data), ("coingecko", coingecko_data))
-        if isinstance(data, dict) and "error" in data
+        if isinstance(data, dict) and "error" in data and not data.get("no_pool")
     }
     if market_depth.get("failed"):
         errors["coingecko depth"] = market_depth["error"]
@@ -139,11 +140,13 @@ def fetch_and_analyse(token, log_fn=None):
     dex_data = fetch_dexscreener_data(
         token,
         contracts=token_contracts(token, coingecko_data.get("platforms")),
-        reference_price=coingecko_data.get("price_usd"),
     )
+    if dex_data.get("no_pool") and "error" in coingecko_data:
+        # The contracts come from CoinGecko, so without it "no contract" is not known
+        dex_data = {"error": "Exchange pool not checked: CoinGecko, which lists the token's contracts, did not answer"}
     say("Reading recent headlines...")
     news_headlines = fetch_cryptopanic_news(token)
-    is_cmc_listed = check_cmc_listed(token)
+    is_cmc_listed = check_cmc_listed(coingecko_data.get("name"), coingecko_data.get("id"))
 
     screenshot_path = None
     if "url" in dex_data and SETTINGS.screenshots_enabled:

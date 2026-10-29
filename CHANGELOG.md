@@ -2,6 +2,12 @@
 
 All notable changes, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions are build numbers (shown in the footer of every page).
 
+## 2026.10.29-2
+
+### Fixed
+- A coin with no token contract (bitcoin) was matched to an impostor exchange pool by ticker search: a "BTC" token on Solana priced like bitcoin passed the 10% price filter and a paid write-up reported it as an $8.0 billion pool with $53 of daily volume. The ticker search is gone; only pools for the exact contracts count, and a coin with no contract shows "no exchange pool" as a fact about the coin, not a failed source, so it no longer sets off the refresher or the monitor.
+- The CoinMarketCap listing check looked up the ticker (`/currencies/btc/`), which returns 404 for bitcoin, ether, solana and avalanche although all are listed, and can find a different coin. It now looks up the coin's name and CoinGecko id, and says "not listed" only when every page is 404.
+
 ## 2026.10.29-1
 
 ### Fixed

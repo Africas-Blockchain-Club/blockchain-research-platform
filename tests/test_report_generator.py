@@ -100,3 +100,10 @@ def test_coingecko_waits_and_retries_after_a_rate_limit(monkeypatch):
                                        ("../../evil", False), ("SOL?x=1", False), ("", False)])
 def test_full_names_pass_and_crafted_input_does_not(query, ok):
     assert report_generator.is_valid_query(query) is ok
+
+
+def test_a_coin_with_no_pool_is_not_a_failed_source():
+    no_pool = {"error": "No exchange pool: no token contract", "no_pool": True}
+    errors = report_generator._source_errors(no_pool, {}, {}, {}, {})
+    assert errors == {}
+    assert "dexscreener" in report_generator._source_errors({"error": "DexScreener returned 500"}, {}, {}, {}, {})
