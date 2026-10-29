@@ -28,11 +28,13 @@ IMAGES_DIR = DATA_DIR / "data" / "images"
 
 # Bump on every release. The footer shows it so a screenshot always says
 # which build it came from.
-BUILD = "2026.10.29-2"
+BUILD = "2026.10.29-3"
 
-# Current Claude models, cheapest last. Haiku is left out on purpose: a
-# research write-up needs the depth of Sonnet or Opus.
-DEFAULT_AI_MODELS = ("claude-opus-5-5", "claude-sonnet-5-5", "claude-fable-5-1")
+# Every write-up uses the first model; payers do not choose. Sonnet 5.5 was
+# chosen on 29 October 2026 after one bitcoin write-up each: Sonnet matched
+# Fable 5.1 on catching bad data at about a quarter of the cost, and Haiku 5.5
+# ran past the 32,000-token limit without finishing.
+DEFAULT_AI_MODELS = ("claude-sonnet-5-5",)
 
 
 def _flag(name, default):

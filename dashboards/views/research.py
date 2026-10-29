@@ -411,7 +411,7 @@ def _ai_section(analysis):
     if unavailable:
         notice("Not available", unavailable, tone="warn")
         return
-    model = st.selectbox("AI model", SETTINGS.ai_models, help="The first model in AI_MODELS is the default.")
+    model = SETTINGS.default_model
     if SETTINGS.payments_enabled:
         _wallet_identity()
         _payment_gate(analysis, model)

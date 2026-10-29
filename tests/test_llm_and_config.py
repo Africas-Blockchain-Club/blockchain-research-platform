@@ -26,6 +26,12 @@ def test_model_list_comes_from_config(monkeypatch):
     assert settings.default_model == "model-a"
 
 
+def test_every_write_up_uses_sonnet_by_default(monkeypatch):
+    # Peter's choice, 29 October 2026; payers do not pick a model
+    monkeypatch.delenv("AI_MODELS", raising=False)
+    assert Settings().default_model == "claude-sonnet-5-5"
+
+
 def test_complete_fails_loudly_when_ai_is_off(monkeypatch):
     off = dataclasses.replace(Settings(), ai_switch=False)
     monkeypatch.setattr(llm, "SETTINGS", off)
