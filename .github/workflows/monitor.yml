@@ -2,15 +2,19 @@ name: Monitor the live site
 
 # Runs on GitHub's machines, so it works while every laptop is closed.
 #   every 30 minutes: quick check (DNS, health endpoint, payment networks)
-#   every day at 06:00 South African time: full check (every page in a real
-#   browser, and the data pipeline against the live data sources)
+#   every 3 hours: full check (every page in a real browser, the paying steps
+#   up to the wallet with a test wallet that never pays, and the data pipeline
+#   against the live data sources)
+# GitHub runs scheduled jobs late or skips them when busy (in October 2026 the
+# 30-minute check often ran only every 3 to 5 hours), so this is a safety net,
+# not a guarantee.
 #   every Monday at 07:00: full check that emails the result even when all pass
 # A failure emails OWNER_ALERT_EMAIL (needs the SMTP_* secrets) and fails the
 # run, which GitHub also emails to the repository owner.
 on:
   schedule:
     - cron: "*/30 * * * *"
-    - cron: "0 4 * * *"
+    - cron: "15 */3 * * *"
     - cron: "0 5 * * 1"
   workflow_dispatch:
     inputs:
@@ -47,7 +51,7 @@ jobs:
         id: mode
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.full }}" = "true" ]; then echo "args=--full --email" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event.schedule }}" = "0 4 * * *" ]; then echo "args=--full --email" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "15 */3 * * *" ]; then echo "args=--full --email" >> "$GITHUB_OUTPUT"
           elif [ "${{ github.event.schedule }}" = "0 5 * * 1" ]; then echo "args=--full --email-always" >> "$GITHUB_OUTPUT"
           else echo "args=--email" >> "$GITHUB_OUTPUT"
           fi

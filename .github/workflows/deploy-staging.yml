@@ -44,6 +44,8 @@ jobs:
       - name: Full end-to-end check against staging
         env:
           MONITOR_URL: https://blockchain-research-platform-staging.fly.dev
+          # Staging takes no payments: the paying check stops after the two fetches
+          MONITOR_EXPECT_PAYMENTS: "false"
         run: |
           sudo apt-get update && sudo apt-get install -y libcairo2-dev pkg-config
           pip install -r requirements.txt

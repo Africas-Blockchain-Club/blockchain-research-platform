@@ -3,8 +3,9 @@ End-to-end check of the live platform. Runs unattended from GitHub Actions
 (.github/workflows/monitor.yml) and on demand from the brp-check skill.
 
   python scripts/monitor.py            quick: DNS, health endpoint, payment networks
-  python scripts/monitor.py --full     also: every page in a real browser, the data
-                                       pipeline, and the sources status the server publishes
+  python scripts/monitor.py --full     also: every page in a real browser, the paying steps
+                                       up to the wallet (never paying), the data pipeline,
+                                       and the sources status the server publishes
   add --email                          email OWNER_ALERT_EMAIL when a check fails
   add --email-always                   email the result even when everything passes
 
@@ -34,6 +35,26 @@ import requests  # noqa: E402
 SITE = os.getenv("MONITOR_URL", "https://blockchain-research-platform.fly.dev").rstrip("/")
 # The networks the live site accepts; kept in step with fly.toml
 LIVE_CHAINS = os.getenv("MONITOR_PAYMENT_CHAINS", "8453,42161,10,137,56,1")
+# The wallet every payment must go to. Staging takes no payments, so it sets
+# MONITOR_EXPECT_PAYMENTS=false and only the fetch part of the paying check runs.
+EXPECTED_RECIPIENT = os.getenv("MONITOR_RECIPIENT", "0x95CD2382EB8DF97fC1e0f3adAA1A9a97FB2b9431").lower()
+EXPECT_PAYMENTS = os.getenv("MONITOR_EXPECT_PAYMENTS", "true").lower() == "true"
+
+# A pretend browser wallet for the paying check. It answers like MetaMask with a
+# zero balance account and refuses every transaction, so nothing is ever sent.
+TEST_WALLET = """
+window.__monitor = {sent: null};
+window.ethereum = {isMetaMask: true, request: async ({method, params}) => {
+  if (method === "eth_requestAccounts" || method === "eth_accounts") return ["0x000000000000000000000000000000000000dEaD"];
+  if (method === "eth_chainId") return "0x2105";
+  if (method === "wallet_switchEthereumChain") return null;
+  if (method === "eth_sendTransaction") {
+    window.__monitor.sent = params[0];
+    throw {code: 4001, message: "refused by the monitor's test wallet"};
+  }
+  throw {code: 4200, message: "not supported by the monitor's test wallet"};
+}};
+"""
 
 
 def check_dns():
@@ -141,6 +162,85 @@ def check_pages():
     return f"{len(pages)} pages and a report render with no errors, security headers present ({status})"
 
 
+def _wait_for_fetch(page, token):
+    """After a fetch button press on a fresh visit: the data is ready, or raise with the page's error."""
+    result = page.get_by_text(re.compile(rf"Data for .*{token}.* is ready|Could not fetch data|Please wait"))
+    result.first.wait_for(timeout=120000)
+    page.locator('[data-testid="stStatusWidget"]').wait_for(state="hidden", timeout=120000)
+    failed = page.get_by_text(re.compile("Could not fetch data|Please wait a"))
+    if failed.count():
+        error = page.locator('[data-testid="stAlertContentError"], [data-testid="stAlert"]')
+        detail = error.first.inner_text()[:200] if error.count() else failed.first.inner_text()
+        raise RuntimeError(f"fetching {token} failed: {detail}")
+
+
+def check_paying():
+    """What a payer does, in a real browser: fetch a coin twice (the second comes
+    from the shared cache), ask for the write-up, give an email, connect a wallet
+    and press Pay. The test wallet refuses the transaction, so nothing is paid;
+    the check reads where the transfer would have gone."""
+    from playwright.sync_api import sync_playwright
+
+    import payment_verifier as pv
+
+    token = "ETH"
+    with sync_playwright() as p:
+        browser = p.chromium.launch(executable_path=os.getenv("MONITOR_CHROMIUM") or None)
+        # The research page does not count the monitor's fetches as searches
+        agent = browser.new_page().evaluate("navigator.userAgent") + " BRP-monitor"
+        context = browser.new_context(viewport={"width": 1280, "height": 900}, user_agent=agent)
+        context.add_init_script(TEST_WALLET)
+        page = context.new_page()
+
+        def press(button):
+            # A fresh visit each time: no box from an earlier press is left to misread
+            page.goto(f"{SITE}/app/?token={token}", timeout=60000)
+            page.get_by_text("Research a blockchain").first.wait_for(timeout=60000)
+            page.get_by_role("button", name=button).first.click(timeout=60000)
+            _wait_for_fetch(page, token)
+
+        press("Fetch the free data")
+        press("Fetch the free data")
+        if not EXPECT_PAYMENTS:
+            browser.close()
+            return f"{token} fetched twice, the second from the shared cache (payments not expected here)"
+
+        press("Get the AI write-up")
+        email = page.get_by_role("textbox", name="Your email address")
+        email.wait_for(timeout=60000)
+        email.fill("monitor@example.com")
+        email.press("Enter")
+        frame_el = page.locator('iframe[src*="wallet_pay"]').first
+        frame_el.wait_for(timeout=60000)
+        frame = frame_el.content_frame
+        connect = frame.locator("#connect")
+        connect.wait_for(timeout=60000)
+        frame.locator("#connect:not([disabled])").wait_for(timeout=60000)
+        connect.click()
+        pay = frame.locator("#pay")
+        pay.wait_for(state="visible", timeout=90000)
+        frame.locator("#pay:not([disabled])").wait_for(timeout=30000)
+        options = frame.locator("#options label").count()
+        pay.click()
+        frame.locator("#status", has_text="monitor's test wallet").wait_for(timeout=30000)
+        sent = frame_el.element_handle().content_frame().evaluate("window.__monitor.sent")
+        browser.close()
+
+    contracts = {contract.lower(): (n["name"], symbol, decimals) for n in pv.NETWORKS.values()
+                 for symbol, (contract, decimals) in n["tokens"].items()}
+    if not sent or not sent.get("data", "").startswith("0xa9059cbb"):
+        raise RuntimeError(f"the Pay button did not prepare a stablecoin transfer: {sent}")
+    if (sent.get("to") or "").lower() not in contracts:
+        raise RuntimeError(f"the Pay button would send to {sent.get('to')}, which is not an accepted stablecoin")
+    network, symbol, decimals = contracts[sent["to"].lower()]
+    recipient = "0x" + sent["data"][10:74][-40:]
+    amount = int(sent["data"][74:138], 16) / 10 ** decimals
+    if recipient.lower() != EXPECTED_RECIPIENT:
+        raise RuntimeError(f"payments would go to {recipient}, not the owner's wallet {EXPECTED_RECIPIENT}")
+    return (f"{token} fetched twice, write-up step reached, wallet offered {options} ways to pay; Pay prepares "
+            f"{amount:g} {symbol} on {network} to {recipient[:6]}...{recipient[-4:]} (test wallet refused it)")
+
+
 def check_pipeline():
     from data_analytics.data_report import build_data_report, quoted_passages
     from data_science.compliance import assert_educational
@@ -197,7 +297,8 @@ def check_sources():
 def run(full):
     checks = [("DNS", check_dns), ("Site health", check_health), ("Payment networks", check_payment_networks)]
     if full:
-        checks += [("Pages in a browser", check_pages), ("Data pipeline", check_pipeline),
+        checks += [("Pages in a browser", check_pages), ("Paying in a browser", check_paying),
+                   ("Data pipeline", check_pipeline),
                    ("Data sources", check_sources)]
     results = []
     for name, check in checks:
