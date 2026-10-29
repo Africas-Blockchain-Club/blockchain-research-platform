@@ -167,3 +167,55 @@ def test_the_shared_limit_refuses_once_full_and_frees_up_after_the_window():
     assert window.take(now=0) and window.take(now=1)
     assert not window.take(now=30)
     assert window.take(now=61)
+
+
+def test_a_coin_without_a_contract_gets_no_pool_and_no_ticker_search(monkeypatch):
+    # 29 October 2026: a ticker search for BTC found an impostor "BTC" token on Solana
+    from data_engineering import fetchers
+
+    def no_network(*a, **k):
+        raise AssertionError("no request should be made")
+
+    monkeypatch.setattr(fetchers.requests, "get", no_network)
+    result = fetchers.fetch_dexscreener_data("BTC", contracts=[])
+    assert "error" in result and "impostor" in result["error"]
+
+
+def test_coinmarketcap_is_looked_up_by_name_never_by_ticker():
+    from data_engineering.fetchers import cmc_slugs
+
+    assert cmc_slugs("Bitcoin", "bitcoin") == ["bitcoin"]
+    assert cmc_slugs("Avalanche", "avalanche-2") == ["avalanche", "avalanche-2"]
+    assert cmc_slugs("Shiba Inu", "shiba-inu") == ["shiba-inu"]
+    assert cmc_slugs(None, None) == []
+
+
+class StatusResponse:
+    def __init__(self, status_code):
+        self.status_code = status_code
+
+
+def test_coinmarketcap_listing_reads_404_as_not_listed_only_when_every_page_is_404(monkeypatch):
+    from data_engineering import fetchers
+
+    def answers(codes):
+        def get(url, **_kwargs):
+            return StatusResponse(codes[url.rstrip("/").rsplit("/", 1)[1]])
+        return get
+
+    monkeypatch.setattr(fetchers.requests, "get", answers({"avalanche": 404, "avalanche-2": 200}))
+    assert fetchers.check_cmc_listed("Avalanche", "avalanche-2") is True
+    monkeypatch.setattr(fetchers.requests, "get", answers({"made-up": 404}))
+    assert fetchers.check_cmc_listed("Made Up", "made-up") is False
+    monkeypatch.setattr(fetchers.requests, "get", answers({"bitcoin": 503}))
+    assert fetchers.check_cmc_listed("Bitcoin", "bitcoin") is None
+    assert fetchers.check_cmc_listed(None, None) is None
+
+
+def test_no_pool_is_no_data_not_zero():
+    from data_analytics.metrics import compute_derived_metrics
+
+    metrics = compute_derived_metrics({"error": "No exchange pool", "no_pool": True}, "BTC")
+    assert metrics["volume_24h"] is None
+    assert metrics["liquidity_turnover_ratio"] is None
+    assert metrics["liquidity_usd"] is None

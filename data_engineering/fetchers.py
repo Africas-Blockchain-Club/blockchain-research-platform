@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import urllib.parse
 from email.utils import parsedate_to_datetime
@@ -262,22 +263,40 @@ def fetch_cryptocompare_social(symbol):
     return {"error": "CryptoCompare social data not available on free tier"}
 
 
-def check_cmc_listed(token):
-    """Quick CMC listing check. True on HTTP 200, False on 404, and None when
-    the check itself failed: an outage must never read as "not listed"."""
-    try:
-        resp = requests.get(
-            f"https://coinmarketcap.com/currencies/{token.lower()}/",
-            headers={"User-Agent": "Mozilla/5.0"},
-            timeout=5,
-        )
+def cmc_slugs(name=None, coingecko_id=None):
+    """CoinMarketCap page names to try: the coin's name ("Bitcoin" becomes
+    "bitcoin"), then its CoinGecko id. Never the ticker: on 29 October 2026
+    /currencies/btc/, /eth/, /sol/ and /avax/ were all 404 although every one is
+    listed, and a ticker page that does exist may be a different coin."""
+    slugs = []
+    for value in (name, coingecko_id):
+        slug = re.sub(r"[^a-z0-9]+", "-", (value or "").lower()).strip("-")
+        if slug and slug not in slugs:
+            slugs.append(slug)
+    return slugs
+
+
+def check_cmc_listed(name=None, coingecko_id=None):
+    """Quick CMC listing check by page name. True when any page answers 200,
+    False only when every page is 404, and None when there is nothing to look
+    up or the check itself failed: an outage must never read as "not listed"."""
+    slugs = cmc_slugs(name, coingecko_id)
+    if not slugs:
+        return None
+    for slug in slugs:
+        try:
+            resp = requests.get(
+                f"https://coinmarketcap.com/currencies/{slug}/",
+                headers={"User-Agent": "Mozilla/5.0"},
+                timeout=5,
+            )
+        except Exception:
+            return None
         if resp.status_code == 200:
             return True
-        if resp.status_code == 404:
-            return False
-        return None
-    except Exception:
-        return None
+        if resp.status_code != 404:
+            return None
+    return False
 
 
 # ====================== EXCHANGE RATE ======================
@@ -424,43 +443,34 @@ def _deepest_active(pairs):
     return max(active or pairs, key=lambda p: float((p.get("liquidity") or {}).get("usd", 0) or 0))
 
 
-def fetch_dexscreener_data(token, contracts=None, reference_price=None):
+def fetch_dexscreener_data(token, contracts=None):
     """
     Fetch the main DEX pool for a token from DexScreener.
 
-    With contracts (from token_contracts()), only pools whose base token is
-    one of those exact contracts count. Searching by ticker alone returns
-    impostor tokens: on 18 October 2026 a search for SOL returned pools of
-    fake "SOL" tokens claiming $2.5bn of liquidity. The ticker search is kept
-    only as a labelled fallback, filtered to pools priced within 10% of the
-    reference price from CoinGecko.
+    Only pools whose base token is one of the exact contracts from
+    token_contracts() count. There is no search by ticker: it returns impostor
+    tokens. On 18 October 2026 a search for SOL found fake "SOL" pools claiming
+    $2.5bn of liquidity, and on 29 October 2026 a search for BTC found a "BTC"
+    token on Solana priced like bitcoin, which passed a price filter and was
+    reported as an $8.0bn pool in a paid write-up. A coin with no contract
+    (bitcoin) therefore has no pool, which the reports show as missing data.
     """
+    if not contracts:
+        return {"error": "No exchange pool: this coin has no token contract to match pools against, "
+                         "and pools found by ticker alone are often impostor tokens", "no_pool": True}
     try:
-        if contracts:
-            wanted = {(chain, address.lower()) for chain, address in contracts}
-            addresses = ",".join(address for _, address in contracts[:30])
-            resp = requests.get(f"https://api.dexscreener.com/latest/dex/tokens/{addresses}", timeout=10)
-            if resp.status_code != 200:
-                return {"error": f"DexScreener returned {resp.status_code}"}
-            pairs = [
-                p for p in resp.json().get("pairs") or []
-                if (p.get("chainId"), (p.get("baseToken") or {}).get("address", "").lower()) in wanted
-            ]
-            if not pairs:
-                return {"error": "No exchange pool found for this token's contract addresses"}
-            return _pair_summary(_deepest_active(pairs), "contract address published by CoinGecko")
-
-        resp = requests.get(f"https://api.dexscreener.com/latest/dex/search?q={token.upper()}", timeout=10)
+        wanted = {(chain, address.lower()) for chain, address in contracts}
+        addresses = ",".join(address for _, address in contracts[:30])
+        resp = requests.get(f"https://api.dexscreener.com/latest/dex/tokens/{addresses}", timeout=10)
         if resp.status_code != 200:
             return {"error": f"DexScreener returned {resp.status_code}"}
-        pairs = [p for p in resp.json().get("pairs") or []
-                 if (p.get("baseToken") or {}).get("symbol", "").upper() == token.upper()]
-        reference = float(reference_price or 0)
-        if reference > 0:
-            pairs = [p for p in pairs if abs(float(p.get("priceUsd") or 0) / reference - 1) <= 0.10]
+        pairs = [
+            p for p in resp.json().get("pairs") or []
+            if (p.get("chainId"), (p.get("baseToken") or {}).get("address", "").lower()) in wanted
+        ]
         if not pairs:
-            return {"error": "Token not found on DexScreener"}
-        return _pair_summary(_deepest_active(pairs), "ticker search only; the contract could not be confirmed")
+            return {"error": "No exchange pool found for this token's contract addresses"}
+        return _pair_summary(_deepest_active(pairs), "contract address published by CoinGecko")
     except Exception as e:
         return {"error": f"DexScreener API error: {str(e)}"}
 

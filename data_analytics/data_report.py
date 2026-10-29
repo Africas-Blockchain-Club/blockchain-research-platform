@@ -223,13 +223,12 @@ def build_data_report(token, data_summary, date_str):
 
     base, quote = to_float(info.get("liquidity_base_tokens")), to_float(info.get("liquidity_quote_tokens"))
     price = info.get("current_price_usd")
-    parts += [
-        "## Phase 1.5: Exchange Pool Maths",
-        "",
-        f"Main pool: {_clean(info.get('dex'))} on {_clean(info.get('chain'))}, found by "
-        f"{_clean(info.get('dex_pair_match'))}.",
-        "",
-    ]
+    parts += ["## Phase 1.5: Exchange Pool Maths", ""]
+    if info.get("dex"):
+        parts += [f"Main pool: {_clean(info.get('dex'))} on {_clean(info.get('chain'))}, found by "
+                  f"{_clean(info.get('dex_pair_match'))}.", ""]
+    else:
+        parts += [f"Main pool: none. {_clean(info.get('dex_pair_match'))}.", ""]
     if base and quote:
         k = base * quote
         # Buying 10% of x out leaves 0.9x, so the price rises by (1 / 0.9) squared
